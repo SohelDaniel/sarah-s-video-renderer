@@ -1,0 +1,9 @@
+# Flat square facing +y
+# 4 vertices, 2 triangles
+# Centered at (0,0,0), fits inside -1..1. Faces are counter-clockwise seen from outside.
+v -1.000000 0.000000 1.000000
+v 1.000000 0.000000 1.000000
+v 1.000000 0.000000 -1.000000
+v -1.000000 0.000000 -1.000000
+f 1 2 3
+f 1 3 4
