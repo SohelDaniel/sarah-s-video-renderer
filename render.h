@@ -24,10 +24,19 @@ private:
 	// World space -> screen. Result: x,y in pixels, z = depth (-1 near .. 1 far).
 	// Returns false if the point is behind the camera.
 	bool project(const vec3& world,vec3& screen)const;
+	// Fill one triangle. v = world space (for lighting), s = screen space.
+	void fill(const vec3& v1,const vec3& v2,const vec3& v3,
+	          const vec3& s1,const vec3& s2,const vec3& s3,px::Pixel color);
 
 	px::Image image;
 	std::vector<float> depth;          // closest depth drawn so far, per pixel
 	mat4<float> view_projection;       // projection * view
 	mat4<float> to_screen;             // viewport
 	vec3 light_dir;                    // direction towards the light
+
+	// scratch space for draw_mesh, kept between calls so drawing many
+	// objects doesn't allocate new memory every time
+	std::vector<vec3> world_verts;
+	std::vector<vec3> screen_verts;
+	std::vector<char> visible;
 };

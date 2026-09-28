@@ -28,6 +28,17 @@ inline mat4<float> translate(float x,float y,float z){
 	};
 }
 
+// Stretch by (x, y, z) around the origin: numbers on the diagonal.
+// 1 = unchanged, 2 = twice as big, 0.5 = half.
+inline mat4<float> scale(float x,float y,float z){
+	return mat4<float>{
+		x, 0, 0, 0,
+		0, y, 0, 0,
+		0, 0, z, 0,
+		0, 0, 0, 1,
+	};
+}
+
 // Rotation around the x axis by `angle` radians (counter-clockwise when
 // looking from +x towards the origin). x stays put, y and z turn in a circle:
 //   y' = y*cos - z*sin
