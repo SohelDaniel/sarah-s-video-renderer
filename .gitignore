@@ -1,0 +1,9 @@
+# build output
+main
+
+# rendered images
+out/
+renders/
+
+# macOS
+.DS_Store
