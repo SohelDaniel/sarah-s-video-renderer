@@ -87,7 +87,8 @@ void layout::sort_by_dependencies(){
 
 void layout::solve(method how){
 	switch(how){
-		case method::naive: place_naive(); method_name = "naive"; break;
+		case method::naive:  place_naive();  method_name = "naive";  break;
+		case method::greedy: place_greedy(); method_name = "greedy"; break;
 	}
 }
 
@@ -99,6 +100,138 @@ void layout::place_naive(){
 	for(int i : order){
 		placed[i].position = links[i].empty() ? vec3(0.0f, 0.0f, 0.0f)
 		                                      : placed[links[i][0].other].position;
+	}
+}
+
+// Step B: the direction a relation points in, from the other object.
+static vec3 direction_of(relation_kind kind){
+	switch(kind){
+		case relation_kind::left_of:     return vec3(-1.0f, 0.0f, 0.0f);
+		case relation_kind::right_of:    return vec3( 1.0f, 0.0f, 0.0f);
+		case relation_kind::above:       return vec3( 0.0f, 1.0f, 0.0f);
+		case relation_kind::below:       return vec3( 0.0f,-1.0f, 0.0f);
+		case relation_kind::in_front_of: return vec3( 0.0f, 0.0f, 1.0f);
+		case relation_kind::behind:      return vec3( 0.0f, 0.0f,-1.0f);
+		case relation_kind::near:        return vec3( 1.0f, 0.0f, 0.0f); // not used
+	}
+	return vec3(1.0f, 0.0f, 0.0f);
+}
+
+// Candidate spots for object i, from one relation, best first.
+//
+// Every spot is at distance  D = r_i + r_other + gap  from the other
+// object's center (the spheres then have exactly `gap` of empty space
+// between them), times 1, 1.5, 2 or 3 if the close ones are all taken.
+//   near      : 8 directions around it, sides and front first, then the
+//               same 8 tilted a bit upwards
+//   left_of...: straight in that direction first, then fanned out 30° and
+//               then 60° in the four directions around it (to get around
+//               whatever is in the way)
+std::vector<vec3> layout::candidates(int i,const link& l)const{
+	const placement& other = placed[l.other];
+	float D = placed[i].radius + other.radius + gap;
+
+	std::vector<vec3> directions;
+	if(l.kind == relation_kind::near){
+		const vec3 flat[8] = {
+			vec3( 1, 0, 0), vec3(-1, 0, 0),           // right, left
+			vec3( 1, 0, 1), vec3(-1, 0, 1),           // front-right, front-left
+			vec3( 1, 0,-1), vec3(-1, 0,-1),           // back-right, back-left
+			vec3( 0, 0, 1), vec3( 0, 0,-1),           // front, back
+		};
+		for(const vec3& d : flat) directions.push_back(normalize(d));
+		for(const vec3& d : flat) directions.push_back(normalize(d + vec3(0, 0.6f, 0)));
+	}else{
+		vec3 d = direction_of(l.kind);
+		// two directions at right angles to d
+		vec3 side = std::fabs(d[1]) > 0.5f ? vec3(1, 0, 0) : vec3(0, 1, 0);
+		vec3 across = normalize(cross(d, side));
+		side = cross(across, d);
+		directions.push_back(d);
+		// tilt d towards each of the four: by 30° (tan 30° = 0.577),
+		// then by 60° (tan 60° = 1.732)
+		for(float tilt : {0.577f, 1.732f}){
+			for(const vec3& t : {side, side * -1.0f, across, across * -1.0f}){
+				directions.push_back(normalize(d + t * tilt));
+			}
+		}
+	}
+
+	std::vector<vec3> spots;
+	for(float k : {1.0f, 1.5f, 2.0f, 3.0f, 4.0f}){
+		for(const vec3& d : directions){
+			spots.push_back(other.position + d * (D * k));
+		}
+	}
+	return spots;
+}
+
+// How much object i, at `spot`, would dig into the objects already placed
+// (counting the wanted `gap` too): 0 means the spot is free.
+float layout::crowding(int i,const vec3& spot,const std::vector<bool>& done)const{
+	float total = 0.0f;
+	for(size_t j = 0;j<placed.size();j++){
+		if(!done[j] || int(j) == i) continue;
+		float need = placed[i].radius + placed[j].radius + gap;
+		float d = distance(spot, placed[j].position);
+		if(d < need - 1e-4f) total += need - d;
+	}
+	return total;
+}
+
+// How many of object i's relations are fully satisfied where it is now.
+int layout::satisfied(int i)const{
+	int count = 0;
+	for(const link& l : links[i]){
+		if(check(i, l) == verdict::ok) count++;
+	}
+	return count;
+}
+
+// Step B: place objects one at a time, in dependency order (most important
+// first). Each one looks at the candidate spots of its first relation, and
+// takes the free spot that satisfies the most of its relations (the first
+// such spot on a tie, which is the closest and most natural one). Objects
+// that were placed earlier never move again: that's what makes it greedy.
+void layout::place_greedy(){
+	std::vector<bool> done(placed.size(), false);
+	int anchor = order.empty() ? -1 : order[0];   // the most important object
+
+	for(int i : order){
+		if(i == anchor){
+			placed[i].position = vec3(0.0f, 0.0f, 0.0f);   // the main object goes in the middle
+			done[i] = true;
+			continue;
+		}
+		// no relation (or only broken ones): treat it as "near" the main object
+		link first = links[i].empty() ? link{relation_kind::near, anchor} : links[i][0];
+
+		std::vector<vec3> spots = candidates(i, first);
+		int best_score = -1;
+		vec3 best;
+		for(const vec3& spot : spots){
+			if(crowding(i, spot, done) > 0.0f) continue;
+			placed[i].position = spot;
+			int score = satisfied(i);
+			if(score > best_score){
+				best_score = score;
+				best = spot;
+			}
+		}
+		if(best_score < 0){
+			// every spot is taken: use the least crowded one and say so
+			float least = -1.0f;
+			for(const vec3& spot : spots){
+				float c = crowding(i, spot, done);
+				if(least < 0.0f || c < least){
+					least = c;
+					best = spot;
+				}
+			}
+			warnings.push_back("no free spot for " + placed[i].name + " (placed where it overlaps least)");
+		}
+		placed[i].position = best;
+		done[i] = true;
 	}
 }
 
@@ -190,6 +323,10 @@ std::string layout::report()const{
 	}
 	out << "  " << ok << " of " << total << " relations satisfied\n";
 
+	if(!warnings.empty()){
+		out << "  problems while solving:\n";
+		for(const std::string& w : warnings) out << "    " << w << "\n";
+	}
 	if(!errors.empty()){
 		out << "  problems in the description:\n";
 		for(const std::string& e : errors) out << "    " << e << "\n";

@@ -1,0 +1,23 @@
+layout (greedy): 9 objects, 0 overlapping pairs
+  objects (in placement order):
+    cube        big     r= 2.42  at (  0.00,   0.00,   0.00)
+    sphere      normal  r= 0.80  at (  3.62,   0.00,   0.00)
+    cone        normal  r= 1.13  at ( -3.96,   0.00,   0.00)
+    cylinder    normal  r= 1.13  at (  2.80,   0.00,   2.80)
+    icosahedron small   r= 0.50  at ( -2.35,   0.00,   2.35)
+    pyramid     normal  r= 1.39  at (  0.00,   4.21,   0.00)
+    torus       normal  r= 0.80  at (  1.62,  -3.46,   0.00)
+    tetrahedron small   r= 0.50  at (  0.00,   0.00,  -3.32)
+    octahedron  small   r= 0.50  at (  2.35,   0.00,  -2.35)
+  relations:
+    ok      sphere near cube
+    ok      cone near cube
+    ok      cylinder near cube
+    ok      icosahedron near cube
+    ok      pyramid above cube
+    ok      torus left_of sphere
+    ok      tetrahedron behind cube
+  7 of 7 relations satisfied
+  problems in the description:
+    octahedron near moon: there is no object called "moon" (relation ignored)
+wrote docs/images/scene3-greedy.png

@@ -37,6 +37,7 @@ All the math is built on **vectors and matrices** (01).
 | 09 | [Time and animation](09-time-and-animation.md) | How do things move over time? | `timeline.h`, `object.cpp`, `camera.cpp` |
 | 10 | [Live player and window](10-live-player-and-window.md) | How does it become a live video? | `player.cpp`, `window.cpp` |
 | 11 | [Scene description](11-scene-description.md) | How does the AI describe a scene? What's the baseline? | `scene_spec.h`, `layout.cpp`, `world.cpp` |
+| 12 | [Greedy placement](12-greedy-placement.md) | How do relations become positions? | `layout.cpp` |
 | | [Ranges and settings](ranges.md) | What values make sense? | `camera.h`, `object.h` |
 | | [C++ notes](cpp-notes.md) | What does this syntax mean? | everywhere |
 | | [Design](design.md) | Why is the code split up like this? | everywhere |

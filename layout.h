@@ -13,6 +13,8 @@
 //
 //  The steps (docs/11 .. 14):
 //    naive  : everything goes where its relation points, no checking (the mess)
+//    greedy : one at a time, most important first; try candidate spots that
+//             fit the relation and take the best one that's free
 // ============================================================================
 
 // Where one object ended up.
@@ -25,7 +27,7 @@ struct placement{
 
 class layout{
 public:
-	enum class method{ naive };
+	enum class method{ naive, greedy };
 
 	// mesh_radii[i] = bounding radius of object i's mesh at size 1
 	// (same order as spec.objects). The layout never loads files itself.
@@ -54,6 +56,10 @@ private:
 	void resolve_names();
 	void sort_by_dependencies();
 	void place_naive();
+	void place_greedy();
+	std::vector<vec3> candidates(int i,const link& l)const;
+	float crowding(int i,const vec3& spot,const std::vector<bool>& done)const;
+	int satisfied(int i)const;
 
 	enum class verdict{ ok, weak, failed };
 	verdict check(int i,const link& l)const;
@@ -64,5 +70,6 @@ private:
 	std::vector<std::vector<link>> links;   // links[i] = object i's relations
 	std::vector<int> order;                 // the order to place objects in
 	std::vector<std::string> errors;        // problems found in the description
+	std::vector<std::string> warnings;      // problems found while solving
 	std::string method_name = "none";
 };
