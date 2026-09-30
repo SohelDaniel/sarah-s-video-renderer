@@ -89,6 +89,7 @@ void layout::solve(method how){
 	switch(how){
 		case method::naive:  place_naive();  method_name = "naive";  break;
 		case method::greedy: place_greedy(); method_name = "greedy"; break;
+		case method::refined: place_greedy(); refine(); method_name = "refined"; break;
 	}
 }
 
@@ -235,6 +236,223 @@ void layout::place_greedy(){
 	}
 }
 
+void layout::set_camera(vec3 new_eye,vec3 new_target){
+	eye = new_eye;
+	target = new_target;
+}
+
+// ---------------------------------------------------------------------------
+//  What the camera sees.
+//
+//  Build the camera's axes (like look_at, docs/04): forward, right, up.
+//  For an object at p, with v = p - eye:
+//      depth  = dot(v, forward)            how far in front of the camera
+//      x      = dot(v, right) / depth      where on screen (similar triangles, docs/05)
+//      y      = dot(v, up)    / depth
+//      radius = r / depth                  how big its circle looks
+//  These are "tan-angle" units: multiply by focal and you get NDC.
+// ---------------------------------------------------------------------------
+struct camera_axes{
+	vec3 forward, right, up;
+};
+static camera_axes axes_of(const vec3& eye,const vec3& target){
+	camera_axes a;
+	a.forward = normalize(target - eye);
+	a.right   = normalize(cross(a.forward, vec3(0.0f, 1.0f, 0.0f)));
+	a.up      = cross(a.right, a.forward);
+	return a;
+}
+
+layout::seen layout::look(int i)const{
+	camera_axes a = axes_of(eye, target);
+	vec3 v = placed[i].position - eye;
+	seen s;
+	s.depth  = dot(v, a.forward);
+	float z  = std::max(s.depth, 0.001f);
+	s.x      = dot(v, a.right) / z;
+	s.y      = dot(v, a.up) / z;
+	s.radius = placed[i].radius / z;
+	return s;
+}
+
+// How many pairs of objects overlap on screen (one partly hides the other).
+int layout::count_hidden()const{
+	int count = 0;
+	for(size_t i = 0;i<placed.size();i++){
+		for(size_t j = i + 1;j<placed.size();j++){
+			seen a = look(int(i)), b = look(int(j));
+			if(a.depth <= 0.0f || b.depth <= 0.0f) continue;
+			float dx = a.x - b.x, dy = a.y - b.y;
+			if(std::sqrt(dx * dx + dy * dy) < a.radius + b.radius) count++;
+		}
+	}
+	return count;
+}
+
+// ---------------------------------------------------------------------------
+//  Step C: refinement by gradient descent.
+//
+//  The energy E is a number that's big when the layout is bad and 0 when
+//  it's perfect. It has four parts (docs/13 works through each one):
+//
+//    spring   : beta  · |p - home|²                  (stay near the greedy spot)
+//    push     : gamma · max(0, r_i + r_j + gap - d)² (every pair of objects)
+//    relations: rho   · max(0, how far it's broken)² (every relation)
+//    screen   : nu    · max(0, a_i + a_j + margin - s)²
+//               (every pair, s = distance between their circles on screen)
+//
+//  The gradient of E says, for every object, which way makes E grow
+//  fastest. Stepping the other way (p -= eta · gradient) makes E smaller.
+//  Repeat, and the layout settles where all the pushes and pulls balance.
+// ---------------------------------------------------------------------------
+
+layout::energy_parts layout::energy(const std::vector<vec3>& home)const{
+	energy_parts e;
+	int n = int(placed.size());
+	for(int i = 0;i<n;i++){
+		vec3 d = placed[i].position - home[i];
+		e.spring += spring_weight * dot(d, d);
+	}
+	for(int i = 0;i<n;i++){
+		for(int j = i + 1;j<n;j++){
+			float need = placed[i].radius + placed[j].radius + gap;
+			float p = std::max(0.0f, need - distance(placed[i].position, placed[j].position));
+			e.push += push_weight * p * p;
+
+			seen a = look(i), b = look(j);
+			if(a.depth > 0.0f && b.depth > 0.0f){
+				float dx = a.x - b.x, dy = a.y - b.y;
+				float s = std::sqrt(dx * dx + dy * dy);
+				float q = std::max(0.0f, a.radius + b.radius + screen_margin - s);
+				e.screen += screen_weight * q * q;
+			}
+		}
+	}
+	for(int i = 0;i<n;i++){
+		for(const link& l : links[i]){
+			const placement& a = placed[i];
+			const placement& b = placed[l.other];
+			float broken = 0.0f;
+			if(l.kind == relation_kind::near){
+				// too far: surfaces more than near_limit apart
+				broken = std::max(0.0f, distance(a.position, b.position) - a.radius - b.radius - near_limit);
+			}else{
+				// not far enough that way: along should be at least reach
+				float along = dot(a.position - b.position, direction_of(l.kind));
+				broken = std::max(0.0f, a.radius + b.radius - along);
+			}
+			e.relations += relation_weight * broken * broken;
+		}
+	}
+	return e;
+}
+
+std::vector<vec3> layout::gradient(const std::vector<vec3>& home)const{
+	int n = int(placed.size());
+	std::vector<vec3> g(n, vec3(0.0f, 0.0f, 0.0f));
+	camera_axes cam = axes_of(eye, target);
+
+	// spring: d/dp of beta·|p - home|² = 2·beta·(p - home)
+	for(int i = 0;i<n;i++){
+		g[i] = g[i] + (placed[i].position - home[i]) * (2.0f * spring_weight);
+	}
+	for(int i = 0;i<n;i++){
+		for(int j = i + 1;j<n;j++){
+			// push: E = gamma·(need - d)², d = |p_i - p_j|
+			// dE/dp_i = -2·gamma·(need - d)·(p_i - p_j)/d   (and the opposite for j)
+			vec3 diff = placed[i].position - placed[j].position;
+			float d = std::sqrt(dot(diff, diff));
+			float need = placed[i].radius + placed[j].radius + gap;
+			if(d < need && d > 1e-6f){
+				vec3 away = diff * (1.0f / d);   // unit arrow from j to i
+				vec3 push = away * (-2.0f * push_weight * (need - d));
+				g[i] = g[i] + push;
+				g[j] = g[j] - push;
+			}
+
+			// screen: same shape as push, but on the screen. Moving p_i by a
+			// small step changes its screen spot by (right·dx + up·dy)/depth,
+			// so a screen direction (qx, qy) is the world direction
+			// (right·qx + up·qy), scaled by 1/depth. (Depth is treated as
+			// fixed here: objects mostly slide sideways.)
+			seen a = look(i), b = look(j);
+			if(a.depth > 0.0f && b.depth > 0.0f){
+				float qx = a.x - b.x, qy = a.y - b.y;
+				float s = std::sqrt(qx * qx + qy * qy);
+				float need_s = a.radius + b.radius + screen_margin;
+				if(s < need_s && s > 1e-6f){
+					vec3 sideways = (cam.right * (qx / s) + cam.up * (qy / s));  // screen arrow j -> i, in world
+					float amount = -2.0f * screen_weight * (need_s - s);
+					g[i] = g[i] + sideways * (amount / a.depth);
+					g[j] = g[j] - sideways * (amount / b.depth);
+				}
+			}
+		}
+	}
+	for(int i = 0;i<n;i++){
+		for(const link& l : links[i]){
+			const placement& a = placed[i];
+			const placement& b = placed[l.other];
+			if(l.kind == relation_kind::near){
+				// E = rho·(d - r_a - r_b - limit)² when too far: pulls them together
+				vec3 diff = a.position - b.position;
+				float d = std::sqrt(dot(diff, diff));
+				float broken = d - a.radius - b.radius - near_limit;
+				if(broken > 0.0f && d > 1e-6f){
+					vec3 pull = diff * (2.0f * relation_weight * broken / d);
+					g[i] = g[i] + pull;
+					g[l.other] = g[l.other] - pull;
+				}
+			}else{
+				// E = rho·(reach - along)², along = dot(p_a - p_b, dir)
+				// dE/dp_a = -2·rho·(reach - along)·dir   (and the opposite for b)
+				vec3 dir = direction_of(l.kind);
+				float broken = a.radius + b.radius - dot(a.position - b.position, dir);
+				if(broken > 0.0f){
+					vec3 push = dir * (-2.0f * relation_weight * broken);
+					g[i] = g[i] + push;
+					g[l.other] = g[l.other] - push;
+				}
+			}
+		}
+	}
+	return g;
+}
+
+void layout::refine(){
+	std::vector<vec3> home;   // where greedy put everything: the springs' rest spots
+	for(const placement& p : placed) home.push_back(p.position);
+	int anchor = order.empty() ? -1 : order[0];   // the main object stays in the middle
+
+	auto log = [&](int step){
+		energy_parts e = energy(home);
+		std::ostringstream line;
+		line << std::fixed << std::setprecision(4)
+		     << "step " << std::setw(3) << step << "   E = " << std::setw(8) << e.total()
+		     << "   (spring " << e.spring << ", push " << e.push
+		     << ", relations " << e.relations << ", screen " << e.screen << ")";
+		energy_log.push_back(line.str());
+	};
+
+	log(0);
+	float before = energy(home).total();
+	int uphill = 0;   // steps where the energy went UP: should stay 0
+	for(int step = 1;step<=steps;step++){
+		std::vector<vec3> g = gradient(home);
+		for(size_t i = 0;i<placed.size();i++){
+			if(int(i) == anchor) continue;
+			placed[i].position = placed[i].position - g[i] * step_size;   // downhill
+		}
+		float after = energy(home).total();
+		// allow for float rounding: a float has ~7 significant digits, so an
+		// energy around 10 wobbles by a few millionths even at the bottom
+		if(after > before * (1.0f + 1e-5f)) uphill++;
+		before = after;
+		if(step == 1 || step == 2 || step % 50 == 0) log(step);
+	}
+	energy_log.push_back("steps where the energy went up: " + std::to_string(uphill) + " of " + std::to_string(steps));
+}
+
 const std::vector<placement>& layout::result()const{
 	return placed;
 }
@@ -296,7 +514,8 @@ std::string layout::report()const{
 	out << std::fixed << std::setprecision(2);
 
 	out << "layout (" << method_name << "): " << placed.size() << " objects, "
-	    << count_overlaps() << " overlapping pairs\n";
+	    << count_overlaps() << " overlapping pairs, "
+	    << count_hidden() << " pairs overlapping on screen\n";
 
 	out << "  objects (in placement order):\n";
 	for(int i : order){
@@ -323,6 +542,10 @@ std::string layout::report()const{
 	}
 	out << "  " << ok << " of " << total << " relations satisfied\n";
 
+	if(!energy_log.empty()){
+		out << "  refinement (energy should go down):\n";
+		for(const std::string& line : energy_log) out << "    " << line << "\n";
+	}
 	if(!warnings.empty()){
 		out << "  problems while solving:\n";
 		for(const std::string& w : warnings) out << "    " << w << "\n";

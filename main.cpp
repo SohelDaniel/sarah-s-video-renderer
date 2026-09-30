@@ -13,9 +13,9 @@
 // usage: ./main [1|2|3] [solver step] [picture.png]
 //   ./main    or  ./main 1   the old 3-picture scene, as a 12 second video
 //   ./main 2                 a little solar system, 20 seconds
-//   ./main 3 greedy          a "lazy AI" scene, placed by the layout solver
-//                            (steps: naive, greedy)
-//   ./main 3 greedy out.png  same, but save one picture instead of playing
+//   ./main 3 refined          a "lazy AI" scene, placed by the layout solver
+//                             (steps: naive, greedy, refined)
+//   ./main 3 refined out.png  same, but save one picture instead of playing
 
 // Scene 1: the same scene as the old 3 pictures, but now as a video: first we say how
 // everything starts, then what changes and WHEN (from second a to second b).
@@ -174,7 +174,8 @@ void solved_scene(const std::string& step,const std::string& picture){
 	layout::method how;
 	if(step == "naive")       how = layout::method::naive;
 	else if(step == "greedy") how = layout::method::greedy;
-	else throw std::invalid_argument("unknown solver step \"" + step + "\" (try: naive, greedy)");
+	else if(step == "refined") how = layout::method::refined;
+	else throw std::invalid_argument("unknown solver step \"" + step + "\" (try: naive, greedy, refined)");
 
 	world w(lazy_ai_scene(), how);
 	std::cout << w.plan().report();
@@ -194,7 +195,7 @@ int main(int argc,char** argv){
 	try {
 		if(which == "1")      example_scene();
 		else if(which == "2") solar_system();
-		else if(which == "3") solved_scene(argc > 2 ? argv[2] : "greedy", argc > 3 ? argv[3] : "");
+		else if(which == "3") solved_scene(argc > 2 ? argv[2] : "refined", argc > 3 ? argv[3] : "");
 		else {
 			std::cerr << "usage: ./main [1|2|3] [solver step] [picture.png]\n";
 			return 1;

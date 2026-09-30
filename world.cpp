@@ -13,6 +13,9 @@ std::vector<float> world::load_meshes(const scene_spec& spec){
 
 world::world(const scene_spec& spec,layout::method how)
 	: solved(spec, load_meshes(spec)){
+	cam.move(vec3(0.0f, 6.0f, 16.0f));
+	cam.point_at(vec3(0.0f, 0.0f, 0.0f));
+	solved.set_camera(vec3(0.0f, 6.0f, 16.0f), vec3(0.0f, 0.0f, 0.0f));
 	solved.solve(how);
 
 	const std::vector<placement>& placed = solved.result();
@@ -30,8 +33,6 @@ world::world(const scene_spec& spec,layout::method how)
 		objects.push_back(thing);
 	}
 
-	cam.move(vec3(0.0f, 6.0f, 16.0f));
-	cam.point_at(vec3(0.0f, 0.0f, 0.0f));
 }
 
 std::vector<object*> world::scene(){

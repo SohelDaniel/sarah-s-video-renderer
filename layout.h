@@ -15,6 +15,8 @@
 //    naive  : everything goes where its relation points, no checking (the mess)
 //    greedy : one at a time, most important first; try candidate spots that
 //             fit the relation and take the best one that's free
+//    refined: greedy, then everything moves a little at a time downhill on
+//             an "energy" (gradient descent) until it settles
 // ============================================================================
 
 // Where one object ended up.
@@ -27,7 +29,11 @@ struct placement{
 
 class layout{
 public:
-	enum class method{ naive, greedy };
+	enum class method{ naive, greedy, refined };
+
+	// Where the camera will look from. Only used to judge what's hidden
+	// behind what on screen (the refinement tries to fix that).
+	void set_camera(vec3 eye,vec3 target);
 
 	// mesh_radii[i] = bounding radius of object i's mesh at size 1
 	// (same order as spec.objects). The layout never loads files itself.
@@ -46,6 +52,15 @@ public:
 	// "near" is satisfied if the two surfaces are at most this far apart
 	static constexpr float near_limit = 2.0f;
 
+	// refinement settings (docs/13)
+	static constexpr float spring_weight   = 1.0f;    // beta : stay close to the greedy spot
+	static constexpr float push_weight     = 10.0f;   // gamma: keep `gap` between objects
+	static constexpr float relation_weight = 10.0f;   // rho  : keep relations true
+	static constexpr float screen_weight   = 8000.0f;  // nu   : don't hide each other on screen
+	static constexpr float screen_margin   = 0.02f;   // wanted space between circles on screen
+	static constexpr float step_size       = 0.01f;   // eta
+	static constexpr int   steps           = 500;
+
 private:
 	// A relation with the other object's name looked up to its index.
 	struct link{
@@ -61,6 +76,25 @@ private:
 	float crowding(int i,const vec3& spot,const std::vector<bool>& done)const;
 	int satisfied(int i)const;
 
+	void refine();
+	// the energy of a layout, split into its four parts (docs/13)
+	struct energy_parts{
+		float spring = 0.0f, push = 0.0f, relations = 0.0f, screen = 0.0f;
+		float total()const{ return spring + push + relations + screen; }
+	};
+	energy_parts energy(const std::vector<vec3>& home)const;
+	std::vector<vec3> gradient(const std::vector<vec3>& home)const;
+
+	// what the camera sees (docs/13): where an object's center lands on
+	// screen, and how big its circle looks there
+	struct seen{
+		float x, y;     // screen position (tan-angle units, like NDC / focal)
+		float radius;   // circle radius, same units
+		float depth;    // distance in front of the camera (<= 0: behind it)
+	};
+	seen look(int i)const;
+	int count_hidden()const;
+
 	enum class verdict{ ok, weak, failed };
 	verdict check(int i,const link& l)const;
 	int count_overlaps()const;
@@ -71,5 +105,8 @@ private:
 	std::vector<int> order;                 // the order to place objects in
 	std::vector<std::string> errors;        // problems found in the description
 	std::vector<std::string> warnings;      // problems found while solving
+	std::vector<std::string> energy_log;    // how the refinement went
+	vec3 eye{0.0f, 6.0f, 16.0f};
+	vec3 target{0.0f, 0.0f, 0.0f};
 	std::string method_name = "none";
 };

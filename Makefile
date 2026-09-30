@@ -23,7 +23,7 @@ run: $(TARGET)
 	./$(TARGET) $(SCENE)
 
 # The pictures in docs/images: scene 3 after each step of the layout solver.
-STEPS = naive greedy
+STEPS = naive greedy refined
 stills: $(TARGET)
 	@mkdir -p docs/images
 	@for s in $(STEPS); do ./$(TARGET) 3 $$s docs/images/scene3-$$s.png > docs/images/scene3-$$s.txt; done
