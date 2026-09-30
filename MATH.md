@@ -290,10 +290,11 @@ Shapes fit inside -1..1, so their corners are up to ~1.73 from the center.
 ## 5. Running it
 
 ```
-make run                     build + render cube to out.png + open it
-make torus                   render shapes/torus.obj to renders/torus.png + open it
-make run SHAPE=shapes/cone.obj OUT=cone.png
-make clean                   delete the binary and renders/
+make run              build and play scene 1 live in a window
+make run SCENE=2      play scene 2 (the solar system)
+make clean            delete the binary
 ```
 
-`make` alone only **builds**; it doesn't make a new image. Use `make run`.
+The camera is now set with `cam.move(eye)` and `cam.point_at(target)`
+instead of `cam.eye = ...` / `cam.target = ...`; the ranges above still apply.
+How the live player, the timing and the window work: see `LIVE.md`.
