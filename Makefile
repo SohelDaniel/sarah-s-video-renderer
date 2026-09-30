@@ -1,39 +1,27 @@
 CXX      ?= clang++
 CXXFLAGS ?= -std=c++17 -Wall -Wextra -O2
 
+# SDL3 only opens the window and shows our finished picture.
+# pkg-config knows where brew put it: brew install sdl3
+SDL_CFLAGS = $(shell pkg-config --cflags sdl3)
+SDL_LIBS   = $(shell pkg-config --libs sdl3)
+
 TARGET  = main
-SOURCES = main.cpp camera.cpp mesh.cpp object.cpp render.cpp vec3.cpp
+SOURCES = main.cpp camera.cpp mesh.cpp object.cpp player.cpp render.cpp vec3.cpp window.cpp
 HEADERS = $(wildcard *.h)
 
-# Every shape in shapes/ becomes a target: make cube, make torus, ...
-SHAPES  = $(basename $(notdir $(wildcard shapes/*.obj)))
-RENDERS = renders
-
-# Override on the command line: make run SHAPE=shapes/torus.obj OUT=torus
-# OUT is a folder: writes $(OUT)/shot_1.png, shot_2.png, ...
-SHAPE ?= shapes/cube.obj
-OUT   ?= out
-
-# Image viewer: macOS has `open`, Linux has `xdg-open`.
-OPEN ?= $(if $(shell command -v open),open,xdg-open)
-
-.PHONY: all run clean $(SHAPES)
+.PHONY: all run clean
 
 all: $(TARGET)
 
 $(TARGET): $(SOURCES) $(HEADERS)
-	$(CXX) $(CXXFLAGS) $(SOURCES) -o $(TARGET)
+	$(CXX) $(CXXFLAGS) $(SDL_CFLAGS) $(SOURCES) -o $(TARGET) $(SDL_LIBS)
 
-# Build, render, and open the images.
+# Build and play a video in a window: make run, or make run SCENE=2
+SCENE ?= 1
 run: $(TARGET)
-	./$(TARGET) $(SHAPE) $(OUT)
-	$(OPEN) $(OUT)/shot_*.png
-
-# make torus -> renders/torus/shot_1.png, shot_2.png, ..., then opens them.
-$(SHAPES): $(TARGET)
-	./$(TARGET) shapes/$@.obj $(RENDERS)/$@
-	$(OPEN) $(RENDERS)/$@/shot_*.png
+	./$(TARGET) $(SCENE)
 
 clean:
 	rm -f $(TARGET)
-	rm -rf $(RENDERS) out
+	rm -rf renders out

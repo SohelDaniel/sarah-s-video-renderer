@@ -12,13 +12,21 @@ struct pixel{
 };
 class render{
 public:
-	render(int width,int height,const camera& cam);
+	// Makes the image and depth buffer once. Reuse the same render for every
+	// frame so we don't allocate a new picture 60 times a second.
+	render(int width,int height);
+
+	// Start a new picture: wipe the image and depth buffer, and set up the
+	// matrices for where the camera is right now. Call before drawing.
+	void begin(const camera& cam);
 
 	// Draw every triangle of `model`, placed in the world by `model_matrix`.
 	void draw_mesh(const mesh& model,const mat4<float>& model_matrix,px::Pixel color);
 	// Draw one triangle given in world space.
 	void draw(vec3 v1,vec3 v2,vec3 v3,px::Pixel color);
 	bool save(const std::string& filename)const;
+	// The finished picture, e.g. to show it in a window.
+	const px::Image& picture()const;
 
 private:
 	// World space -> screen. Result: x,y in pixels, z = depth (-1 near .. 1 far).

@@ -6,12 +6,21 @@
 #include <limits>
 
 
-render::render(int width,int height,const camera& cam)
-	:image(width, height, px::Pixel(20, 20, 28)),
+// the color behind everything
+static const px::Pixel background(20, 20, 28);
+
+render::render(int width,int height)
+	:image(width, height, background),
 	 depth(size_t(width) * size_t(height), std::numeric_limits<float>::infinity()),
-	 view_projection(cam.projection(float(width) / float(height)) * cam.view()),
 	 to_screen(viewport(width, height)),
 	 light_dir(normalize(vec3(0.4f, 0.8f, 0.6f))){}
+
+void render::begin(const camera& cam){
+	image.Clear(background);
+	std::fill(depth.begin(), depth.end(), std::numeric_limits<float>::infinity());
+	float aspect = float(image.Width()) / float(image.Height());
+	view_projection = cam.projection(aspect) * cam.view();
+}
 
 void render::draw_mesh(const mesh& model,const mat4<float>& model_matrix,px::Pixel color){
 	// Transform and project every vertex ONCE up front. A vertex is shared by
@@ -115,4 +124,8 @@ void render::fill(const vec3& v1,const vec3& v2,const vec3& v3,
 
 bool render::save(const std::string& filename)const{
 	return image.Save(filename);
+}
+
+const px::Image& render::picture()const{
+	return image;
 }

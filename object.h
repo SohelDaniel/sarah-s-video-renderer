@@ -3,11 +3,20 @@
 #include "mesh.h"
 #include "pixel.h"
 #include "render.h"
+#include "timeline.h"
 #include "vec3.h"
 
-// One thing in the scene: which mesh it uses, where it is, how it's turned,
-// how big it is, and its color. It knows nothing about the camera or the
-// image; those belong to the scene (one camera, one render per picture).
+// Where an object is, how it's turned and how big it is, at one moment.
+struct pose{
+	vec3 position{0.0f, 0.0f, 0.0f};
+	float rot_y = 0.0f;  // spin around the vertical axis, radians
+	float rot_x = 0.0f;  // tip forward/back, radians
+	float size  = 1.0f;  // 1 = normal size, 2 = twice as big, 0.5 = half
+};
+
+// One thing in the scene: which mesh it uses, its color, and how it moves
+// over time. It knows nothing about the camera or the image; those belong
+// to the scene (one camera, one render per picture).
 //
 // The mesh is NOT copied, the object just points at it. So you can load
 // cube.obj once and make 50 cube objects from it. The mesh has to stay alive
@@ -15,6 +24,8 @@
 class object{
 public:
 	object(const mesh& shape,px::Pixel color);
+
+	// ---- right away: sets how the object starts (at second 0) ----
 
 	// put it at a position (world units)
 	void move(vec3 to);
@@ -29,6 +40,17 @@ public:
 	// 1 = normal size, 2 = twice as big, 0.5 = half
 	void scale(float scale_by);
 
+	// ---- over time: the same, but it happens between second `start` and `end` ----
+	// move, rotate and scale go TO the value given.
+	// rotate_around swings BY the angles given (a quarter orbit, a full orbit...).
+	void move(vec3 to,float start,float end);
+	void rotate(float rot_y,float rot_x,float start,float end);
+	void rotate_around(vec3 around,float rot_y,float rot_x,float start,float end);
+	void scale(float scale_by,float start,float end);
+
+	// Work out where the object is at time t (seconds). Call once per frame.
+	void update(float t);
+
 	vec3 get_position()const;
 	// translate * rotate * scale: scale first, then turn, then move
 	mat4<float> model_matrix()const;
@@ -37,7 +59,6 @@ public:
 private:
 	const mesh* shape;
 	px::Pixel color;
-	vec3 position{0.0f, 0.0f, 0.0f};
-	mat4<float> orientation = mat4<float>::identity();
-	float size = 1.0f;
+	timeline<pose> motion;  // how it starts + every change scheduled on it
+	pose now;               // where it is at the current time
 };
