@@ -1,0 +1,234 @@
+# C++ notes
+
+Every piece of C++ syntax used in the engine that's worth explaining, with
+where it's used.
+
+---
+
+## Files and headers
+
+### `#pragma once`
+At the top of every `.h`. It means "only include this file once per `.cpp`,
+even if several headers include it". Without it, the same struct would be
+defined twice and compilation would fail.
+
+### Header (`.h`) vs source (`.cpp`)
+The header says **what exists** (class, function signatures); the source
+says **how it works**. Other files only include the header. Templates are
+the exception: all their code lives in the header (see below).
+
+### Forward declarations
+```cpp
+class object;        // camera.h
+struct SDL_Window;   // window.h
+```
+"This type exists; the details come later." Enough to use a **pointer or
+reference** to it. It breaks include cycles (`render.h` includes
+`camera.h`, so `camera.h` can't include `render.h` back), and it keeps SDL
+out of every file except `window.cpp`.
+
+---
+
+## Types
+
+### `struct` vs `class`
+Identical except for the default: `struct` members are public, `class`
+members are private. The code uses `struct` for plain bundles of data
+(`vec3`, `pose`, `time_span`) and `class` for things that protect their
+insides (`object`, `camera`, `mesh`).
+
+### Default member values
+```cpp
+float size = 1.0f;
+vec3 position{0.0f, 0.0f, 0.0f};
+```
+Every new object starts with these values, with no constructor needed.
+
+### Aggregate initialization
+```cpp
+motion.add({start, end}, ...);   // builds a time_span field by field
+```
+
+### `enum class`
+```cpp
+enum class size_word {tiny, small, normal, big, huge};
+size_word s = size_word::big;
+```
+A type with a fixed list of named values. The `class` makes you write
+`size_word::big`, not just `big`, so names from different enums can't
+clash, and it won't silently turn into an int.
+
+---
+
+## Functions
+
+### References and `const&`
+```cpp
+vec3 operator+(const vec3& v, const vec3& w);
+```
+`&` passes the original, not a copy. `const` promises not to change it. So
+`const vec3&` means "read the caller's vec3 without copying it".
+
+### `const` member functions
+```cpp
+vec3 get_position()const;
+```
+Promises the function doesn't change the object. It can be called on a
+`const` object, and the compiler stops you if you accidentally modify
+something.
+
+### Operator overloading
+```cpp
+vec3 operator+(const vec3& v, const vec3& w);
+mat4 operator*(const mat4& other) const;
+float& operator[](int i);
+```
+Lets `a + b`, `M * p` and `v[0]` work on our own types, so the code reads
+like the math.
+
+### Function overloading
+```cpp
+void move(vec3 to);                        // instant
+void move(vec3 to,float start,float end);  // over time
+```
+Same name, different parameters; the compiler picks one by the arguments.
+
+### `::name`, the global scope
+Inside `object`, `scale(...)` means the member `object::scale`.
+`::scale(...)` means the global one from `transform.h`.
+
+### `static` on a free function
+```cpp
+static void orbit(pose& p, ...);   // object.cpp
+```
+Only visible inside that one `.cpp`. A private helper.
+
+### `explicit`
+```cpp
+explicit player(float seconds);
+```
+Stops C++ from silently turning a lone `float` into a `player`.
+
+### `inline`
+```cpp
+inline mat4<float> translate(float x, float y, float z){ ... }
+```
+Needed for a function **defined** in a header: every `.cpp` that includes it
+gets a copy, and `inline` tells the linker they're all the same function.
+
+---
+
+## Templates
+
+```cpp
+template<typename T>
+class mat4 { T m[16]; ... };
+
+template<typename State>
+class timeline { State initial; ... };
+```
+
+Code written once for any type. `timeline<pose>` and
+`timeline<viewpoint>` are two classes the compiler generates from the same
+code. The compiler needs the full code wherever a new type is used, so
+templates live entirely in headers.
+
+### `std::initializer_list`
+```cpp
+mat4(std::initializer_list<T> values)
+...
+return mat4<float>{ 1, 0, 0, x,  0, 1, 0, y, ... };
+```
+Lets a matrix be written out row by row, like on paper.
+
+---
+
+## Lambdas and `std::function`
+
+```cpp
+[to](pose& p, float f){ p.position = lerp(p.position, to, f); }
+```
+
+A function with no name, written where it's needed.
+
+- `[to]`: the **capture list**. It **copies** `to` into the lambda, so it's
+  still there long after `move()` has returned. Capturing by reference
+  (`[&to]`) would point at a variable that no longer exists by the time
+  the lambda runs, 5 seconds later.
+- `(pose& p, float f)`: parameters
+- `{ ... }`: body
+
+```cpp
+using change = std::function<void(State& state, float progress)>;
+```
+
+`std::function` is a box that holds **anything callable** with that
+signature. Every lambda has its own hidden type, so this is how different
+lambdas fit in one `std::vector`. `using X = ...` gives a long type a short
+name.
+
+### Sorting with a lambda
+```cpp
+std::stable_sort(steps.begin(), steps.end(),
+	[](const step& a, const step& b){ return a.when.start < b.when.start; });
+```
+The lambda answers "does a come before b?". **Stable** keeps equal elements
+in their original order.
+
+---
+
+## Resources
+
+### RAII
+**Resource Acquisition Is Initialization**: the constructor grabs a resource
+(a window, a file) and the destructor gives it back. `window` opens in its
+constructor and closes in `~window()`, whether `play()` ends normally, by
+`break` or by an exception. You can't forget to close it.
+
+### Deleting copies
+```cpp
+window(const window&) = delete;
+window& operator=(const window&) = delete;
+```
+A copy would mean two objects owning one OS window, and both would close
+it.
+
+### Exceptions
+```cpp
+throw std::runtime_error("could not open a window: " + error);
+...
+try { example_scene(); }
+catch (const std::exception& e) { std::cerr << "error: " << e.what(); return 1; }
+```
+Errors travel up to the nearest `catch`. `main` catches everything, prints
+it and exits with code 1 instead of crashing.
+
+---
+
+## The standard library bits
+
+| Thing | Where | What for |
+|---|---|---|
+| `std::vector<T>` | everywhere | a growable array |
+| `std::map<K, V>` | `world.cpp` | look up a mesh by file name |
+| `std::string` | names, file names | text |
+| `std::clamp(x, lo, hi)` | `timeline.h` | keep progress in 0..1 |
+| `std::chrono::steady_clock` | `player.cpp` | measure real time |
+| `std::filesystem::create_directories` | `camera.cpp` | make the output folder |
+| `std::numeric_limits<float>::infinity()` | `render.cpp` | an "empty" depth value |
+
+### `<chrono>`, step by step
+```cpp
+using clock = std::chrono::steady_clock;
+const clock::time_point started = clock::now();
+float t = std::chrono::duration<float>(clock::now() - started).count();
+```
+`now()` gives a moment; subtracting two moments gives a duration;
+`duration<float>` converts it to seconds; `.count()` takes the plain number
+out.
+
+### The ternary operator
+```cpp
+std::string which = argc > 1 ? argv[1] : "1";
+```
+`condition ? if_true : if_false`
