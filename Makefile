@@ -7,10 +7,10 @@ SDL_CFLAGS = $(shell pkg-config --cflags sdl3)
 SDL_LIBS   = $(shell pkg-config --libs sdl3)
 
 TARGET  = main
-SOURCES = main.cpp camera.cpp mesh.cpp object.cpp player.cpp render.cpp vec3.cpp window.cpp
+SOURCES = main.cpp camera.cpp layout.cpp mesh.cpp object.cpp player.cpp render.cpp vec3.cpp window.cpp world.cpp
 HEADERS = $(wildcard *.h)
 
-.PHONY: all run clean
+.PHONY: all run stills clean
 
 all: $(TARGET)
 
@@ -21,6 +21,12 @@ $(TARGET): $(SOURCES) $(HEADERS)
 SCENE ?= 1
 run: $(TARGET)
 	./$(TARGET) $(SCENE)
+
+# The pictures in docs/images: scene 3 after each step of the layout solver.
+STEPS = naive
+stills: $(TARGET)
+	@mkdir -p docs/images
+	@for s in $(STEPS); do ./$(TARGET) 3 $$s docs/images/scene3-$$s.png > docs/images/scene3-$$s.txt; done
 
 clean:
 	rm -f $(TARGET)

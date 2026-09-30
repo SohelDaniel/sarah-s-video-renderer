@@ -2,6 +2,7 @@
 #include "camera.h"
 #include "object.h"
 
+#include <string>
 #include <vector>
 
 // Plays a scene live in a window for a set number of seconds.
@@ -18,6 +19,10 @@ public:
 	explicit player(float seconds);
 
 	void play(camera& cam,const std::vector<object*>& scene);
+
+	// Instead of playing: draw the single frame at time t and save it as a
+	// PNG. Used for the pictures in docs/.
+	void save_still(camera& cam,const std::vector<object*>& scene,float t,const std::string& filename);
 
 private:
 	float seconds;

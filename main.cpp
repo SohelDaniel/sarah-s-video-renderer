@@ -2,15 +2,19 @@
 #include "mesh.h"
 #include "object.h"
 #include "player.h"
+#include "scene_spec.h"
+#include "world.h"
 
 #include <iostream>
 #include <exception>
 #include <string>
 #include <vector>
 
-// usage: ./main [1|2]
+// usage: ./main [1|2|3] [solver step] [picture.png]
 //   ./main    or  ./main 1   the old 3-picture scene, as a 12 second video
 //   ./main 2                 a little solar system, 20 seconds
+//   ./main 3 naive           a "lazy AI" scene, placed by the layout solver
+//   ./main 3 naive out.png   same, but save one picture instead of playing
 
 // Scene 1: the same scene as the old 3 pictures, but now as a video: first we say how
 // everything starts, then what changes and WHEN (from second a to second b).
@@ -145,13 +149,52 @@ void solar_system(){
 	video.play(cam, scene);
 }
 
+// Scene 3: written the way an AI would write it. No coordinates at all,
+// only what exists and how things relate, and a bit sloppy on purpose:
+// lots of things crowd "near cube", and one relation points at an object
+// that doesn't exist. The layout solver has to make sense of it.
+scene_spec lazy_ai_scene(){
+	scene_spec spec;
+	spec.add("cube",        "shapes/cube.obj",        px::Pixel(230, 130,  60), size_word::big, 10);
+	spec.add("sphere",      "shapes/sphere.obj",      px::Pixel( 80, 160, 230)).near("cube");
+	spec.add("cone",        "shapes/cone.obj",        px::Pixel(120, 200,  90)).near("cube");
+	spec.add("cylinder",    "shapes/cylinder.obj",    px::Pixel(200, 120, 220)).near("cube");
+	spec.add("icosahedron", "shapes/icosahedron.obj", px::Pixel(240, 220,  80), size_word::small).near("cube");
+	spec.add("pyramid",     "shapes/pyramid.obj",     px::Pixel(235, 235, 245)).above("cube");
+	spec.add("torus",       "shapes/torus.obj",       px::Pixel( 90, 210, 200)).left_of("sphere");
+	spec.add("tetrahedron", "shapes/tetrahedron.obj", px::Pixel(220,  80,  70), size_word::small).behind("cube");
+	spec.add("octahedron",  "shapes/octahedron.obj",  px::Pixel(160, 160, 170), size_word::small).near("moon");
+	return spec;
+}
+
+// Solve scene 3's layout with one of the solver's steps, print the report,
+// then play it (every object slowly spins in place) or save one picture.
+void solved_scene(const std::string& step,const std::string& picture){
+	layout::method how;
+	if(step == "naive") how = layout::method::naive;
+	else throw std::invalid_argument("unknown solver step \"" + step + "\" (try: naive)");
+
+	world w(lazy_ai_scene(), how);
+	std::cout << w.plan().report();
+
+	std::vector<object*> scene = w.scene();
+	for(object* o : scene){
+		o->rotate(0.6f + 6.283f, 0.3f, 0.0f, 20.0f);   // one full spin over 20 s
+	}
+
+	player video(20.0f);
+	if(picture.empty()) video.play(w.cam, scene);
+	else                video.save_still(w.cam, scene, 0.0f, picture);
+}
+
 int main(int argc,char** argv){
 	std::string which = argc > 1 ? argv[1] : "1";
 	try {
 		if(which == "1")      example_scene();
 		else if(which == "2") solar_system();
+		else if(which == "3") solved_scene(argc > 2 ? argv[2] : "naive", argc > 3 ? argv[3] : "");
 		else {
-			std::cerr << "usage: ./main [1|2]\n";
+			std::cerr << "usage: ./main [1|2|3] [solver step] [picture.png]\n";
 			return 1;
 		}
 	} catch (const std::exception& e) {

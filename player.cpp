@@ -4,6 +4,7 @@
 
 #include <chrono>
 #include <iostream>
+#include <stdexcept>
 
 
 player::player(float seconds)
@@ -38,6 +39,7 @@ void player::play(camera& cam,const std::vector<object*>& scene){
 		for(const object* o : scene){
 			o->draw(renderer);
 		}
+		renderer.finish();
 
 		// 4. on screen
 		screen.show(renderer.picture());
@@ -46,4 +48,21 @@ void player::play(camera& cam,const std::vector<object*>& scene){
 
 	std::cout << "played " << frames << " frames in " << t << " s ("
 	          << frames / t << " frames per second)\n";
+}
+
+void player::save_still(camera& cam,const std::vector<object*>& scene,float t,const std::string& filename){
+	render renderer(cam.width, cam.height);
+	cam.update(t);
+	for(object* o : scene){
+		o->update(t);
+	}
+	renderer.begin(cam);
+	for(const object* o : scene){
+		o->draw(renderer);
+	}
+	renderer.finish();
+	if(!renderer.save(filename)){
+		throw std::runtime_error("could not write " + filename);
+	}
+	std::cout << "wrote " << filename << "\n";
 }

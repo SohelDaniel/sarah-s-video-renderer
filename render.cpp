@@ -19,7 +19,11 @@ void render::begin(const camera& cam){
 	image.Clear(background);
 	std::fill(depth.begin(), depth.end(), std::numeric_limits<float>::infinity());
 	float aspect = float(image.Width()) / float(image.Height());
-	view_projection = cam.projection(aspect) * cam.view();
+	mat4<float> view = cam.view();
+	view_projection = cam.projection(aspect) * view;
+	// row 2 of the view matrix is the camera's up axis (docs/04)
+	camera_up = vec3(view(1, 0), view(1, 1), view(1, 2));
+	overlay.clear();
 }
 
 void render::draw_mesh(const mesh& model,const mat4<float>& model_matrix,px::Pixel color){
@@ -120,6 +124,26 @@ void render::fill(const vec3& v1,const vec3& v2,const vec3& v3,
      		}
 	}
 
+}
+
+void render::draw_bounds(vec3 center,float radius,px::Pixel color){
+	overlay.push_back({center, radius, color});
+}
+
+void render::finish(){
+	// A sphere seen through a camera looks (almost exactly) like a circle.
+	// Its screen radius: project the center, and a point on the sphere's
+	// edge straight "up" from the camera's point of view, and measure the
+	// distance between the two on screen.
+	for(const circle& c : overlay){
+		vec3 mid, edge;
+		if(!project(c.center, mid) || !project(c.center + camera_up * c.radius, edge)) continue;
+		float dx = edge[0] - mid[0];
+		float dy = edge[1] - mid[1];
+		int r = int(std::lround(std::sqrt(dx * dx + dy * dy)));
+		image.DrawCircle(int(std::lround(mid[0])), int(std::lround(mid[1])), r, c.color);
+	}
+	overlay.clear();
 }
 
 bool render::save(const std::string& filename)const{

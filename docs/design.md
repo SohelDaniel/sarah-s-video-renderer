@@ -31,6 +31,22 @@ can be understood, tested and replaced on its own.
 | **Separate "what" from "when"** | `main` only describes the scene; `player` decides when frames are drawn. The same scene can play in a window or be saved as stills. |
 | **Fail loudly, early** | The mesh loader checks every face index at load time; `main` reports errors instead of crashing. |
 
+## The solver's pieces
+
+```
+scene_spec (what the AI wrote) ──► layout (pure math: spheres in, positions out) ──► world (meshes + objects + camera)
+```
+
+- **`layout` never touches files or triangles.** It gets names, relations and
+  radii, and gives back positions and a report. That makes it easy to test
+  and to reason about, and it doesn't care whether the scene came from C++
+  or from a parser.
+- **`world` owns everything it builds.** The meshes live in a map inside it,
+  and the objects point at them, so they can't outlive their meshes.
+- **Mistakes in the description are reported, not fatal.** A wrong name
+  drops that one relation and says so. With an AI writing the scene, a clear
+  message it can act on is worth more than a crash.
+
 ## Choices that aren't obvious
 
 - **Rotation stored as angles, not a matrix.** Angles can be blended over

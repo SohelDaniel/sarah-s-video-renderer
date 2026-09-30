@@ -24,6 +24,11 @@ public:
 	void draw_mesh(const mesh& model,const mat4<float>& model_matrix,px::Pixel color);
 	// Draw one triangle given in world space.
 	void draw(vec3 v1,vec3 v2,vec3 v3,px::Pixel color);
+	// Outline of a sphere (a bounding sphere), as a circle on screen. It's
+	// only remembered here and drawn by finish(), on top of everything.
+	void draw_bounds(vec3 center,float radius,px::Pixel color);
+	// Draw what has to go on top (the circles). Call after all objects.
+	void finish();
 	bool save(const std::string& filename)const;
 	// The finished picture, e.g. to show it in a window.
 	const px::Image& picture()const;
@@ -41,6 +46,14 @@ private:
 	mat4<float> view_projection;       // projection * view
 	mat4<float> to_screen;             // viewport
 	vec3 light_dir;                    // direction towards the light
+	vec3 camera_up;                    // the camera's up axis in world space
+
+	struct circle{
+		vec3 center;
+		float radius;
+		px::Pixel color;
+	};
+	std::vector<circle> overlay;       // waiting for finish()
 
 	// scratch space for draw_mesh, kept between calls so drawing many
 	// objects doesn't allocate new memory every time

@@ -58,6 +58,16 @@ A type with a fixed list of named values. The `class` makes you write
 `size_word::big`, not just `big`, so names from different enums can't
 clash, and it won't silently turn into an int.
 
+### `switch` on an `enum class`
+```cpp
+switch(s){
+	case size_word::tiny:  return 0.3f;
+	...
+}
+```
+The compiler warns (`-Wall`) if a value of the enum is missing from the
+switch, so adding a new size word can't be forgotten anywhere.
+
 ---
 
 ## Functions
@@ -96,6 +106,26 @@ Same name, different parameters; the compiler picks one by the arguments.
 ### `::name`, the global scope
 Inside `object`, `scale(...)` means the member `object::scale`.
 `::scale(...)` means the global one from `transform.h`.
+
+### Returning `*this` (chaining)
+```cpp
+object_spec& near(const std::string& other){ relations.push_back(...); return *this; }
+
+spec.add("sphere", ...).near("cube").above("table");
+```
+Each call returns the same object, so the next call can be written right
+after it. Reads like a sentence, and it's easy for an AI to write.
+
+### Member initializer order
+```cpp
+std::map<std::string, mesh> meshes;   // world.h: declared first
+layout solved;                        // declared second
+...
+world::world(...) : solved(spec, load_meshes(spec)) {}
+```
+Members are always built **in the order they're declared**, whatever order
+the initializer list says. `load_meshes` fills `meshes`, so `meshes` has to
+be declared above `solved`.
 
 ### `static` on a free function
 ```cpp
@@ -210,7 +240,9 @@ it and exits with code 1 instead of crashing.
 | Thing | Where | What for |
 |---|---|---|
 | `std::vector<T>` | everywhere | a growable array |
-| `std::map<K, V>` | `world.cpp` | look up a mesh by file name |
+| `std::map<K, V>` | `world.cpp` | look up a mesh by file name. `try_emplace(key, args)` builds the value only if the key isn't there yet, so each mesh file is loaded once |
+| `std::deque<T>` | `scene_spec.h` | like a vector, but adding to the end **never moves** existing elements, so a reference returned by `add()` stays valid. A vector may move everything to new memory when it grows |
+| `std::ostringstream`, `<iomanip>` | `layout.cpp` | build the report as text: `std::fixed`, `std::setprecision(2)`, `std::setw(12)` for aligned columns |
 | `std::string` | names, file names | text |
 | `std::clamp(x, lo, hi)` | `timeline.h` | keep progress in 0..1 |
 | `std::chrono::steady_clock` | `player.cpp` | measure real time |

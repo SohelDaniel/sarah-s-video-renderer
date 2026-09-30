@@ -25,11 +25,15 @@ public:
 	int get_faces_count()const;
 	vec3 vertex(int i)const;
 	triangle face(int i)const;
+	// Distance from (0,0,0) to the farthest vertex: a sphere this big holds
+	// the whole shape, however it's turned. Used by the layout solver.
+	float bounding_radius()const;
 
 private:
 	std::string name;
 	std::vector<vec3> vertices;
 	std::vector<triangle> faces;
+	float radius = 0.0f;
 
 
 };

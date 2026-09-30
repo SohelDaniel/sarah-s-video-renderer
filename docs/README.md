@@ -36,6 +36,7 @@ All the math is built on **vectors and matrices** (01).
 | 08 | [Depth and shading](08-depth-and-shading.md) | What's in front? How bright is it? | `render.cpp` `fill` |
 | 09 | [Time and animation](09-time-and-animation.md) | How do things move over time? | `timeline.h`, `object.cpp`, `camera.cpp` |
 | 10 | [Live player and window](10-live-player-and-window.md) | How does it become a live video? | `player.cpp`, `window.cpp` |
+| 11 | [Scene description](11-scene-description.md) | How does the AI describe a scene? What's the baseline? | `scene_spec.h`, `layout.cpp`, `world.cpp` |
 | | [Ranges and settings](ranges.md) | What values make sense? | `camera.h`, `object.h` |
 | | [C++ notes](cpp-notes.md) | What does this syntax mean? | everywhere |
 | | [Design](design.md) | Why is the code split up like this? | everywhere |
@@ -62,4 +63,6 @@ computes.
 ```
 make run              scene 1: cube, sphere, torus (12 s video)
 make run SCENE=2      scene 2: solar system (20 s)
+./main 3 <step>       scene 3: a "lazy AI" scene, placed by one step of the solver
+make stills           writes the solver pictures in docs/images/
 ```

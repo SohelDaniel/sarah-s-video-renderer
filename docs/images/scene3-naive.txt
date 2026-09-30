@@ -1,0 +1,23 @@
+layout (naive): 9 objects, 36 overlapping pairs
+  objects (in placement order):
+    cube        big     r= 2.42  at (  0.00,   0.00,   0.00)  OVERLAPS
+    sphere      normal  r= 0.80  at (  0.00,   0.00,   0.00)  OVERLAPS
+    cone        normal  r= 1.13  at (  0.00,   0.00,   0.00)  OVERLAPS
+    cylinder    normal  r= 1.13  at (  0.00,   0.00,   0.00)  OVERLAPS
+    icosahedron small   r= 0.50  at (  0.00,   0.00,   0.00)  OVERLAPS
+    pyramid     normal  r= 1.39  at (  0.00,   0.00,   0.00)  OVERLAPS
+    torus       normal  r= 0.80  at (  0.00,   0.00,   0.00)  OVERLAPS
+    tetrahedron small   r= 0.50  at (  0.00,   0.00,   0.00)  OVERLAPS
+    octahedron  small   r= 0.50  at (  0.00,   0.00,   0.00)  OVERLAPS
+  relations:
+    weak    sphere near cube
+    weak    cone near cube
+    weak    cylinder near cube
+    weak    icosahedron near cube
+    FAILED  pyramid above cube
+    FAILED  torus left_of sphere
+    FAILED  tetrahedron behind cube
+  0 of 7 relations satisfied
+  problems in the description:
+    octahedron near moon: there is no object called "moon" (relation ignored)
+wrote docs/images/scene3-naive.png

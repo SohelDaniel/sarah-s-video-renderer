@@ -1,4 +1,6 @@
 #include "mesh.h"
+#include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -47,6 +49,11 @@ mesh::mesh(const std::string& file_name)
 			}
 		}
 	}
+
+	// bounding radius: the farthest vertex from the center
+	for(const vec3& v : vertices){
+		radius = std::max(radius, std::sqrt(dot(v, v)));
+	}
 }
 int mesh::get_vertices_count()const{
 	return vertices.size();
@@ -59,4 +66,7 @@ vec3 mesh::vertex(int i)const{
 }
 triangle mesh::face(int i)const{
 	return faces[i];
+}
+float mesh::bounding_radius()const{
+	return radius;
 }

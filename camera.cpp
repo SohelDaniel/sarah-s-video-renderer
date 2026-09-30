@@ -44,6 +44,7 @@ void camera::take(const std::vector<const object*>& scene){
 	for(const object* o : scene){
 		o->draw(renderer);
 	}
+	renderer.finish();
 
 	std::filesystem::create_directories(folder);
 	std::string filename = folder + "/shot_" + std::to_string(++shots_taken) + ".png";
