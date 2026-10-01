@@ -112,7 +112,8 @@ motion_plan::motion_plan(const std::vector<obstacle>& still,std::vector<path> mo
 
 void motion_plan::solve(method how){
 	switch(how){
-		case method::naive: place_naive(); method_name = "naive"; break;
+		case method::naive:  place_naive(); method_name = "naive"; break;
+		case method::orbits: place_naive(); plan_orbits(); method_name = "orbits"; break;
 	}
 }
 
@@ -130,6 +131,72 @@ void motion_plan::place_naive(){
 			p.from = other.position - vec3(half, 0.0f, 0.0f);
 			p.to   = other.position + vec3(half, 0.0f, 0.0f);
 		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+//  Step E2: orbit radii (docs/16).
+//
+//  An orbit is a circle of radius R around c, in the horizontal plane. How
+//  close does it come to a still object at o? Measure o from c:
+//      h = horizontal distance (in x and z),   v = height difference (y)
+//  The nearest point of the circle is straight "out" towards o, so
+//      closest distance = √((h − R)² + v²)
+//  It must be at least  need = r_object + r_o + gap. Squaring and solving
+//  for R: the circle is too close exactly when
+//      |h − R| < w,   with  w = √(need² − v²)      (only if need > |v|)
+//  so every still object rules out the radii between h − w and h + w.
+//
+//  Two orbits round the same center, R and R_q: every point of one circle
+//  is at least |R − R_q| from the other, so they can never meet if
+//  |R − R_q| ≥ r + r_q + gap. That rules out R_q − need .. R_q + need.
+//
+//  The orbit gets the smallest R (at least r + r_center + gap) that isn't
+//  ruled out by anything.
+// ---------------------------------------------------------------------------
+void motion_plan::plan_orbits(){
+	std::vector<int> done;   // orbits that already have their radius
+	for(size_t k = 0;k<moving.size();k++){
+		path& p = moving[k];
+		if(p.kind != motion_kind::orbits) continue;
+		const obstacle& center = still[p.around];
+
+		std::vector<std::pair<float, float>> ruled_out;
+		for(size_t j = 0;j<still.size();j++){
+			if(int(j) == p.around) continue;
+			vec3 d = still[j].position - center.position;
+			float h = std::sqrt(d[0] * d[0] + d[2] * d[2]);
+			float v = d[1];
+			float need = p.radius + still[j].radius + layout::gap;
+			if(need <= std::fabs(v)) continue;   // far enough above or below: never in the way
+			float w = std::sqrt(need * need - v * v);
+			ruled_out.push_back({h - w, h + w});
+		}
+		for(int q : done){
+			if(moving[q].around != p.around) continue;
+			float need = p.radius + moving[q].radius + layout::gap;
+			ruled_out.push_back({moving[q].orbit_radius - need, moving[q].orbit_radius + need});
+		}
+
+		// the answer is either the smallest radius, or just past the end of
+		// one of the ruled-out ranges: try those, smallest first
+		float smallest = p.radius + center.radius + layout::gap;
+		std::vector<float> tries = {smallest};
+		for(const auto& range : ruled_out){
+			if(range.second > smallest) tries.push_back(range.second);
+		}
+		std::sort(tries.begin(), tries.end());
+		for(float R : tries){
+			bool free = true;
+			for(const auto& range : ruled_out){
+				if(R > range.first + 1e-4f && R < range.second - 1e-4f) free = false;
+			}
+			if(free){
+				p.orbit_radius = R;
+				break;
+			}
+		}
+		done.push_back(int(k));
 	}
 }
 

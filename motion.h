@@ -16,7 +16,9 @@
 //
 //  The steps:
 //    naive  : the simplest path (smallest orbit, a line straight through)
-//    ... more steps arrive in later commits
+//    orbits : every orbit gets the smallest radius whose whole circle stays
+//             clear of the still objects and of the other orbits around the
+//             same center (fly-bys still naive)
 // ============================================================================
 
 
@@ -68,7 +70,7 @@ struct path{
 
 class motion_plan{
 public:
-	enum class method{ naive };
+	enum class method{ naive, orbits };
 
 	motion_plan(const std::vector<obstacle>& still,std::vector<path> moving);
 
@@ -87,6 +89,7 @@ public:
 
 private:
 	void place_naive();
+	void plan_orbits();
 	float sample_step()const;
 
 	// One pair that hit each other.

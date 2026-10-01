@@ -182,12 +182,117 @@ picture. That gets fixed in E4.
 
 ---
 
+## 6. Step E2: orbit radii
+
+An orbit is a whole **circle**, so it doesn't matter where the planet is
+right now: if the circle passes too close to something, the planet will hit it
+sooner or later. So the radius is picked once, for the whole circle.
+
+### How close does a circle come to a point?
+
+Orbit: center c, radius R, flat (horizontal). A still object at o.
+Measure o from c:
+
+```
+h = horizontal distance from c to o   (x and z only)
+v = height of o above c               (y only)
+```
+
+The circle's closest point to o is the one straight "out" towards it, so
+in the plane through c, o and that point:
+
+```
+closest distance = √( (h − R)² + v² )
+```
+
+It must be at least `need = r_planet + r_o + gap`. Square both sides and solve
+for R. The circle is too close exactly when
+
+```
+|h − R| < w,      w = √(need² − v²)              (if need ≤ |v|, never too close)
+```
+
+so each still object **rules out every radius between h − w and h + w**.
+
+**Two orbits round the same center**, with radii R and R_q: every point on one
+circle is at least |R − R_q| from the other circle. They can never meet if
+|R − R_q| ≥ r + r_q + gap, so an existing orbit rules out R_q − need ..
+R_q + need.
+
+**The pick:** the smallest R that is at least `r + r_center + gap` and not
+inside any ruled-out range. The answer is always either that minimum or
+the top end of some range, so only those values need to be tried.
+
+### Worked example: scene 4
+
+Sun r = 1.4. The rock (r = 0.8) is at h = 2.6, the moon (r = 0.3, standing
+still) at h = 2.1, both at v = 0, so w = need.
+
+**Planet1** (r = 0.8). Smallest radius: 0.8 + 1.4 + 0.4 = **2.6**.
+
+| Rules out | need | range |
+|---|---|---|
+| rock | 0.8 + 0.8 + 0.4 = 2.0 | 2.6 − 2.0 .. 2.6 + 2.0 = **0.6 .. 4.6** |
+| moon | 0.8 + 0.3 + 0.4 = 1.5 | 2.1 − 1.5 .. 2.1 + 1.5 = **0.6 .. 3.6** |
+
+Try 2.6: inside 0.6..4.6 ✗. Try 3.6: inside 0.6..4.6 ✗. Try 4.6: on the edge,
+allowed ✓ → **R = 4.6**.
+
+**Planet2** (r = 0.87). Smallest radius: 0.87 + 1.4 + 0.4 = **2.67**.
+
+| Rules out | need | range |
+|---|---|---|
+| rock | 2.07 | 0.53 .. 4.67 |
+| moon | 1.57 | 0.53 .. 3.67 |
+| planet1's orbit (4.6) | 0.87 + 0.8 + 0.4 = 2.07 | 2.53 .. **6.67** |
+
+Try 2.67 ✗ (rock), 3.67 ✗ (rock), 4.67 ✗ (planet1's orbit), 6.67 ✓ →
+**R = 6.67**.
+
+The report ([scene4-orbits.txt](images/scene4-orbits.txt)):
+
+```
+motion (orbits): 3 moving objects, 4 colliding pairs
+    planet1    orbits sun, 0.00-20.00 s: radius 4.60, 1.00 turns
+    planet2    orbits sun, 0.00-20.00 s: radius 6.67, 2.00 turns
+  collisions:
+    planet2 hits comet, first at 4.58 s ...
+    comet hits moon, first at 5.68 s ...
+    comet hits sun, first at 6.06 s ...
+    comet hits rock, first at 7.35 s ...
+```
+
+**9 → 4 colliding pairs**, and every one that's left involves the comet,
+which still flies straight through (E3). The orbits are exact: they
+can't hit any still object or each other, at any speed and at any moment,
+which is better than sampling could ever prove.
+
+One limit: orbits around **different** centers aren't compared this way
+(their circles aren't concentric). Time sampling still catches them if they
+collide.
+
+| 0 s | 3 s | 7 s | 12 s |
+|---|---|---|---|
+| ![](images/scene4-orbits-0.png) | ![](images/scene4-orbits-3.png) | ![](images/scene4-orbits-7.png) | ![](images/scene4-orbits-12.png) |
+
+The planets are clear of the rock and of each other. Planet2's orbit is
+now so wide it's mostly out of the picture, because the camera still only
+frames the still objects (E4).
+
+---
+
 ## Try it on paper
 
-Planet2 (R = 2.67, 2 turns over 0 → 20 s, start angle 0). Where is it at
-t = 2.5 s?
+1. Planet2 (R = 2.67, 2 turns over 0 → 20 s, start angle 0). Where is it at
+   t = 2.5 s?
+2. An orbit around (0, 0, 0) for an object with r = 0.5. A still box-shaped
+   rock with r = 1 sits at (3, 2, 0). Which radii does it rule out? (gap = 0.4)
 
 Answer: f = 0.125, angle = 2π · 2 · 0.125 = 90°, so p = (0, 0, −2.67).
 Planet1 at that time: f = 0.125, angle = 45°, p = (1.84, 0, −1.84). Distance
 between them = √(1.84² + 0.83²) = 2.02, more than 0.8 + 0.87 = 1.67. At this
 moment they don't touch: planet2 has pulled ahead.
+
+2. h = 3, v = 2, need = 0.5 + 1 + 0.4 = 1.9. need ≤ |v| = 2, so it's never in
+   the way: the orbit passes underneath with room to spare. (Check: at R = 3
+   the closest distance is √(0 + 4) = 2 ≥ 1.9 ✓.)

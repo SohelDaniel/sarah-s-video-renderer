@@ -29,7 +29,7 @@ run: $(TARGET)
 # The pictures in docs/images: scene 3 after each step of the layout solver.
 STEPS = naive greedy refined framed
 # scene 4 (docs/16): each motion step, pictured at these seconds
-MOTION_STEPS = naive
+MOTION_STEPS = naive orbits
 MOTION_TIMES = 0 3 7 12
 stills: $(TARGET) $(TEST_TARGET)
 	@mkdir -p docs/images
