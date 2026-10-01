@@ -127,7 +127,7 @@ The engine's own report ([scene3-greedy.txt](images/scene3-greedy.txt))
 shows the same numbers:
 
 ```
-layout (greedy): 9 objects, 0 overlapping pairs
+layout (greedy): 9 objects, 0 overlapping pairs, 6 pairs overlapping on screen
     cube        big     r= 2.42  at (  0.00,   0.00,   0.00)
     sphere      normal  r= 0.80  at (  3.62,   0.00,   0.00)
     cone        normal  r= 1.13  at ( -3.96,   0.00,   0.00)

@@ -227,7 +227,7 @@ spheres of objects that overlap something (grey = fine). The report
 ([scene3-naive.txt](images/scene3-naive.txt)):
 
 ```
-layout (naive): 9 objects, 36 overlapping pairs
+layout (naive): 9 objects, 36 overlapping pairs, 36 pairs overlapping on screen
   ...
   0 of 7 relations satisfied
   problems in the description:
