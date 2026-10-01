@@ -1,0 +1,10 @@
+# Fades (docs/24): the moon fades in, a glass block fades in and out again
+# (the planet shows through it when it passes behind), and the planet
+# fades out at the end.
+
+scene "fades"
+
+sun    = sphere big gold important
+moon   = icosahedron small white near sun fades_in 0s-3s smooth
+glass  = cube big teal in_front_of sun fades_in 1s-4s fades_out 9s-12s
+planet = octahedron red orbits sun 1 turn 0s-12s fades_out 10s-12s

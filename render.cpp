@@ -24,7 +24,9 @@ void render::begin(const camera& cam){
 	view_projection = cam.projection(aspect) * view;
 	// row 2 of the view matrix is the camera's up axis (docs/04)
 	camera_up = vec3(view(1, 0), view(1, 1), view(1, 2));
+	camera_eye = cam.eye();
 	overlay.clear();
+	waiting.clear();
 }
 
 void render::draw_mesh(const mesh& model,const mat4<float>& model_matrix,px::Pixel color){
@@ -127,13 +129,22 @@ bool render::project(const vec3& world,vec3& screen)const{
 	return true;
 }
 
-void render::draw(vec3 v1,vec3 v2,vec3 v3,px::Pixel color){
+void render::draw(vec3 v1,vec3 v2,vec3 v3,px::Pixel color,float see_through_by){
+	opacity = see_through_by;
 	const vec3 world[3] = {v1, v2, v3};
 	vec4<float> clip[3];
 	for(int k = 0;k<3;k++){
 		clip[k] = view_projection * vec4<float>{world[k][0], world[k][1], world[k][2], 1.0f};
 	}
 	clip_and_fill(world, clip, color);
+	opacity = 1.0f;
+}
+
+void render::draw_see_through(const mesh& model,const mat4<float>& model_matrix,px::Pixel color,float how_solid){
+	// the object's center is where the model matrix moves (0,0,0) to: its last column
+	vec3 center(model_matrix(0, 3), model_matrix(1, 3), model_matrix(2, 3));
+	vec3 d = center - camera_eye;
+	waiting.push_back({&model, model_matrix, color, how_solid, std::sqrt(dot(d, d))});
 }
 
 void render::fill(const vec3& v1,const vec3& v2,const vec3& v3,
@@ -149,9 +160,11 @@ void render::fill(const vec3& v1,const vec3& v2,const vec3& v3,
 	vec3 normal = normalize(cross(v2 - v1, v3 - v1));
 	const float ambient = 0.15f;
 	float brightness = ambient + (1.0f - ambient) * std::max(0.0f, dot(normal, light_dir));
+	// a < 255 makes Image::Draw blend it over what's there (docs/24)
 	px::Pixel shaded(uint8_t(color.r * brightness),
 	                 uint8_t(color.g * brightness),
-	                 uint8_t(color.b * brightness));
+	                 uint8_t(color.b * brightness),
+	                 uint8_t(std::lround(255.0f * std::clamp(opacity, 0.0f, 1.0f))));
 
 	// Only look at pixels inside the triangle's bounding box.
 	int minX = std::max(0,                  int(std::floor(std::min({s1[0], s2[0], s3[0]}))));
@@ -183,7 +196,9 @@ void render::fill(const vec3& v1,const vec3& v2,const vec3& v3,
 			float z = w1 * s1[2] + w2 * s2[2] + w3 * s3[2];
 			float& closest = depth[size_t(p.y) * image.Width() + p.x];
 			if(z >= closest) continue;
-			closest = z;
+			// Something see-through doesn't claim the pixel: whatever is
+			// behind it has to stay visible through it (docs/24).
+			if(opacity >= 1.0f) closest = z;
 
 			image.Draw(p.x, p.y, shaded);
      		}
@@ -196,6 +211,17 @@ void render::draw_bounds(vec3 center,float radius){
 }
 
 void render::finish(){
+	// See-through things last, FARTHEST FIRST: each one is blended over what's
+	// behind it, so what's behind has to be drawn already (docs/24).
+	std::stable_sort(waiting.begin(), waiting.end(),
+		[](const see_through& a,const see_through& b){ return a.distance > b.distance; });
+	for(const see_through& s : waiting){
+		opacity = s.opacity;
+		draw_mesh(*s.model, s.model_matrix, s.color);
+	}
+	opacity = 1.0f;
+	waiting.clear();
+
 	// A sphere seen through a camera looks (almost exactly) like a circle.
 	// Its screen radius: project the center, and a point on the sphere's
 	// edge straight "up" from the camera's point of view, and measure the

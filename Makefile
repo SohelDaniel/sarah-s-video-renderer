@@ -49,6 +49,7 @@ stills: $(TARGET) $(TEST_TARGET)
 	@for c in on off; do ./$(TARGET) clip $$c docs/images/clip-$$c.png > /dev/null; done
 	@./$(TARGET) walk docs/images/walk- > docs/images/walk.txt
 	@./$(TARGET) ease docs/images/easing.png > /dev/null
+	@for t in 0 2 5 11; do ./$(TARGET) scenes/fades.dan framed docs/images/fades-$$t.png $$t > /dev/null; done
 	@./solver_test > docs/images/stress-results.txt || true
 	@# our PNG writer doesn't compress (docs/pixel.h); macOS's sips can, ~50x smaller
 	@if command -v sips > /dev/null; then for f in docs/images/*.png; do sips -s format png $$f --out $$f > /dev/null; done; fi

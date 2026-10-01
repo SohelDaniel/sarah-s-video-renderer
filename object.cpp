@@ -75,6 +75,17 @@ void object::scale(float scale_by,float start,float end,rate how){
 	});
 }
 
+void object::set_opacity(float opacity){
+	motion.initial.opacity = opacity;
+	now = motion.initial;
+}
+
+void object::fade(float to,float start,float end,rate how){
+	motion.add({start, end, how}, [to](pose& p,float f){
+		p.opacity = lerp(p.opacity, to, f);
+	});
+}
+
 void object::update(float t){
 	now = motion.at(t);
 	now_time = t;
@@ -123,7 +134,12 @@ mat4<float> object::model_matrix()const{
 }
 
 void object::draw(render& renderer)const{
-	renderer.draw_mesh(*shape, model_matrix(), color);
+	if(now.opacity <= 0.001f) return;                      // invisible: nothing to draw
+	if(now.opacity < 0.999f){
+		renderer.draw_see_through(*shape, model_matrix(), color, now.opacity);
+	}else{
+		renderer.draw_mesh(*shape, model_matrix(), color);
+	}
 	if(bounds_on){
 		renderer.draw_bounds(get_position(), shape->bounding_radius() * now.size);
 	}

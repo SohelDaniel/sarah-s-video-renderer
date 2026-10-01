@@ -26,6 +26,12 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 		// the circle turns red in any frame where it overlaps something
 		thing.show_bounds();
 
+		// fades (docs/24): if the first one fades IN, it starts invisible
+		std::vector<fade_step> fades = o.fades;
+		std::stable_sort(fades.begin(), fades.end(), [](const fade_step& a,const fade_step& b){ return a.start < b.start; });
+		if(!fades.empty() && fades[0].to > 0.5f) thing.set_opacity(0.0f);
+		for(const fade_step& f : fades) thing.fade(f.to, f.start, f.end, f.how);
+
 		int k = solved.path_of(int(i));
 		if(k < 0){
 			thing.move(solved.placed(int(i))->position);

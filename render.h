@@ -22,13 +22,17 @@ public:
 
 	// Draw every triangle of `model`, placed in the world by `model_matrix`.
 	void draw_mesh(const mesh& model,const mat4<float>& model_matrix,px::Pixel color);
-	// Draw one triangle given in world space.
-	void draw(vec3 v1,vec3 v2,vec3 v3,px::Pixel color);
+	// See-through (docs/24): opacity between 0 and 1. It's only remembered
+	// here, and drawn by finish(): after everything solid, farthest first.
+	void draw_see_through(const mesh& model,const mat4<float>& model_matrix,px::Pixel color,float opacity);
+	// Draw one triangle given in world space (opacity 1 = solid).
+	void draw(vec3 v1,vec3 v2,vec3 v3,px::Pixel color,float opacity = 1.0f);
 	// Outline of a sphere (a bounding sphere), as a circle on screen. It's
 	// only remembered here and drawn by finish(), on top of everything:
 	// red if it overlaps another one in this frame, grey if not.
 	void draw_bounds(vec3 center,float radius);
-	// Draw what has to go on top (the circles). Call after all objects.
+	// Draw what has to wait: see-through objects, then the circles on top.
+	// Call after all objects.
 	void finish();
 	bool save(const std::string& filename)const;
 
@@ -63,6 +67,17 @@ private:
 		float radius;
 	};
 	std::vector<circle> overlay;       // waiting for finish()
+
+	struct see_through{
+		const mesh* model;
+		mat4<float> model_matrix;
+		px::Pixel color;
+		float opacity;
+		float distance;                // from the camera, for sorting
+	};
+	std::vector<see_through> waiting;  // waiting for finish()
+	float opacity = 1.0f;              // of what's being drawn right now
+	vec3 camera_eye;
 
 	// scratch space for draw_mesh, kept between calls so drawing many
 	// objects doesn't allocate new memory every time

@@ -139,6 +139,40 @@ static void test_fly_camera(){
 	check(close(a.eye, b.eye, 0.0f) && a.yaw == b.yaw && a.pitch == b.pitch, "the same inputs always give the same camera");
 }
 
+// ---- fades (docs/24) ----
+static void test_fades(){
+	std::printf("fades:\n");
+	camera cam;
+	cam.width = 160;
+	cam.height = 120;
+	cam.move(vec3(0.0f, 0.0f, 4.0f));
+	cam.point_at(vec3(0.0f, 0.0f, 0.0f));
+	// a triangle facing the camera (counter-clockwise seen from +z)
+	vec3 a(-1, -1, 0), b(1, -1, 0), c(0, 1, 0);
+
+	render solid(cam.width, cam.height);
+	solid.begin(cam);
+	solid.draw(a, b, c, px::Pixel(220, 220, 220));
+	render half(cam.width, cam.height);
+	half.begin(cam);
+	half.draw(a, b, c, px::Pixel(220, 220, 220), 0.5f);
+
+	px::Pixel s = solid.picture().Get(80, 62);   // inside the triangle
+	px::Pixel h = half.picture().Get(80, 62);
+	px::Pixel bg = solid.picture().Get(2, 2);     // the background
+	int expected = int(std::lround(0.5f * s.r + 0.5f * bg.r));
+	check(std::abs(h.r - expected) <= 1, "half see-through = halfway between it and the background (" + std::to_string(h.r)
+	      + ", expected " + std::to_string(expected) + ")");
+
+	// see-through must not hide what's behind it, even if drawn first
+	render order(cam.width, cam.height);
+	order.begin(cam);
+	order.draw(a, b, c, px::Pixel(220, 220, 220), 0.5f);   // in front, at z = 0
+	order.draw(vec3(-1, -1, -1), vec3(1, -1, -1), vec3(0, 1, -1), px::Pixel(250, 50, 50));   // behind, solid red
+	check(order.picture().Get(80, 62).r > order.picture().Get(80, 62).g + 40,
+	      "something solid behind a see-through one still shows through");
+}
+
 // ---- easing (docs/23) ----
 static void test_easing(){
 	std::printf("easing:\n");
@@ -189,6 +223,7 @@ static bool same_spec(const scene_spec& a,const scene_spec& b,std::string& why){
 				why = who + ": relation " + std::to_string(k + 1); return false;
 			}
 		}
+		if(x.fades.size() != y.fades.size()){ why = who + ": number of fades"; return false; }
 		if(x.motions.size() != y.motions.size()){ why = who + ": number of motions"; return false; }
 		for(size_t k = 0;k<x.motions.size();k++){
 			const motion& m = x.motions[k];
@@ -285,6 +320,7 @@ static void test_live_reload(){
 int main(){
 	test_clipping();
 	test_fly_camera();
+	test_fades();
 	test_easing();
 	test_looping();
 	test_scene_language();

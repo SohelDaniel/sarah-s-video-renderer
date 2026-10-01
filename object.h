@@ -12,6 +12,7 @@ struct pose{
 	float rot_y = 0.0f;  // spin around the vertical axis, radians
 	float rot_x = 0.0f;  // tip forward/back, radians
 	float size  = 1.0f;  // 1 = normal size, 2 = twice as big, 0.5 = half
+	float opacity = 1.0f; // 1 = solid, 0 = invisible (docs/24)
 };
 
 // One thing in the scene: which mesh it uses, its color, and how it moves
@@ -48,6 +49,9 @@ public:
 	void rotate(float rot_y,float rot_x,float start,float end,rate how = rate::linear);
 	void rotate_around(vec3 around,float rot_y,float rot_x,float start,float end,rate how = rate::linear);
 	void scale(float scale_by,float start,float end,rate how = rate::linear);
+	// How solid it is (docs/24): 1 = solid, 0 = invisible.
+	void set_opacity(float opacity);
+	void fade(float to,float start,float end,rate how = rate::linear);
 
 	// Work out where the object is at time t (seconds). Call once per frame.
 	void update(float t);

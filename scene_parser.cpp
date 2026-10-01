@@ -405,6 +405,15 @@ void parser::phrase(object_spec& o,const token& first){
 		o.flies_past(other, start, end, optional_rate());
 		return;
 	}
+	if(first.value == "fades_in" || first.value == "fades_out"){
+		float start = time("for when the fade starts, like 0s");
+		const token& dash = next();
+		if(dash.kind != token_kind::dash) fail(dash, "expected '-' between the start and end times, like 0s-2s");
+		float end = time("for when the fade ends, like 2s");
+		if(first.value == "fades_in") o.fades_in(start, end, optional_rate());
+		else                          o.fades_out(start, end, optional_rate());
+		return;
+	}
 	if(first.value == "hits"){
 		std::string other = name("after 'hits'");
 		const token& at = next();
@@ -421,7 +430,7 @@ void parser::phrase(object_spec& o,const token& first){
 		return;
 	}
 
-	std::vector<std::string> known = {"important", "orbits", "flies_past", "hits"};
+	std::vector<std::string> known = {"important", "orbits", "flies_past", "hits", "fades_in", "fades_out"};
 	for(const auto& m : {keys_of(size_words), keys_of(color_words), keys_of(relation_words)}){
 		known.insert(known.end(), m.begin(), m.end());
 	}

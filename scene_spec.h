@@ -115,6 +115,13 @@ struct motion{
 	rate how = rate::linear;   // how it eases (docs/23); orbits stay linear
 };
 
+// A change of how see-through it is (docs/24): to 1 = fade in, to 0 = fade out.
+struct fade_step{
+	float to;
+	float start, end;
+	rate how = rate::linear;
+};
+
 // One object in the scene, as described.
 struct object_spec{
 	std::string name;       // how other objects refer to it
@@ -124,6 +131,7 @@ struct object_spec{
 	int importance = 1;     // higher = placed first, gets the best spot
 	std::vector<relation> relations;
 	std::vector<motion> motions;   // empty = it stands still
+	std::vector<fade_step> fades;  // fading in or out (docs/24)
 
 	// Each of these adds a relation and returns the object itself, so they
 	// can be chained:  spec.add(...).near("cube").above("table");
@@ -141,6 +149,15 @@ struct object_spec{
 	}
 	object_spec& flies_past(const std::string& other,float start,float end,rate how = rate::linear){
 		motions.push_back({motion_kind::flies_past, other, 0.0f, start, end, how});
+		return *this;
+	}
+	// starts invisible and fades in / fades out to invisible (docs/24)
+	object_spec& fades_in(float start,float end,rate how = rate::linear){
+		fades.push_back({1.0f, start, end, how});
+		return *this;
+	}
+	object_spec& fades_out(float start,float end,rate how = rate::linear){
+		fades.push_back({0.0f, start, end, how});
 		return *this;
 	}
 	// arrives at `time`, after flying for `approach` seconds, and sticks
@@ -161,7 +178,7 @@ class scene_spec{
 public:
 	object_spec& add(const std::string& name,const std::string& mesh_file,px::Pixel color,
 	                 size_word size = size_word::normal,int importance = 1){
-		objects.push_back(object_spec{name, mesh_file, color, size, importance, {}, {}});
+		objects.push_back(object_spec{name, mesh_file, color, size, importance, {}, {}, {}});
 		return objects.back();
 	}
 
