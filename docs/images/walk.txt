@@ -1,0 +1,3 @@
+wrote docs/images/walk-1.png (eye at -0.293931, 5.34529, 11.7229, yaw 0 deg, pitch -20.556 deg)
+wrote docs/images/walk-2.png (eye at -0.293931, 2.51687, 8.89449, yaw 0 deg, pitch -20.556 deg)
+wrote docs/images/walk-3.png (eye at -5.66399, 2.51687, 6.54451, yaw 42.9718 deg, pitch -20.556 deg)

@@ -1,4 +1,5 @@
 #pragma once
+#include "fly_camera.h"
 #include "pixel.h"
 #include <string>
 
@@ -26,6 +27,17 @@ public:
 	// Returns false once the user has closed the window.
 	bool is_open();
 
+	// The keys held right now, and how far the mouse moved since last time
+	// (docs/20). Only means something while the mouse is captured.
+	controls read_controls();
+	// Was Tab pressed since last time? (switches between the scripted and
+	// the free camera)
+	bool toggled();
+	// Was Esc pressed since last time? (leaves the free camera, gives the mouse back)
+	bool escaped();
+	// Capture the mouse (hidden, unlimited movement) or let it go.
+	void capture_mouse(bool on);
+
 	// Put this picture on screen. Must be the same size as the window.
 	void show(const px::Image& image);
 
@@ -34,4 +46,7 @@ private:
 	SDL_Renderer* painter = nullptr;  // copies images onto the window
 	SDL_Texture*  screen  = nullptr;  // the picture, uploaded to the graphics card
 	bool open = true;
+	bool tab_pressed = false;
+	bool escape_pressed = false;
+	float mouse_x = 0.0f, mouse_y = 0.0f;   // mouse movement collected since last read
 };

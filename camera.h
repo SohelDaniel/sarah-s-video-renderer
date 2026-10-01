@@ -45,6 +45,13 @@ public:
 	// Work out where the camera is at time t (seconds). Call once per frame.
 	void update(float t);
 
+	// Put the camera somewhere for this frame only, without touching its
+	// scripted path (the free camera, docs/20, uses this; going back to the
+	// script then carries on exactly where the script is).
+	void set_view(vec3 eye,vec3 target);
+	vec3 eye()const;
+	vec3 target()const;
+
 	mat4<float> view()const{
 		return look_at(now.eye, now.target, up);
 	}

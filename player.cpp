@@ -1,4 +1,5 @@
 #include "player.h"
+#include "fly_camera.h"
 #include "render.h"
 #include "window.h"
 
@@ -22,15 +23,35 @@ void player::play(camera& cam,const std::vector<object*>& scene){
 	float t = 0.0f;
 	int frames = 0;
 
+	fly_camera fly;          // the free camera (docs/20)
+	bool free = false;
+	float last = 0.0f;       // t of the previous frame, for real dt
+
 	while(screen.is_open()){
 		// 1. seconds since we started playing. Using real time (not a frame
 		// count) means a slow computer shows fewer frames of the same motion,
 		// instead of playing in slow motion.
 		t = std::chrono::duration<float>(clock::now() - started).count();
 		if(t > seconds) break;
+		float dt = t - last;   // real seconds since the last frame
+		last = t;
+
+		// Tab: switch camera. Going free starts exactly where the scripted
+		// camera is now; going back hands control back to the script.
+		if(screen.toggled() || (free && screen.escaped())){
+			free = !free;
+			if(free) fly.look_from(cam.eye(), cam.target());
+			screen.capture_mouse(free);
+		}
 
 		// 2. everything goes to where it is at time t
-		cam.update(t);
+		if(free){
+			fly.step(screen.read_controls(), dt);
+			cam.set_view(fly.eye, fly.target());
+		}else{
+			screen.read_controls();   // throw away mouse moves made meanwhile
+			cam.update(t);
+		}
 		for(object* o : scene){
 			o->update(t);
 		}

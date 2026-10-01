@@ -1,7 +1,9 @@
 #include "camera.h"
 #include "mesh.h"
 #include "object.h"
+#include "fly_camera.h"
 #include "player.h"
+#include "render.h"
 #include "scene_spec.h"
 #include "test_scenes.h"
 #include "world.h"
@@ -21,6 +23,9 @@
 //   ./main 4 naive x.png 7.5  same, but save the picture at 7.5 seconds
 //   ./main 5 framed           things that collide on purpose (docs/18)
 //   ./main clip on|off        standing in a scene, with/without near-plane clipping (docs/19)
+//   ./main walk prefix        pictures of walking around scene 3 with pretend keys (docs/20)
+//   In the window: Tab = free camera (WASD + mouse, Space/Shift up/down,
+//   Ctrl faster), Esc = back to the scripted camera.
 //   ./main stress crowd                 one of the stress test scenes (docs/15)
 //   ./main stress crowd greedy x.png    ... after one solver step, saved as a picture
 //                                       (names: see test_scenes.cpp or `make test`)
@@ -188,6 +193,43 @@ void clipping_demo(bool clip,const std::string& picture){
 	else                video.save_still(cam, scene, 0.0f, picture);
 }
 
+// The free camera (docs/20), driven by pretend key presses instead of a real
+// keyboard, so the docs can show what walking looks like. Start at the
+// solved camera of scene 3; walk forward while going down (W + Shift); then
+// turn right while stepping left (mouse + A), which circles round the
+// scene like walking round a statue.
+void walk_demo(const std::string& prefix){
+	world w(lazy_ai_scene(), layout::method::framed);
+	std::vector<object*> scene = w.scene();
+	for(object* o : scene) o->update(0.0f);
+
+	fly_camera fly;
+	fly.look_from(w.cam.eye(), w.cam.target());
+
+	controls forward_down;
+	forward_down.forward = true;
+	forward_down.down = true;
+	controls circle;
+	circle.left = true;
+	circle.turn_x = 30.0f;   // 30 pixels of mouse per step, 10 steps: 300 pixels
+
+	for(int k = 0;k<3;k++){
+		if(k == 1) fly.step(forward_down, 1.0f);
+		if(k == 2) for(int s = 0;s<10;s++) fly.step(circle, 0.15f);
+		w.cam.set_view(fly.eye, fly.target());
+
+		render picture(w.cam.width, w.cam.height);
+		picture.begin(w.cam);
+		for(const object* o : scene) o->draw(picture);
+		picture.finish();
+		std::string file = prefix + std::to_string(k + 1) + ".png";
+		picture.save(file);
+		std::cout << "wrote " << file << " (eye at " << fly.eye[0] << ", " << fly.eye[1] << ", " << fly.eye[2]
+		          << ", yaw " << fly.yaw * 180.0f / 3.14159265f << " deg, pitch "
+		          << fly.pitch * 180.0f / 3.14159265f << " deg)\n";
+	}
+}
+
 // Solve a described scene, print the report, then play it (still objects
 // slowly spin in place, moving ones follow their paths) or save the one
 // picture at time `t`. Scene 3 and 4 live in test_scenes.cpp.
@@ -229,6 +271,9 @@ int main(int argc,char** argv){
 		else if(which == "3"){
 			solved_scene(lazy_ai_scene(), still_step(argc > 2 ? argv[2] : "framed"), motion_plan::method::naive,
 			             argc > 3 ? argv[3] : "", 0.0f);
+		}
+		else if(which == "walk"){
+			walk_demo(argc > 2 ? argv[2] : "walk-");
 		}
 		else if(which == "clip"){
 			clipping_demo(argc > 2 ? std::string(argv[2]) != "off" : true, argc > 3 ? argv[3] : "");

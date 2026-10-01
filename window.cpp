@@ -46,8 +46,53 @@ bool window::is_open(){
 	SDL_Event event;
 	while(SDL_PollEvent(&event)){
 		if(event.type == SDL_EVENT_QUIT) open = false;
+		if(event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat){
+			if(event.key.key == SDLK_TAB)    tab_pressed = true;
+			if(event.key.key == SDLK_ESCAPE) escape_pressed = true;
+		}
+		// in relative mode these are pure movements, not positions: the
+		// mouse can move forever without hitting the edge of the screen
+		if(event.type == SDL_EVENT_MOUSE_MOTION){
+			mouse_x += event.motion.xrel;
+			mouse_y += event.motion.yrel;
+		}
 	}
 	return open;
+}
+
+controls window::read_controls(){
+	// a snapshot of every key: held down right now or not
+	const bool* keys = SDL_GetKeyboardState(nullptr);
+	controls c;
+	c.forward = keys[SDL_SCANCODE_W];
+	c.back    = keys[SDL_SCANCODE_S];
+	c.left    = keys[SDL_SCANCODE_A];
+	c.right   = keys[SDL_SCANCODE_D];
+	c.up      = keys[SDL_SCANCODE_SPACE];
+	c.down    = keys[SDL_SCANCODE_LSHIFT] || keys[SDL_SCANCODE_RSHIFT];
+	c.fast    = keys[SDL_SCANCODE_LCTRL]  || keys[SDL_SCANCODE_RCTRL];
+	c.turn_x  = mouse_x;
+	c.turn_y  = mouse_y;
+	mouse_x = mouse_y = 0.0f;
+	return c;
+}
+
+bool window::toggled(){
+	bool now = tab_pressed;
+	tab_pressed = false;
+	return now;
+}
+
+bool window::escaped(){
+	bool now = escape_pressed;
+	escape_pressed = false;
+	return now;
+}
+
+void window::capture_mouse(bool on){
+	SDL_SetWindowRelativeMouseMode(handle, on);
+	mouse_x = mouse_y = 0.0f;
+	escape_pressed = false;
 }
 
 void window::show(const px::Image& image){

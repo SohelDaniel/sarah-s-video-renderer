@@ -45,6 +45,7 @@ All the math is built on **vectors and matrices** (01).
 | 17 | [Parent and child](17-parent-child.md) | How does a ring follow its planet? | `object.cpp` |
 | 18 | [Intended collisions](18-intended-collisions.md) | What if things are meant to hit? | `motion.cpp` |
 | 19 | [Near-plane clipping](19-near-plane-clipping.md) | What if a triangle reaches behind the camera? | `render.cpp` |
+| 20 | [Walking around (and looping)](20-controls-and-looping.md) | How do WASD and the mouse work? | `fly_camera.cpp`, `window.cpp`, `player.cpp` |
 | | [Ranges and settings](ranges.md) | What values make sense? | `camera.h`, `object.h` |
 | | [C++ notes](cpp-notes.md) | What does this syntax mean? | everywhere |
 | | [Design](design.md) | Why is the code split up like this? | everywhere |
@@ -75,6 +76,8 @@ make run SCENE=2      scene 2: solar system (20 s)
 ./main 4 <step>       scene 4: a "lazy AI" animation, orbits and a fly-by (16)
 ./main 5              scene 5: collisions that are meant to happen (18)
 ./main clip on|off    standing inside a scene, with or without clipping (19)
+./main walk <prefix>  pictures of walking round scene 3 with pretend keys (20)
+                      in any window: Tab = walk around (WASD + mouse), Esc = back
 ./main stress <name>  one of the stress test scenes (15)
 make test             solve every stress scene, check the rules
 make stills           writes the solver pictures in docs/images/

@@ -37,6 +37,14 @@ void camera::update(float t){
 	now = path.at(t);
 }
 
+void camera::set_view(vec3 eye,vec3 target){
+	now.eye = eye;
+	now.target = target;
+}
+
+vec3 camera::eye()const{ return now.eye; }
+vec3 camera::target()const{ return now.target; }
+
 void camera::take(const std::vector<const object*>& scene){
 	// fresh image + depth buffer every picture, then draw everything into it
 	render renderer(width, height);

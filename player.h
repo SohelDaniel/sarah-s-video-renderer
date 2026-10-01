@@ -10,9 +10,13 @@
 // Every frame it does the same four things:
 //   1. check the clock: how many seconds since we started?  -> t
 //   2. move the camera and every object to where they are at time t
+//      (or, in free mode, move the camera with the keys and mouse, docs/20)
 //   3. draw a fresh picture with our own rasterizer
 //   4. show it in the window
 // Then again, about 60 times a second, until time is up or the window is closed.
+//
+// Keys: Tab = free camera on/off, WASD = move, mouse = look, Space/Shift =
+// up/down, Ctrl = faster, Esc = back to the scripted camera.
 class player{
 public:
 	// how long the video lasts, in seconds
