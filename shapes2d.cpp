@@ -1,4 +1,5 @@
 #include "shapes2d.h"
+#include "timeline.h"
 
 #include <algorithm>
 #include <cmath>
@@ -81,4 +82,18 @@ std::vector<point2> path_prefix(const flat_path& path,float fraction){
 		left -= side;
 	}
 	return part;
+}
+
+flat_look create_look(float p,bool filled){
+	p = std::clamp(p, 0.0f, 1.0f);
+	flat_look look;
+	if(p >= 1.0f) return look;                   // done: all of it
+	if(!filled){
+		look.drawn = smooth_curve(p);
+		look.fill = 0.0f;
+	}else{
+		look.drawn = smooth_curve(std::min(1.0f, 2.0f * p));
+		look.fill = smooth_curve(std::max(0.0f, 2.0f * p - 1.0f));
+	}
+	return look;
 }

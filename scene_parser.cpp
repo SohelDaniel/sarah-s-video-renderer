@@ -212,7 +212,8 @@ static std::vector<token> tokenize(const std::string& source){
 //    header     = "scene" [ text ] [ "view" view_word ]
 //    definition = name "=" shape { property }
 //    fact       = name phrase { [","] phrase }
-//    property   = size | color | "important" | "filled" | label | phrase | ","
+//    property   = size | color | "important" | "filled" | create | label | phrase | ","
+//    create     = "create" [ time "-" time ]               (flat shapes only, docs/41)
 //    (shape: a mesh word, or a flat one: circle square triangle hexagon star, docs/40)
 //    label      = "label" [ "math" ] text { "math" | time "-" time | "always" }
 //    phrase     = relation_word name
@@ -525,6 +526,21 @@ void parser::property(object_spec& o){
 	if(auto size = size_words.find(t.value); size != size_words.end()){ o.size = size->second; return; }
 	if(auto color = color_words.find(t.value); color != color_words.end()){ o.color = color->second; return; }
 	if(t.value == "important"){ o.importance = 10; return; }
+	if(t.value == "create"){
+		// create [ time "-" time ]      (docs/41): 1 s from the start if no times
+		if(o.flat.empty()) fail(t, "only flat shapes (" + join(flat_shape_words()) + ") can be created; a 3D object draws itself in with draw_in");
+		o.create_start = 0.0f;
+		o.create_end = 1.0f;
+		if(peek().kind == token_kind::time){
+			const token& from = peek();
+			o.create_start = time("");
+			const token& dash = next();
+			if(dash.kind != token_kind::dash) fail(dash, "expected '-' between the start and end times, like 1s-2s");
+			o.create_end = time("for when it's fully drawn, like 2s");
+			if(o.create_end <= o.create_start) fail(from, "creating it has to end after it starts");
+		}
+		return;
+	}
 	if(t.value == "filled"){
 		if(o.flat.empty()) fail(t, "only flat shapes (" + join(flat_shape_words()) + ") can be filled");
 		o.filled = true;
@@ -619,7 +635,7 @@ void parser::phrase(object_spec& o,const token& first){
 		return;
 	}
 
-	std::vector<std::string> known = {"important", "orbits", "flies_past", "hits", "fades_in", "fades_out", "label", "filled"};
+	std::vector<std::string> known = {"important", "orbits", "flies_past", "hits", "fades_in", "fades_out", "label", "filled", "create"};
 	for(const auto& m : {keys_of(size_words), keys_of(color_words), keys_of(relation_words)}){
 		known.insert(known.end(), m.begin(), m.end());
 	}

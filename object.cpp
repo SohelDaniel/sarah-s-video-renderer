@@ -32,6 +32,11 @@ void object::set_flat_look(flat_look l){
 	look = l;
 }
 
+void object::create(float start,float end){
+	create_start = start;
+	create_end = end;
+}
+
 // ---- right away: change the starting pose ----
 
 void object::move(vec3 to){
@@ -96,6 +101,11 @@ void object::fade(float to,float start,float end,rate how){
 void object::update(float t){
 	now = motion.at(t);
 	now_time = t;
+	if(flat && create_end > create_start){
+		bool filled = false;
+		for(const flat_path& p : flat->paths) filled = filled || p.filled;
+		look = create_look((t - create_start) / (create_end - create_start), filled);
+	}
 }
 
 void object::attach_to(const object* new_parent){

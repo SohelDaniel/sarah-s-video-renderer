@@ -63,6 +63,7 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 			//      rx = −asin(d.y),    ry = atan2(d.x, d.z)
 			vec3 d = normalize(solved.still().camera_eye() - solved.still().camera_target());
 			thing.rotate(std::atan2(d[0], d[2]), -std::asin(d[1]));
+			if(o.create_end >= 0.0f) thing.create(o.create_start, o.create_end);   // drawn in (docs/41)
 		}
 		// the circle turns red in any frame where it overlaps something
 		thing.show_bounds();

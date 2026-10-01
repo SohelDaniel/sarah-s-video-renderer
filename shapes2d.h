@@ -47,3 +47,9 @@ struct flat_look{
 // The first `fraction` of a path along its length (0..1), as an open line
 // of points: for a closed path the side back to the start counts too.
 std::vector<point2> path_prefix(const flat_path& path,float fraction);
+
+// Create (docs/41), p = 0..1 of the way through, like Manim's Create:
+//   outline only:  the outline is drawn along its length the whole time:   drawn = smooth(p)
+//   filled:        the outline in the first half:   drawn = smooth(min(1, 2p))
+//                  then the fill comes up:          fill  = smooth(max(0, 2p − 1))
+flat_look create_look(float p,bool filled);

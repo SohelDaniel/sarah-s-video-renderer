@@ -802,6 +802,37 @@ static void test_flat_shapes(){
 	      "'cirlce' gets a did-you-mean; 'filled' on a cube is a mistake (only flat shapes can be filled)");
 }
 
+// Create (docs/41): flat shapes drawn in along their outline.
+static void test_create(){
+	std::printf("\ncreate:\n");
+	flat_path open;
+	open.points = {{0, 0}, {3, 0}, {3, 4}};
+	open.closed = false;
+	std::vector<point2> half = path_prefix(open, 0.5f);
+	check(half.size() == 3 && std::fabs(half.back().x - 3) < 1e-5f && std::fabs(half.back().y - 0.5f) < 1e-5f,
+	      "an open path 3 + 4 = 7 long: its first half (3.5) ends at (3, 0.5); no side back to the start");
+	flat_shape square = polygon_shape(4);
+	std::vector<point2> part = path_prefix(square.paths[0], 0.6f);
+	check(std::fabs(part.back().x + 0.7071f) < 1e-3f && std::fabs(part.back().y + 0.1414f) < 1e-3f,
+	      "a square's outline (4 x 1.414 = 5.657) at 0.6: 3.394 = 2 sides + 0.566, at (-0.7071, -0.1414)");
+
+	flat_look line = create_look(0.5f, false), filled_early = create_look(0.25f, true), filled_late = create_look(0.75f, true);
+	check(std::fabs(line.drawn - 0.5f) < 1e-5f && line.fill == 0.0f, "an outline at 0.5 is half drawn (smooth(0.5))");
+	check(std::fabs(filled_early.drawn - 0.5f) < 1e-5f && filled_early.fill == 0.0f
+	      && filled_late.drawn == 1.0f && std::fabs(filled_late.fill - 0.5f) < 1e-5f,
+	      "a filled one: at 0.25 the outline is half drawn, at 0.75 it's whole and the fill half up");
+	flat_look before = create_look(-0.2f, true), after = create_look(1.0f, true);
+	check(before.drawn == 0.0f && before.fill == 0.0f && after.drawn == 1.0f && after.fill == 1.0f,
+	      "before it starts nothing is drawn; at the end all of it");
+
+	parse_result timed = parse_scene("ring = circle create 1s-2s\nbox = square create\n");
+	parse_result solid = parse_scene("box = cube create 1s-2s\n");
+	parse_result back = parse_scene("ring = circle create 2s-1s\n");
+	check(timed.ok() && timed.spec.objects[0].create_start == 1.0f && timed.spec.objects[0].create_end == 2.0f
+	      && timed.spec.objects[1].create_end == 1.0f && !solid.ok() && !back.ok(),
+	      "'create 1s-2s' and 'create' (0 s to 1 s) are read; create on a cube, or ending before it starts, are mistakes");
+}
+
 int main(){
 	test_clipping();
 	test_fly_camera();
@@ -822,6 +853,7 @@ int main(){
 	test_write();
 	test_transform();
 	test_flat_shapes();
+	test_create();
 	std::printf("\n%s: %d check%s failed\n", failures == 0 ? "ALL PASSED" : "FAILED", failures, failures == 1 ? "" : "s");
 	return failures == 0 ? 0 : 1;
 }

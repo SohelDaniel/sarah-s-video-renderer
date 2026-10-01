@@ -1,0 +1,11 @@
+# Create (docs/41): flat shapes drawn in along their outline, like Manim's
+# Create. A filled one draws its outline first, then fills in.
+
+scene "create"
+title "Create"
+
+sun    = sphere big gold important
+ring   = circle teal right_of sun create 0s-2s
+box    = square blue filled left_of sun create 1s-3s
+spark  = star yellow filled above sun create 2s-4s
+tri    = triangle white below sun create 3s-4s

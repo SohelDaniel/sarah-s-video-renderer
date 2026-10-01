@@ -30,6 +30,8 @@ public:
 	bool is_flat()const{ return flat != nullptr; }
 	// Create (docs/41): how much of a flat shape is drawn
 	void set_flat_look(flat_look look);
+	// draw a flat shape in from `start` to `end` (docs/41); nothing before start
+	void create(float start,float end);
 
 	// ---- right away: sets how the object starts (at second 0) ----
 
@@ -91,6 +93,7 @@ private:
 	const mesh* shape = nullptr;
 	const flat_shape* flat = nullptr;  // drawn instead of a mesh if set
 	flat_look look;
+	float create_start = 0.0f, create_end = -1.0f;   // end < start: no Create, just there
 	px::Pixel color;
 	timeline<pose> motion;  // how it starts + every change scheduled on it
 	pose now;               // where it is at the current time (its own motion)
