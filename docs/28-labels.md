@@ -219,11 +219,11 @@ two labels on top of each other are both unreadable.
 
 ## Limits
 
-- Labels are placed **per frame**, on the screen. The 3D solver doesn't know
-  about them, so it doesn't leave room for them. A future step: give the
-  refinement (13) a term for label space.
-- They don't avoid **titles** (27) yet. The title area could simply be added as
-  a box that's never free.
+- Labels are placed **per frame**, on the screen. At first the 3D solver
+  didn't know about them, so it didn't leave room for them, and they didn't
+  avoid the **titles** (27). Both are fixed in 31: the refinement spaces
+  labelled objects apart, and the title band is a box that's never free
+  (`keep_out`).
 - Greedy is fast but not optimal: a label placed early can take the only spot
   a later one could use. The 1995 paper's best method was **simulated
   annealing** (random moves, accepted more cautiously over time). It's too slow

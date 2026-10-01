@@ -351,3 +351,52 @@ one copy instead of each getting its own (27).
 std::string which = argc > 1 ? argv[1] : "1";
 ```
 `condition ? if_true : if_false`
+
+### Pointer to implementation ("pimpl")
+```cpp
+class font{
+	struct data;                    // declared here, defined only in font.cpp
+	std::unique_ptr<data> d;
+};
+```
+The header names `data` without saying what's in it, so files that include
+`font.h` never see `stb_truetype.h`. Only `font.cpp` does (29).
+
+### `mutable`
+```cpp
+mutable std::map<std::pair<int, int>, glyph> cache;
+const glyph& get(int codepoint,float size)const;
+```
+`get` is `const` (it doesn't change the font), but it fills a cache.
+`mutable` allows that one member to change inside `const` functions. A
+`std::pair` as the map's key compares the first value, then the second (29).
+
+### A function-local `static`
+```cpp
+const font* sans(){ static const font* f = load("fonts/DejaVuSans.ttf"); return f; }
+```
+Made the first time the function runs, then kept for the whole program: the
+font file is read once, only if it's ever used (29).
+
+### Silencing warnings in someone else's code
+```cpp
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-compare"
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
+#pragma clang diagnostic pop
+```
+A single-header library is the declarations plus, if a `#define` asks for
+it, the code itself, in exactly one `.cpp`. The pragmas turn off warnings for
+that file only and put them back after, so our own code still builds with
+no warnings (29).
+
+### A tree of `unique_ptr`s
+```cpp
+struct math_node{
+	std::vector<std::unique_ptr<math_node>> parts;
+	std::unique_ptr<math_node> base, up, down;
+};
+```
+Each node owns its children. When the root is deleted, the whole tree goes
+with it, with no `delete` anywhere (30).

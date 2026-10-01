@@ -73,6 +73,20 @@ scene_spec (what the AI wrote) ──► layout (pure math: spheres in, position
   `controls` struct, so the walking math (`fly_camera`) is tested without a
   keyboard, and the scripted camera's path is never touched by walking
   (`set_view`).
+- **Borrow the file format, write the interesting part.** `stb_truetype`
+  only reads the font file (which character is which outline, the widths,
+  kerning). Turning curves into pixels (flattening, the winding rule,
+  coverage) is our own code in `font.cpp` (29).
+- **A formula is laid out once, drawn every frame.** `math_layout` turns
+  text into a tree and the tree into a box of placed glyphs and bars: plain
+  data, with no drawing. So the box sizes are tested as numbers (30), and
+  `render` just paints the list.
+- **The solver doesn't load fonts.** It estimates a label's width from its
+  letters (31), so it stays pure math and fast to test. The real width only
+  matters when drawing, and the label layout handles the difference.
+- **Solve twice when things move.** Placing the still objects needs room for
+  the paths, and the paths need the still objects' places. Going round once
+  more (still, paths, still again, paths again) settles it (32).
 - **Every step is measured.** The report counts overlaps in 3D, overlaps
   on screen and satisfied relations, so each step can be compared with the
   one before (the table at the end of 14). An improvement you can't
