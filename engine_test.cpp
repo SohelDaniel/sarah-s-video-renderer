@@ -544,7 +544,11 @@ static void test_hd(){
 	      "a world made for 1920x1080 has a camera of that size; the default is still 640x480");
 
 	std::vector<float> radii;
-	for(const object_spec& o : spec.objects) radii.push_back(mesh(o.mesh_file).bounding_radius());
+	for(const object_spec& o : spec.objects){
+		// a flat shape fits radius 1 (a graph 2.5, docs/40, 42); a mesh, its own
+		if(!o.flat.empty()) radii.push_back(o.flat == "graph" ? graph_scale : 1.0f);
+		else radii.push_back(mesh(o.mesh_file).bounding_radius());
+	}
 	scene_solver wide(spec, radii, layout::method::framed, motion_plan::method::framed, 16.0f / 9.0f);
 	scene_solver narrow(spec, radii, layout::method::framed, motion_plan::method::framed);
 	check(std::fabs(wide.still().picture_aspect() - 16.0f / 9.0f) < 1e-6f

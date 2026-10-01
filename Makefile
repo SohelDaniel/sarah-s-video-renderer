@@ -59,8 +59,7 @@ stills: $(TARGET) $(TEST_TARGET)
 	@./$(TARGET) scenes/labelled.dan framed docs/images/labelled-after.png 0 --aa > /dev/null
 	@./$(TARGET) stress flyby_mover framed /tmp/flyby-mover.png > docs/images/flyby-mover.txt
 	@for t in 4 8 12; do ./$(TARGET) stress flyby_mover framed docs/images/flyby-mover-$$t.png $$t > /dev/null; done
-	@./$(TARGET) scenes/showcase.dan framed docs/images/showcase-after.png 17 --aa > /dev/null
-	@./$(TARGET) scenes/showcase.dan framed docs/images/showcase-hd.png 17 --hd --aa > /dev/null
+	@# (showcase-before/after/hd.png are kept as they were: docs/33 and 34 describe the showcase of that time)
 	@./$(TARGET) paths docs/images/paths.png > /dev/null
 	@for t in 0.5 1.8 2.2; do ./$(TARGET) scenes/write.dan framed docs/images/write-$$t.png $$t --aa > /dev/null; done
 	@for t in 3 5 7; do ./$(TARGET) scenes/transform.dan framed docs/images/transform-$$t.png $$t --aa > /dev/null; done

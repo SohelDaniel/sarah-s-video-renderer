@@ -14,7 +14,9 @@ it, live in a window you can walk around in, with the things an explainer
 needs (like [Manim](https://www.manim.community/)): titles, labels that
 place themselves, math formulas typeset by its own small TeX that
 **write themselves in** and **turn into the next formula** (Manim's Write
-and Transform), smooth outline text, arrows, easing, fades, and mp4 export up to 1080p.
+and Transform), Manim-style **shapes and graphs** that look 2D from the
+camera but stand in the 3D world (Create, morphing), 3D objects that
+**draw themselves in**, smooth outline text, arrows, easing, fades, and mp4 export up to 1080p.
 
 The AI writes a `.dan` file; the engine reloads it every time it's saved and
 writes `<file>.dan.report` with every error and every problem the solver
@@ -92,6 +94,18 @@ The circles are each object's bounding sphere: red = overlapping something.
 - **Transform**: `becomes "..." at 4s-6s` turns a formula into the next;
   pieces are matched by longest common subsequence (like a diff) and glide,
   the rest fade ([docs/39](docs/39-transform.md))
+- **flat shapes** (circle, square, triangle, hexagon, star): unlit outlines
+  and see-through fills on a plane facing the camera, so they're exactly 2D
+  from there and thin shapes in space from the side; depth per pixel from
+  the plane equation ([docs/40](docs/40-flat-shapes.md))
+- **Create** draws a shape along its outline, then fills it ([docs/41](docs/41-create.md))
+- **graphs**: `graph "sin(x)" from -6.28 to 6.28`, with our own expression
+  parser, robust y ranges, 1-2-5 tick steps, numbers as letter outlines on
+  the plane ([docs/42](docs/42-graphs.md))
+- **morph**: `square becomes circle at 2s-3s`, point by point: resampled by
+  length, turned the same way round, started at the best offset ([docs/43](docs/43-morph.md))
+- **draw-in** for 3D objects: crease edges trace out, then the faces fade in
+  ([docs/44](docs/44-draw-in.md))
 
 **Live player**
 - a frame loop driven by a real-time clock (frame-rate independent)
@@ -150,9 +164,10 @@ The circles are each object's bounding sphere: red = overlapping something.
   keeps the last good scene and says why in the `.report` file ([docs/22](docs/22-live-reload.md))
 
 `make test` runs both test programs: the solver's 181 checks and the
-engine's 118 (clipping, the fly camera, fonts, math, labels, text, lines,
+engine's 147 (clipping, the fly camera, fonts, math, labels, text, lines,
 fades, easing, looping, the parser, live reload, picture sizes, linear
-light, smooth shading, vector paths, write, transform).
+light, smooth shading, vector paths, write, transform, flat shapes,
+create, graphs, morph, draw-in).
 
 ## Build and run
 
@@ -173,6 +188,11 @@ make run SCENE=2      scene 2: a small solar system, 20 s
 ./main scenes/showcase.dan --aa               everything at once
 ./main scenes/write.dan --hd --aa             a title and formula writing themselves in, at 1080p
 ./main scenes/transform.dan --hd --aa         E = mc^2 turning into the next formulas
+./main scenes/shapes.dan --aa                 flat shapes: walk round them with Tab + WASD
+./main scenes/graph.dan --aa                  sin(x) drawing itself on axes
+./main scenes/morph.dan --aa                  a square becoming a circle, a star, a triangle
+./main scenes/draw.dan --aa                   3D objects tracing their edges, then filling in
+./main scenes/shapes.dan framed x.png 3 --eye 9,3,5   a still from somewhere else
 ./main paths picture.png                      a formula filled, outlined, and as its points
 ./main stress flyby_mover                     a probe flying past a planet that is itself orbiting
 ./main scenes/labels.dan --aa --video out.mp4 the same, as an mp4 (needs ffmpeg)
@@ -212,6 +232,8 @@ small numbers you can check on paper. One point is followed from the cube's
 | `font`, `fonts/` | outline fonts: reading TrueType files, flattening curves, filling glyphs |
 | `math_layout` | the small TeX: parsing formulas and laying them out as boxes |
 | `vpath` | text and formulas as vector paths: arc length, Write timing, Transform matching |
+| `shapes2d` | flat shapes and graphs: building them, Create, morphing |
+| `expression` | the function parser for graphs |
 | `font8x8.h` | the public-domain bitmap font (kept for tests) |
 | `stb_truetype.h` | Sean Barrett's font-file reader (only reads the files) |
 | `scene_spec.h` | how a scene is described (what the AI will produce) |
@@ -227,8 +249,10 @@ small numbers you can check on paper. One point is followed from the cube's
 ## Next
 
 - hooking up an AI to write `.dan` files, reading `.dan.report` to fix them
-- more of TeX: big operators with limits, matrices, growing brackets, `\text{}`
-- animating text and formulas (writing them in, morphing one into another)
+- more of TeX: `\sin`-style upright function names, big operators with
+  limits, matrices, growing brackets, `\text{}`
+- a point-by-point morph for formulas too, and cleaner grids for drawing in
+  smooth 3D objects
 - full parent/child transforms (spin and scale too) for things like wheels on
   a moving car
 

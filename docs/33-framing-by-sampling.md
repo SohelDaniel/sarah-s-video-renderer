@@ -15,7 +15,8 @@ Now the camera fits where each thing **actually is**, over time.
 |---|---|
 | ![](images/showcase-before.png) | ![](images/showcase-after.png) |
 
-`scenes/showcase.dan` at 17 s. Camera distance **59.7 → 42.0**.
+`scenes/showcase.dan` at 17 s, as it was then (it has gained a graph and a
+morphing shape since). Camera distance **59.7 → 42.0**.
 
 Code: `motion.cpp` (`bounds`).
 

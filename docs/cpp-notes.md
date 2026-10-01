@@ -447,3 +447,25 @@ title_spec s{"Orbits", 0.0f, 5.0f};
 Adding a field to a struct that's filled with `{a, b, c}` gives a "missing
 field" warning everywhere. A constructor with default arguments takes the
 same braces and sets the new field to its default (39).
+
+### Structured bindings
+```cpp
+for(const auto& [edge, around] : faces_of){ ... }
+for(const auto& [a, b] : shape->outline_edges()){ ... }
+```
+C++17 unpacks a pair (or a map's key and value) into two names at once,
+instead of writing `.first` and `.second` (44).
+
+### A map with a pair as its key
+```cpp
+std::map<std::pair<int, int>, std::vector<size_t>> faces_of;
+faces_of[{std::min(a, b), std::max(a, b)}].push_back(i);
+```
+An edge between vertices 3 and 7 is the same edge whichever face lists it
+first, so the smaller number always goes first. `[]` makes an empty list
+the first time a key is used (44).
+
+### `NAN` and `std::isfinite`
+`std::log(-1)` is NaN ("not a number"), `1.0f / 0.0f` is infinity. Neither
+is an error in C++: they just flow on. `std::isfinite(y)` is false for both,
+which is how a graph knows where to leave a gap (42).

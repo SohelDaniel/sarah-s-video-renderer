@@ -2,7 +2,8 @@
 # turn into the next step (docs/38, 39), titles with their own times, labels
 # (always on, timed, and formulas), orbits, a moon, a fly-by past a moving
 # planet (docs/32), a planned hit that sticks (docs/18), easing, fades,
-# see-through glass and arrows. No coordinates anywhere: the solver places it all.
+# see-through glass, arrows, a graph that draws itself (docs/42) and a shape
+# that morphs (docs/43). No coordinates anywhere: the solver places it all.
 # ./main scenes/showcase.dan --aa
 
 scene "showcase"
@@ -18,6 +19,8 @@ planet = octahedron red orbits sun 1 turn 0s-24s label math "m" always
 moon   = tetrahedron tiny white orbits planet 3 turns 0s-24s label "moon" 2s-10s
 probe  = cube small blue flies_past planet 4s-12s smooth label "probe" 4s-12s
 comet  = pyramid small white fades_in 9s-11s label "comet" 9s-20s
+wave   = graph "sin(x)" from -6.28 to 6.28 small teal below sun create 2s-5s
+badge  = square yellow filled small left_of sun create 1s-2s becomes circle at 8s-9s becomes star at 16s-17s
 comet hits planet at 16s from 12s sticks
 
 arrow sun planet gold

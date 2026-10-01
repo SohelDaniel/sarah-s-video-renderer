@@ -105,6 +105,12 @@ scene_spec (what the AI wrote) ──► layout (pure math: spheres in, position
   writing, and which piece matches which, are plain functions of numbers
   (`piece_progress`, `border_then_fill`, `match_pieces`), tested without
   drawing anything (38, 39).
+- **2D things are really 3D.** A flat shape is a plane turned to face the
+  scripted camera, so the same code makes it look exactly flat from there
+  and lets you walk round it; nothing about it is a screen overlay (40).
+- **Work things out once, slide during.** A morph's resampling and lining
+  up, a mesh's crease edges and a graph's samples are all computed when the
+  scene is built; each frame only interpolates (42–44).
 - **Every step is measured.** The report counts overlaps in 3D, overlaps
   on screen and satisfied relations, so each step can be compared with the
   one before (the table at the end of 14). An improvement you can't

@@ -34,8 +34,9 @@ band = 12 + 40 · titles + 60 · formulas          labelled.dan: 12 + 40 + 60 = 
 the titles and formulas that are showing right now, so the band is the
 **tallest stack at any moment**. A stack only grows when something starts,
 so it's enough to count at every start time (`words_band` in `solver.cpp`).
-`scenes/showcase.dan` has 3 titles and 2 formulas, but never more than 2
-titles and 1 formula at once:
+`scenes/showcase.dan` (as it was when this was written; it has changed
+since) had 3 titles and 2 formulas, but never more than 2 titles and 1
+formula at once:
 
 ```
 at 0 s:   title 1, formula 1             40 + 60      = 100
