@@ -3,6 +3,7 @@
 #include "mat4.h"
 #include "mesh.h"
 #include "math_layout.h"
+#include "vpath.h"
 #include "pixel.h"
 #include <string>
 #include <vector>
@@ -67,6 +68,13 @@ public:
 	// A laid-out formula (docs/30), its top-left corner at (x, y) on the
 	// finished picture; `opacity` fades it (docs/24). Drawn last, with the text.
 	void draw_math(float x,float y,const math_box& formula,px::Pixel color,float opacity = 1.0f);
+
+	// One piece of a vector path (docs/37): its `at` point lands on (x, y) of
+	// the finished picture. A piece that's just there (look.still()) is drawn
+	// exactly like text and formulas always were (the glyph cache, the exact
+	// bar); an animated one is filled and outlined from its loops. `shadow` =
+	// how far the soft shadow sits down and right (0 = none). Drawn last.
+	void draw_vpiece(const vpiece& piece,float x,float y,px::Pixel color,const piece_look& look,float shadow);
 
 	// The 8x8 bitmap font (docs/27): each font pixel a scale x scale square.
 	void draw_bitmap_text(int x,int y,const std::string& text,int scale,px::Pixel color);
@@ -158,6 +166,16 @@ private:
 		px::Pixel color;
 	};
 	std::vector<math_item> maths;      // waiting for finish()
+
+	struct vpiece_item{
+		const vpiece* piece;
+		float x, y;
+		px::Pixel color;
+		piece_look look;
+		float shadow;
+	};
+	std::vector<vpiece_item> vpieces;  // waiting for finish()
+	void paint_vpiece(const vpiece_item& v,float dx,float dy,px::Pixel color);
 	void paint_math(const math_item& m,float dx,float dy,px::Pixel color);
 	void paint_text(const text_item& t,int dx,int dy,px::Pixel color);
 	void paint_outline_text(const text_item& t,float dx,float dy,px::Pixel color);

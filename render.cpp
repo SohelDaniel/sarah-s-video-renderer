@@ -40,6 +40,7 @@ void render::begin(const camera& cam){
 	texts.clear();
 	screen_lines.clear();
 	maths.clear();
+	vpieces.clear();
 }
 
 void render::draw_mesh(const mesh& model,const mat4<float>& model_matrix,px::Pixel color){
@@ -471,6 +472,109 @@ void render::finish(){
 		paint_math(m, 0.0f, 0.0f, m.color);
 	}
 	maths.clear();
+
+	// vector pieces (docs/37): every shadow first, then every piece, so one
+	// letter's shadow never lands on the letter before it
+	for(const vpiece_item& v : vpieces){
+		if(v.shadow > 0.0f) paint_vpiece(v, v.shadow, v.shadow, px::Pixel(0, 0, 0, uint8_t(170 * v.color.a / 255)));
+	}
+	for(const vpiece_item& v : vpieces) paint_vpiece(v, 0.0f, 0.0f, v.color);
+	vpieces.clear();
+}
+
+void render::draw_vpiece(const vpiece& piece,float x,float y,px::Pixel color,const piece_look& look,float shadow){
+	if(color.a == 0) return;
+	vpieces.push_back({&piece, x, y, color, look, shadow});
+}
+
+// ---------------------------------------------------------------------------
+//  Drawing a vector piece (docs/37).
+//
+//  Still: exactly as before. A letter is its cached glyph (29), placed with
+//  the same rounding; a bar is filled with its exact coverage (30). So
+//  turning titles and formulas into vector paths changes no pixel.
+//
+//  Animated: from the loops, every frame.
+//    each point:  q = (x, y) + p · scale
+//    fill:        the winding rule (fill_loops, 29) over the piece's box, times look.fill
+//    outline:     the first look.stroke of every loop (loop_prefix), each
+//                 pixel covered as much as the nearest side covers it
+//                 (line_coverage, 26), times look.stroke_alpha
+// ---------------------------------------------------------------------------
+void render::paint_vpiece(const vpiece_item& v,float dx,float dy,px::Pixel color){
+	px::Image& picture = out();
+	const vpiece& p = *v.piece;
+	float x = v.x + dx, y = v.y + dy;
+	auto blend = [&](int px_x,int px_y,float c){
+		if(c <= 0.0f) return;
+		px::Pixel q = color;
+		q.a = uint8_t(std::lround(color.a * std::min(1.0f, c)));
+		srgb::blend(picture, px_x, px_y, q);
+	};
+
+	if(v.look.still()){
+		if(p.face){
+			const font::glyph& g = p.face->get(p.key, p.size);
+			int left = int(std::lround(x)) + g.left;
+			int top = int(std::lround(y)) + g.top;
+			for(int j = 0;j<g.height;j++){
+				for(int i = 0;i<g.width;i++) blend(left + i, top + j, g.coverage[size_t(j) * g.width + i]);
+			}
+		}else{
+			float x0 = x, x1 = x + p.width, y0 = y, y1 = y + p.height;
+			for(int j = int(std::floor(y0));j<int(std::ceil(y1));j++){
+				float rows = std::min(y1, float(j + 1)) - std::max(y0, float(j));
+				for(int i = int(std::floor(x0));i<int(std::ceil(x1));i++){
+					blend(i, j, rows * (std::min(x1, float(i + 1)) - std::max(x0, float(i))));
+				}
+			}
+		}
+		return;
+	}
+
+	// moved and resized, and the box around it, on whole pixels
+	float pen = 1.5f * ui_scale();                         // the outline's width
+	std::vector<std::vector<point2>> loops = p.loops;
+	float x0 = 1e9f, y0 = 1e9f, x1 = -1e9f, y1 = -1e9f;
+	for(auto& loop : loops){
+		for(point2& q : loop){
+			q = {x + q.x * v.look.scale, y + q.y * v.look.scale};
+			x0 = std::min(x0, q.x); y0 = std::min(y0, q.y); x1 = std::max(x1, q.x); y1 = std::max(y1, q.y);
+		}
+	}
+	if(loops.empty()) return;
+	int left = int(std::floor(x0 - pen)) - 1, top = int(std::floor(y0 - pen)) - 1;
+	int w = int(std::ceil(x1 + pen)) - left + 2, h = int(std::ceil(y1 + pen)) - top + 2;
+	for(auto& loop : loops) for(point2& q : loop){ q.x -= left; q.y -= top; }
+
+	if(v.look.fill > 0.0f){
+		std::vector<float> c = fill_loops(loops, w, h);
+		for(int j = 0;j<h;j++){
+			for(int i = 0;i<w;i++) blend(left + i, top + j, c[size_t(j) * w + i] * v.look.fill);
+		}
+	}
+	if(v.look.stroke_alpha > 0.0f && v.look.stroke > 0.0f){
+		std::vector<float> c(size_t(w) * size_t(h), 0.0f);
+		for(const auto& loop : loops){
+			std::vector<point2> drawn = loop_prefix(loop, v.look.stroke);
+			for(size_t k = 0;k + 1<drawn.size();k++){
+				point2 a = drawn[k], b = drawn[k + 1];
+				int i0 = std::max(0, int(std::floor(std::min(a.x, b.x) - pen)) - 1);
+				int i1 = std::min(w - 1, int(std::ceil(std::max(a.x, b.x) + pen)) + 1);
+				int j0 = std::max(0, int(std::floor(std::min(a.y, b.y) - pen)) - 1);
+				int j1 = std::min(h - 1, int(std::ceil(std::max(a.y, b.y) + pen)) + 1);
+				for(int j = j0;j<=j1;j++){
+					for(int i = i0;i<=i1;i++){
+						float& here = c[size_t(j) * w + i];
+						here = std::max(here, line_coverage(i + 0.5f, j + 0.5f, a.x, a.y, b.x, b.y, pen));
+					}
+				}
+			}
+		}
+		for(int j = 0;j<h;j++){
+			for(int i = 0;i<w;i++) blend(left + i, top + j, c[size_t(j) * w + i] * v.look.stroke_alpha);
+		}
+	}
 }
 
 void render::draw_math(float x,float y,const math_box& formula,px::Pixel color,float opacity){

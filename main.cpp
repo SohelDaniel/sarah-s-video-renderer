@@ -2,6 +2,7 @@
 #include "mesh.h"
 #include "object.h"
 #include "fly_camera.h"
+#include "font.h"
 #include "player.h"
 #include "render.h"
 #include "live_scene.h"
@@ -361,6 +362,43 @@ void font_demo(const std::string& prefix){
 	std::cout << "wrote " << prefix << "both.png and " << prefix << "zoom.png\n";
 }
 
+// Vector paths (docs/37): the same formula three ways. Filled (how it's
+// normally drawn), outlined (only the loops' edges), and the points the
+// loops are made of.
+void paths_demo(const std::string& filename){
+	camera cam;
+	cam.width = 640;
+	cam.height = 480;
+	cam.update(0.0f);
+	math_parse_result parsed = parse_math("F = G\\frac{m_1 m_2}{r^2}");
+	if(!parsed.tree || !fonts::serif() || !fonts::italic()) throw std::runtime_error("needs the fonts in fonts/");
+	math_box box = layout_math(*parsed.tree, 64.0f);
+	vgroup group = math_paths(box);
+	render r(cam.width, cam.height, 2);
+	r.begin(cam);
+	px::Pixel white(240, 240, 245);
+	float x = (cam.width - box.width) / 2.0f;
+	piece_look outline;
+	outline.fill = 0.0f;
+	outline.stroke = 1.0f;
+	outline.stroke_alpha = 1.0f;
+	int points = 0;
+	for(const vpiece& p : group.pieces){
+		r.draw_vpiece(p, x + p.at.x, 20.0f + p.at.y, white, piece_look{}, 1.5f);
+		r.draw_vpiece(p, x + p.at.x, 170.0f + p.at.y, white, outline, 0.0f);
+		for(const auto& loop : p.loops){
+			for(const point2& q : loop){
+				float px_x = x + p.at.x + q.x, px_y = 320.0f + p.at.y + q.y;
+				r.draw_screen_line(px_x, px_y, px_x, px_y, 2.5f, px::Pixel(250, 200, 60));
+				points++;
+			}
+		}
+	}
+	r.finish();
+	r.save(filename);
+	std::cout << "wrote " << filename << ": " << group.pieces.size() << " pieces, " << points << " points\n";
+}
+
 // The anti-aliasing comparison (docs/25): scene 3, drawn without and with
 // it, plus both enlarged 4x around one edge so the difference is visible.
 void antialiasing_demo(const std::string& prefix){
@@ -423,6 +461,9 @@ int main(int raw_argc,char** raw_argv){
 		else if(which == "3"){
 			solved_scene(lazy_ai_scene(), still_step(argc > 2 ? argv[2] : "framed"), motion_plan::method::naive,
 			             argc > 3 ? argv[3] : "", 0.0f);
+		}
+		else if(which == "paths"){
+			paths_demo(argc > 2 ? argv[2] : "paths.png");
 		}
 		else if(which == "fonts"){
 			font_demo(argc > 2 ? argv[2] : "font-");

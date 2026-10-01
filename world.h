@@ -57,10 +57,17 @@ private:
 		float start, end;
 	};
 	std::vector<world_arrow> arrows;
-	std::vector<title_spec> titles;
+	// titles and formulas as vector paths (docs/37), built once
+	struct world_title{
+		title_spec when;
+		float size;                       // 30 px (times ui), or less if it wouldn't fit across
+		vgroup paths;                     // empty if fonts/ is missing: then plain draw_text
+	};
+	std::vector<world_title> titles;
 	struct world_math{
 		title_spec when;
 		math_box formula;
+		vgroup paths;
 	};
 	std::vector<world_math> maths;
 	struct world_label{

@@ -16,6 +16,7 @@
 #include "srgb.h"
 #include "test_scenes.h"
 #include "timeline.h"
+#include "vpath.h"
 
 #include <chrono>
 #include <cmath>
@@ -624,6 +625,50 @@ static void test_smooth_shading(){
 	      "halfway between two normals, made 1 long again: (0.7071, 0.7071, 0)");
 }
 
+// Vector paths (docs/37): text and formulas as loops of points.
+static void test_vector_paths(){
+	std::printf("\nvector paths:\n");
+	const font* sans = fonts::sans();
+	if(!sans){ check(false, "the fonts are in fonts/"); return; }
+	vgroup e = text_paths("E = m", *sans, 30.0f);
+	check(e.pieces.size() == 3 && e.pieces[0].key == 69 && e.pieces[1].key == 61 && e.pieces[2].key == 109,
+	      "\"E = m\" is 3 pieces: E (69), = (61), m (109); the spaces have no ink, so no piece");
+
+	std::vector<point2> square = {{0, 0}, {10, 0}, {10, 10}, {0, 10}};
+	std::vector<point2> quarter = loop_prefix(square, 0.25f), more = loop_prefix(square, 0.3f);
+	check(std::fabs(loop_length(square) - 40.0f) < 1e-5f, "a 10 x 10 square's loop is 40 long (4 sides, back to the start)");
+	check(std::fabs(quarter.back().x - 10) < 1e-5f && std::fabs(quarter.back().y) < 1e-5f
+	      && std::fabs(more.back().x - 10) < 1e-5f && std::fabs(more.back().y - 2) < 1e-5f,
+	      "its first 0.25 ends at the corner (10, 0); its first 0.3 (12 long) at (10, 2)");
+
+	math_parse_result half = parse_math("\\frac{1}{2}");
+	vgroup f = math_paths(layout_math(*half.tree, 30.0f));
+	bool bar = false;
+	for(const vpiece& p : f.pieces) if(p.key == -1 && p.loops.size() == 1 && p.loops[0].size() == 4) bar = true;
+	check(f.pieces.size() == 3 && bar, "\\frac{1}{2} is 3 pieces: 1, 2, and the bar as a 4-corner loop");
+
+	// the same 'o' drawn still (the glyph cache) and animated (filled from its loops)
+	camera cam;
+	cam.width = 60;
+	cam.height = 60;
+	cam.update(0.0f);
+	vgroup o = text_paths("o", *sans, 40.0f);
+	render still(cam.width, cam.height), moving(cam.width, cam.height);
+	still.begin(cam);
+	moving.begin(cam);
+	piece_look nearly;
+	nearly.fill = 0.99999f;   // not still(): takes the loops path
+	still.draw_vpiece(o.pieces[0], 10.0f, 45.0f, px::Pixel(255, 255, 255), piece_look{}, 0.0f);
+	moving.draw_vpiece(o.pieces[0], 10.0f, 45.0f, px::Pixel(255, 255, 255), nearly, 0.0f);
+	still.finish();
+	moving.finish();
+	int worst = 0;
+	for(int y = 0;y<cam.height;y++) for(int x = 0;x<cam.width;x++){
+		worst = std::max(worst, std::abs(int(still.picture().Get(x, y).r) - int(moving.picture().Get(x, y).r)));
+	}
+	check(worst <= 1, "an 'o' filled from its loops looks the same as its cached glyph (at most " + std::to_string(worst) + " apart)");
+}
+
 int main(){
 	test_clipping();
 	test_fly_camera();
@@ -640,6 +685,7 @@ int main(){
 	test_hd();
 	test_linear_light();
 	test_smooth_shading();
+	test_vector_paths();
 	std::printf("\n%s: %d check%s failed\n", failures == 0 ? "ALL PASSED" : "FAILED", failures, failures == 1 ? "" : "s");
 	return failures == 0 ? 0 : 1;
 }

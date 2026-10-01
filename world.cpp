@@ -104,11 +104,21 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 	cam.move(solved.still().camera_eye());
 	cam.point_at(solved.still().camera_target());
 
-	titles.assign(spec.titles.begin(), spec.titles.end());
+	for(const title_spec& s : spec.titles){
+		// as big as fits: 30 pixels, or smaller if it would run off the sides
+		float size = 30.0f * ui;
+		float room = float(cam.width) - 32.0f * ui;
+		float w = render::text_width(s.text, size);
+		if(w > room) size *= room / w;               // text width grows in step with size
+		titles.push_back({s, size, fonts::sans() ? text_paths(s.text, *fonts::sans(), size) : vgroup{}});
+	}
 	// formulas are laid out once (docs/30); the parser already checked them
 	for(const title_spec& m : spec.maths){
 		math_parse_result parsed = parse_math(m.text);
-		if(parsed.tree && fonts::serif() && fonts::italic()) maths.push_back({m, layout_math(*parsed.tree, 30.0f * ui)});
+		if(parsed.tree && fonts::serif() && fonts::italic()){
+			math_box box = layout_math(*parsed.tree, 30.0f * ui);
+			maths.push_back({m, box, math_paths(box)});
+		}
 	}
 
 	// arrows (docs/26): look the names up once
@@ -134,24 +144,27 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 void world::draw_overlays(render& renderer,float t){
 	// titles, across the top, centered (docs/27, 29); several stack downwards
 	float top = 12.0f * ui;
-	for(const title_spec& s : titles){
-		float seen = appear(s.start, s.end, t);
+	for(const world_title& s : titles){
+		float seen = appear(s.when.start, s.when.end, t);
 		if(seen <= 0.0f) continue;
-		// as big as fits: 30 pixels, or smaller if it would run off the sides
-		float size = 30.0f * ui;
-		float room = float(cam.width) - 32.0f * ui;
-		float w = render::text_width(s.text, size);
-		if(w > room) size *= room / w;               // text width grows in step with size
-		float x = (cam.width - render::text_width(s.text, size)) / 2.0f;
-		renderer.draw_text(x, top, s.text, size, px::Pixel(240, 240, 245, uint8_t(255 * seen)));
-		top += render::text_height(size) + 6.0f * ui;
+		float x = (cam.width - render::text_width(s.when.text, s.size)) / 2.0f;
+		px::Pixel color(240, 240, 245, uint8_t(255 * seen));
+		if(s.paths.pieces.empty()) renderer.draw_text(x, top, s.when.text, s.size, color);
+		for(const vpiece& p : s.paths.pieces){
+			renderer.draw_vpiece(p, x + p.at.x, top + p.at.y, color, piece_look{}, std::max(1.0f, s.size / 16.0f));
+		}
+		top += render::text_height(s.size) + 6.0f * ui;
 	}
 	// formulas under the titles, centered, each during its own time range
 	for(const world_math& m : maths){
 		float seen = appear(m.when.start, m.when.end, t);
 		if(seen <= 0.0f) continue;
 		float x = (cam.width - m.formula.width) / 2.0f;
-		renderer.draw_math(x, top + 4.0f * ui, m.formula, px::Pixel(240, 240, 245), seen);
+		float y = top + 4.0f * ui;
+		px::Pixel color(240, 240, 245, uint8_t(std::lround(255.0f * seen)));
+		for(const vpiece& p : m.paths.pieces){
+			renderer.draw_vpiece(p, x + p.at.x, y + p.at.y, color, piece_look{}, 1.5f * ui);
+		}
 		top += m.formula.height + m.formula.depth + 12.0f * ui;
 	}
 
