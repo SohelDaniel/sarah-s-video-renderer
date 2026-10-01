@@ -2,18 +2,32 @@
 
 #include <algorithm>
 #include <cmath>
+#include "expression.h"
 #include "font.h"
 #include "math_layout.h"
 
+
+// Which flat shape an object uses: "circle", "square filled", or a graph's
+// own one (each graph is different).
+static std::string flat_key(const object_spec& o){
+	if(o.flat == "graph") return "graph " + o.name;
+	return o.flat + (o.filled ? " filled" : "");
+}
 
 std::vector<float> world::load_meshes(const scene_spec& spec){
 	std::vector<float> radii;
 	for(const object_spec& o : spec.objects){
 		if(!o.flat.empty()){
 			// a flat shape (docs/40): built once per kind, and it fits in radius 1
-			std::string key = o.flat + (o.filled ? " filled" : "");
-			flat_shapes.try_emplace(key, make_flat_shape(o.flat, o.filled));
-			radii.push_back(1.0f);
+			std::string key = flat_key(o);
+			if(o.flat == "graph"){
+				// a graph (docs/42): its function was checked by the parser
+				expression_result f = parse_expression(o.graph);
+				flat_shapes.try_emplace(key, f.tree ? graph_shape(*f.tree, o.graph_from, o.graph_to, fonts::sans()) : flat_shape{});
+			}else{
+				flat_shapes.try_emplace(key, make_flat_shape(o.flat, o.filled));
+			}
+			radii.push_back(o.flat == "graph" ? graph_scale : 1.0f);
 			continue;
 		}
 		// try_emplace only loads the file if it isn't in the map yet
@@ -49,8 +63,8 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 	for(size_t i = 0;i<spec.objects.size();i++){
 		const object_spec& o = spec.objects[i];
 		object thing = o.flat.empty() ? object(meshes.at(o.mesh_file), o.color)
-		                              : object(flat_shapes.at(o.flat + (o.filled ? " filled" : "")), o.color);
-		thing.scale(size_value(o.size));
+		                              : object(flat_shapes.at(flat_key(o)), o.color);
+		thing.scale(size_value(o.size) * (o.flat == "graph" ? graph_scale : 1.0f));
 		if(o.flat.empty()){
 			// a three-quarter view, so the faces of flat-sided shapes are easy to
 			// tell apart. The bounding sphere doesn't care how it's turned.

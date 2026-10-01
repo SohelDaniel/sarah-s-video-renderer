@@ -142,6 +142,8 @@ struct object_spec{
 	bool filled = false;           // a flat shape's inside is colored too
 	float create_start = 0.0f;     // drawn in from start to end (docs/41); end < 0 = just there
 	float create_end = -1.0f;
+	std::string graph;             // a graph's function, like "sin(x)" (docs/42)
+	float graph_from = -5.0f, graph_to = 5.0f;   // its x range
 
 	// Each of these adds a relation and returns the object itself, so they
 	// can be chained:  spec.add(...).near("cube").above("table");
@@ -223,7 +225,7 @@ public:
 
 	object_spec& add(const std::string& name,const std::string& mesh_file,px::Pixel color,
 	                 size_word size = size_word::normal,int importance = 1){
-		objects.push_back(object_spec{name, mesh_file, color, size, importance, {}, {}, {}, "", false, false, 0.0f, -1.0f, "", false, 0.0f, -1.0f});
+		objects.push_back(object_spec{name, mesh_file, color, size, importance, {}, {}, {}, "", false, false, 0.0f, -1.0f, "", false, 0.0f, -1.0f, "", -5.0f, 5.0f});
 		return objects.back();
 	}
 

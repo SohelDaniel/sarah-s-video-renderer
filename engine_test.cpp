@@ -6,6 +6,7 @@
 // ============================================================================
 #include "camera.h"
 #include "fly_camera.h"
+#include "expression.h"
 #include "font.h"
 #include "label_layout.h"
 #include "live_scene.h"
@@ -833,6 +834,43 @@ static void test_create(){
 	      "'create 1s-2s' and 'create' (0 s to 1 s) are read; create on a cube, or ending before it starts, are mistakes");
 }
 
+// Graphs (docs/42): expressions, ticks and curves.
+static void test_graphs(){
+	std::printf("\ngraphs:\n");
+	auto value = [](const char* text,float x){
+		expression_result r = parse_expression(text);
+		return r.tree ? evaluate(*r.tree, x) : NAN;
+	};
+	check(std::fabs(value("2*sin(x)+1", 3.14159265f / 6.0f) - 2.0f) < 1e-5f, "2*sin(x)+1 at x = pi/6 is 2 * 0.5 + 1 = 2");
+	check(value("-x^2", 3.0f) == -9.0f && value("2^3^2", 0.0f) == 512.0f,
+	      "-x^2 at 3 is -(3^2) = -9; 2^3^2 is 2^(3^2) = 512 (powers go right to left)");
+	expression_result typo = parse_expression("sinn(x)"), juxt = parse_expression("2x");
+	check(!typo.tree && typo.column == 1 && typo.error.find("did you mean sin") != std::string::npos
+	      && juxt.error.find("write *") != std::string::npos,
+	      "'sinn(x)' is unknown at column 1 (did you mean sin?); '2x' says to write 2*x");
+
+	check(tick_step(6.28f) == 1.0f && tick_step(12.56f) == 2.0f && std::fabs(tick_step(2.2f) - 0.5f) < 1e-6f,
+	      "tick steps: 1 for a range of 6.28, 2 for 12.56, 0.5 for 2.2 (at most 10 ticks)");
+
+	expression_result log = parse_expression("log(x)");
+	flat_shape g = graph_shape(*log.tree, -1.0f, 1.0f, nullptr);
+	int curves = 0;
+	bool right_half = true;
+	for(const flat_path& p : g.paths){
+		if(p.role != flat_path::curve) continue;
+		curves++;
+		for(const point2& q : p.points) if(q.x <= 0.0f) right_half = false;   // x = 0 is the middle of the box
+	}
+	check(curves == 1 && right_half, "log(x) from -1 to 1: one curve, only where x > 0 (no value to draw for x <= 0)");
+
+	parse_result ok = parse_scene("g = graph \"sin(x)\" from -3.14 to 3.14 teal\n");
+	parse_result bad = parse_scene("g = graph \"sin(x\"\n");
+	parse_result backwards = parse_scene("g = graph \"x\" from 3 to -3\n");
+	check(ok.ok() && ok.spec.objects[0].flat == "graph" && std::fabs(ok.spec.objects[0].graph_from + 3.14f) < 1e-5f
+	      && !bad.ok() && bad.errors[0].column == 15 && !backwards.ok(),
+	      "'graph \"sin(x)\" from -3.14 to 3.14' is read; an unclosed '(' points at column 15; from 3 to -3 is a mistake");
+}
+
 int main(){
 	test_clipping();
 	test_fly_camera();
@@ -854,6 +892,7 @@ int main(){
 	test_transform();
 	test_flat_shapes();
 	test_create();
+	test_graphs();
 	std::printf("\n%s: %d check%s failed\n", failures == 0 ? "ALL PASSED" : "FAILED", failures, failures == 1 ? "" : "s");
 	return failures == 0 ? 0 : 1;
 }

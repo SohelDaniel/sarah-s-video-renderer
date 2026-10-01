@@ -1,0 +1,11 @@
+# Graphs (docs/42): a function drawn on axes, flat in the 3D world like the
+# other shapes (40). Created axes first, then the curve, left to right.
+
+scene "graph"
+title "Graphs"
+math "f(x) = \frac{x^2}{4} - 1" 0s-20s write 1s
+
+sun    = sphere small gold
+wave   = graph "sin(x)" from -6.28 to 6.28 big teal important create 1s-4s
+bowl   = graph "x^2/4 - 1" from -3 to 3 yellow below wave create 3s-5s
+sun near wave

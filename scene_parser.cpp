@@ -1,5 +1,6 @@
 #include "scene_parser.h"
 #include "shapes2d.h"
+#include "expression.h"
 #include "math_layout.h"
 
 #include <algorithm>
@@ -214,6 +215,7 @@ static std::vector<token> tokenize(const std::string& source){
 //    fact       = name phrase { [","] phrase }
 //    property   = size | color | "important" | "filled" | create | label | phrase | ","
 //    create     = "create" [ time "-" time ]               (flat shapes only, docs/41)
+//    graph      = "graph" text [ "from" number "to" number ]   (a shape, docs/42)
 //    (shape: a mesh word, or a flat one: circle square triangle hexagon star, docs/40)
 //    label      = "label" [ "math" ] text { "math" | time "-" time | "always" }
 //    phrase     = relation_word name
@@ -254,6 +256,8 @@ private:
 	void formula();
 	void write_in(title_spec& s,const std::string& what);
 	void becomes(title_spec& s);
+	void graph(object_spec& o);
+	float signed_number(const std::string& what);
 	void check_formula(const token& words);
 	void definition();
 	void fact();
@@ -397,6 +401,38 @@ static std::string format_seconds(float seconds){
 	return out.str();
 }
 
+// graph = "graph" text [ "from" number "to" number ]      (docs/42)
+// The text is the function of x, checked by the expression parser: a
+// mistake points at the exact character, like a formula's (30).
+void parser::graph(object_spec& o){
+	const token& words = next();
+	if(words.kind != token_kind::text) fail(words, "expected the function in quotes, like: graph \"sin(x)\" from -3 to 3");
+	expression_result check = parse_expression(words.value);
+	if(!check.error.empty()){
+		token at = words;
+		at.column = words.column + check.column;
+		fail(at, "in the function: " + check.error);
+	}
+	o.graph = words.value;
+	if(peek().kind == token_kind::word && peek().value == "from"){
+		next();
+		const token& start = peek();
+		o.graph_from = signed_number("after 'from', like -3");
+		const token& to = next();
+		if(!(to.kind == token_kind::word && to.value == "to")) fail(to, "expected 'to' and where the graph ends, like: from -3 to 3");
+		o.graph_to = signed_number("after 'to', like 3");
+		if(o.graph_to <= o.graph_from) fail(start, "the graph has to go from a smaller x to a bigger one");
+	}
+}
+
+// A number that may have a minus in front (the '-' is its own token, 21).
+float parser::signed_number(const std::string& what){
+	bool minus = false;
+	if(peek().kind == token_kind::dash){ next(); minus = true; }
+	float v = number(what);
+	return minus ? -v : v;
+}
+
 // A formula in quotes, checked by the math parser (30). An error points at
 // the exact character: the text starts one column after its quote.
 void parser::check_formula(const token& words){
@@ -500,15 +536,17 @@ void parser::definition(){
 	defined.push_back(n.value);
 	const token& s = next();
 	const std::vector<std::string>& flats = flat_shape_words();
-	bool is_flat = std::find(flats.begin(), flats.end(), s.value) != flats.end();
+	bool is_flat = std::find(flats.begin(), flats.end(), s.value) != flats.end() || s.value == "graph";
 	if(s.kind != token_kind::word || (!is_flat && std::find(shape_words.begin(), shape_words.end(), s.value) == shape_words.end())){
 		std::vector<std::string> all = shape_words;
 		all.insert(all.end(), flats.begin(), flats.end());
+		all.push_back("graph");
 		fail(s, "expected a shape after '=', got " + describe(s) + did_you_mean(s.value, all));
 	}
 	// a flat shape (docs/40) has no mesh file
 	object_spec& o = result.spec.add(n.value, is_flat ? "" : "shapes/" + s.value + ".obj", px::Pixel(200, 200, 200));
 	if(is_flat) o.flat = s.value;
+	if(s.value == "graph") graph(o);
 	while(!at_end_of_line()) property(o);
 }
 

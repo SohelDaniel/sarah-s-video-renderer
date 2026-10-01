@@ -326,7 +326,8 @@ void render::rasterize_flat(const flat_item& f){
 
 	for(const flat_path& path : f.shape->paths){
 		px::Pixel color = path.role == flat_path::outline || path.role == flat_path::curve ? f.color : grey;
-		std::vector<point2> drawn = path_prefix(path, f.look.drawn);
+		std::vector<point2> drawn = path.stroked ? path_prefix(path, path.role == flat_path::curve ? f.look.curve : f.look.drawn)
+		                                         : std::vector<point2>{};
 		std::vector<vec3> line;
 		for(const point2& p : drawn){
 			vec3 s;
@@ -339,20 +340,26 @@ void render::rasterize_flat(const flat_item& f){
 			float a = (dz1 * dy2 - dz2 * dy1) / det;
 			float b = (dx1 * dz2 - dx2 * dz1) / det;
 			float c = o[2] - a * o[0] - b * o[1];
-			std::vector<point2> loop;
+			std::vector<std::vector<point2>> loops;   // the path, and any loops filled with it (a letter's holes)
 			float x0 = 1e9f, y0 = 1e9f, x1 = -1e9f, y1 = -1e9f;
-			for(const point2& p : path.points){
-				vec3 s;
-				if(!onto(p, s)) return;
-				loop.push_back({s[0], s[1]});
-				x0 = std::min(x0, s[0]); y0 = std::min(y0, s[1]); x1 = std::max(x1, s[0]); y1 = std::max(y1, s[1]);
+			std::vector<const std::vector<point2>*> all = {&path.points};
+			for(const auto& more : path.inner) all.push_back(&more);
+			for(const std::vector<point2>* src : all){
+				loops.push_back({});
+				for(const point2& p : *src){
+					vec3 s;
+					if(!onto(p, s)) return;
+					loops.back().push_back({s[0], s[1]});
+					x0 = std::min(x0, s[0]); y0 = std::min(y0, s[1]); x1 = std::max(x1, s[0]); y1 = std::max(y1, s[1]);
+				}
 			}
 			int left = std::max(0, int(std::floor(x0))), top = std::max(0, int(std::floor(y0)));
 			int right = std::min(image.Width() - 1, int(std::ceil(x1))), bottom = std::min(image.Height() - 1, int(std::ceil(y1)));
 			if(right >= left && bottom >= top){
 				int w = right - left + 1, h = bottom - top + 1;
-				for(point2& q : loop){ q.x -= left; q.y -= top; }
-				std::vector<float> cover = fill_loops({loop}, w, h, samples > 1 ? 2 : 4);
+				for(auto& loop : loops) for(point2& q : loop){ q.x -= left; q.y -= top; }
+				std::vector<float> cover = fill_loops(loops, w, h, samples > 1 ? 2 : 4);
+				float strength = path.role == flat_path::text ? 1.0f : 0.5f;   // words solid, shapes see-through
 				px::Pixel inside = color;
 				for(int j = 0;j<h;j++){
 					for(int i = 0;i<w;i++){
@@ -361,7 +368,7 @@ void render::rasterize_flat(const flat_item& f){
 						int x = left + i, y = top + j;
 						float z = a * (x + 0.5f) + b * (y + 0.5f) + c;
 						if(z > depth[size_t(y) * image.Width() + x] + 1e-4f) continue;
-						inside.a = uint8_t(std::lround(255.0f * f.opacity * 0.5f * f.look.fill * k));
+						inside.a = uint8_t(std::lround(255.0f * f.opacity * strength * f.look.fill * k));
 						srgb::blend(image, x, y, inside);
 					}
 				}

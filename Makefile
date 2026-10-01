@@ -7,14 +7,14 @@ SDL_CFLAGS = $(shell pkg-config --cflags sdl3)
 SDL_LIBS   = $(shell pkg-config --libs sdl3)
 
 TARGET  = main
-SOURCES = main.cpp camera.cpp fly_camera.cpp font.cpp label_layout.cpp math_layout.cpp layout.cpp live_scene.cpp mesh.cpp motion.cpp object.cpp player.cpp render.cpp scene_parser.cpp shapes2d.cpp solver.cpp test_scenes.cpp vec3.cpp vpath.cpp window.cpp world.cpp
+SOURCES = main.cpp camera.cpp expression.cpp fly_camera.cpp font.cpp label_layout.cpp math_layout.cpp layout.cpp live_scene.cpp mesh.cpp motion.cpp object.cpp player.cpp render.cpp scene_parser.cpp shapes2d.cpp solver.cpp test_scenes.cpp vec3.cpp vpath.cpp window.cpp world.cpp
 
 # The solver's stress tests: no window, so no SDL (docs/15).
 TEST_TARGET  = solver_test
 TEST_SOURCES = solver_test.cpp label_layout.cpp layout.cpp mesh.cpp motion.cpp solver.cpp test_scenes.cpp vec3.cpp
 # The engine's own tests (docs/19-21): also no SDL
 ENGINE_TEST         = engine_test
-ENGINE_TEST_SOURCES = engine_test.cpp camera.cpp fly_camera.cpp font.cpp label_layout.cpp math_layout.cpp layout.cpp live_scene.cpp mesh.cpp motion.cpp object.cpp render.cpp scene_parser.cpp shapes2d.cpp solver.cpp test_scenes.cpp vec3.cpp vpath.cpp world.cpp
+ENGINE_TEST_SOURCES = engine_test.cpp camera.cpp expression.cpp fly_camera.cpp font.cpp label_layout.cpp math_layout.cpp layout.cpp live_scene.cpp mesh.cpp motion.cpp object.cpp render.cpp scene_parser.cpp shapes2d.cpp solver.cpp test_scenes.cpp vec3.cpp vpath.cpp world.cpp
 HEADERS = $(wildcard *.h)
 
 .PHONY: all run stills test clean
@@ -67,6 +67,8 @@ stills: $(TARGET) $(TEST_TARGET)
 	@./$(TARGET) scenes/shapes.dan framed docs/images/shapes-front.png 3 --aa > /dev/null
 	@./$(TARGET) scenes/shapes.dan framed docs/images/shapes-side.png 3 --aa --eye 9,3,5 > /dev/null
 	@for t in 1 2 3; do ./$(TARGET) scenes/create.dan framed docs/images/create-$$t.png $$t --aa > /dev/null; done
+	@for t in 2.5 8; do ./$(TARGET) scenes/graph.dan framed docs/images/graph-$$t.png $$t --aa > /dev/null; done
+	@./$(TARGET) scenes/graph.dan framed docs/images/graph-side.png 8 --aa --eye 12,4,6 > /dev/null
 	@rm -f scenes/*.report
 	@./solver_test > docs/images/stress-results.txt || true
 	@# our PNG writer doesn't compress (docs/pixel.h); macOS's sips can, ~50x smaller

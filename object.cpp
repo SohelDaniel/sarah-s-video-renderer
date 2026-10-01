@@ -102,9 +102,12 @@ void object::update(float t){
 	now = motion.at(t);
 	now_time = t;
 	if(flat && create_end > create_start){
-		bool filled = false;
-		for(const flat_path& p : flat->paths) filled = filled || p.filled;
-		look = create_look((t - create_start) / (create_end - create_start), filled);
+		bool filled = false, graph = false;
+		for(const flat_path& p : flat->paths){
+			filled = filled || p.filled;
+			graph = graph || p.role == flat_path::curve;
+		}
+		look = create_look((t - create_start) / (create_end - create_start), filled, graph);
 	}
 }
 

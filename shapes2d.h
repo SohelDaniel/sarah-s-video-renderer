@@ -20,6 +20,8 @@ struct flat_path{
 	std::vector<point2> points;
 	bool closed = true;      // a loop (back to the start), or an open line
 	bool filled = false;     // its inside is colored too
+	bool stroked = true;     // its outline is drawn (a graph's numbers are only filled)
+	std::vector<std::vector<point2>> inner;   // more loops filled together with this one: a letter's holes (docs/42)
 	kind_of role = outline;  // picks its color: the object's, or grey for axes
 };
 
@@ -42,6 +44,7 @@ flat_shape star_shape(int tips = 5,float inner = 0.4f);
 struct flat_look{
 	float drawn = 1.0f;   // how much of each path's length is drawn, 0..1
 	float fill = 1.0f;    // how far its fill has come up, 0..1
+	float curve = 1.0f;   // a graph's curve: drawn after its axes (docs/42)
 };
 
 // The first `fraction` of a path along its length (0..1), as an open line
@@ -52,4 +55,17 @@ std::vector<point2> path_prefix(const flat_path& path,float fraction);
 //   outline only:  the outline is drawn along its length the whole time:   drawn = smooth(p)
 //   filled:        the outline in the first half:   drawn = smooth(min(1, 2p))
 //                  then the fill comes up:          fill  = smooth(max(0, 2p − 1))
-flat_look create_look(float p,bool filled);
+flat_look create_look(float p,bool filled,bool graph = false);
+
+// A graph (docs/42): axes, ticks, numbers and the curve of f from x0 to x1,
+// fitted inside the circle of radius 1. `digits` draws the numbers (none if
+// it's null).
+struct expr_node;
+class font;
+flat_shape graph_shape(const expr_node& f,float x0,float x1,const font* digits);
+// A graph is something to read, like a board: for the same size word it's
+// 2.5 times as big as the other shapes.
+constexpr float graph_scale = 2.5f;
+// The gap between ticks for a range this long: 1, 2 or 5 times a power of
+// ten, the smallest that gives at most 10 ticks.
+float tick_step(float range);
