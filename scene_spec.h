@@ -67,6 +67,21 @@ inline const char* relation_name(relation_kind k){
 	return "?";
 }
 
+// Where the camera looks from, as a word. The solver works out the exact
+// spot (docs/14). None of them is straight above: look_at can't handle a
+// camera directly over its target (docs/04).
+enum class view_word{ front, front_above, left_above, right_above };
+
+inline const char* view_name(view_word v){
+	switch(v){
+		case view_word::front:       return "front";
+		case view_word::front_above: return "front_above";
+		case view_word::left_above:  return "left_above";
+		case view_word::right_above: return "right_above";
+	}
+	return "?";
+}
+
 // "sphere near cube" is stored on the sphere as {near, "cube"}.
 struct relation{
 	relation_kind kind;
@@ -107,6 +122,9 @@ public:
 		objects.push_back(object_spec{name, mesh_file, color, size, importance, {}});
 		return objects.back();
 	}
+
+	// where the camera looks from (the solver picks the distance)
+	view_word view = view_word::front_above;
 
 	// A deque, not a vector: adding to a vector can move everything to new
 	// memory, which would break the reference add() just handed out. A deque

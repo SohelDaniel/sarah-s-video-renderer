@@ -208,6 +208,8 @@ when something is far away.
 left 2 pairs overlapping on screen, because the springs won. Trying a few
 values:
 
+(Measured with a fixed η = 0.01, before the line search below.)
+
 | ν | pairs overlapping on screen | final energy | spring part |
 |---|---|---|---|
 | 500 | 2 | 5.48 | 3.10 |
@@ -217,12 +219,24 @@ values:
 A bigger ν hides less but moves things farther from where greedy put them.
 8000 is the smallest of these that gets everything visible.
 
-**The step size has to be small enough.** With η = 0.02 the energy went
-**up** now and then near the end: the steps were so big they jumped over the
-valley's bottom. Halving it to η = 0.01 (and doing 500 steps instead of
-300) fixed that. `refine` now counts every step where the energy went up, as
-a self-check. It allows for float rounding: a float has about 7 significant
-digits, so an energy around 10 wobbles by a few millionths even at the bottom.
+**The step size has to be small enough, so it adjusts itself.** With a
+fixed η = 0.02 the energy went **up** now and then near the end: the steps
+were so big they jumped over the valley's bottom. η = 0.01 fixed it for this
+camera. Then step D moved the camera closer, which made the screen term
+steeper (it grows like 1/depth²), and the energy went up on 244 of 500
+steps. A step size that only works for one camera is no good when an AI
+writes the scenes, so `refine` now uses a **backtracking line search**:
+
+```
+try  p_new = p − η·∇E
+if E(p_new) > E(p):   undo it, η ← η/2, try again    (we jumped over the bottom)
+else:                 keep it,  η ← 1.25·η           (it worked: be a bit bolder)
+```
+
+The energy can then **never go up**, however steep things get. The report
+says how many times a step had to be halved. The check allows for float
+rounding: a float has about 7 significant digits, so an energy around 10
+wobbles by a few millionths even at the bottom.
 
 ## 6. Result
 
@@ -234,9 +248,9 @@ layout (refined): 9 objects, 0 overlapping pairs, 0 pairs overlapping on screen
   refinement (energy should go down):
     step   0   E = 227.6333   (spring 0.0000, push 0.0000, relations 0.0000, screen 227.6333)
     step   1   E =  68.1100   (spring 2.7921, ...                          screen 65.3179)
-    step  50   E =   9.9942   (spring 9.3628, ...                          screen 0.6313)
-    step 500   E =   9.9782   (spring 9.3498, ...                          screen 0.6284)
-    steps where the energy went up: 0 of 500
+    step  50   E =   9.9892   (spring 9.3588, ...                          screen 0.6304)
+    step 500   E =   9.9783   (spring 9.3508, ...                          screen 0.6275)
+    steps halved because they went uphill: 160
 ```
 
 At step 0 all the energy is in the screen term (things hide each other). By

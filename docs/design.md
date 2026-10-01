@@ -43,6 +43,13 @@ scene_spec (what the AI wrote) ──► layout (pure math: spheres in, position
   or from a parser.
 - **`world` owns everything it builds.** The meshes live in a map inside it,
   and the objects point at them, so they can't outlive their meshes.
+- **Every step is measured.** The report counts overlaps in 3D, overlaps
+  on screen and satisfied relations, so each step can be compared with the
+  one before (the table at the end of 14). An improvement you can't
+  measure is a guess.
+- **Nothing is tuned for one scene.** When the closer camera broke the
+  fixed step size, the fix was a line search that adapts itself, not a new
+  magic number. The AI will write scenes nobody has tested.
 - **Mistakes in the description are reported, not fatal.** A wrong name
   drops that one relation and says so. With an AI writing the scene, a clear
   message it can act on is worth more than a crash.

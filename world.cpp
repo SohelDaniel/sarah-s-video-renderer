@@ -13,10 +13,12 @@ std::vector<float> world::load_meshes(const scene_spec& spec){
 
 world::world(const scene_spec& spec,layout::method how)
 	: solved(spec, load_meshes(spec)){
-	cam.move(vec3(0.0f, 6.0f, 16.0f));
-	cam.point_at(vec3(0.0f, 0.0f, 0.0f));
+	// a fixed starting camera; step D (framed) replaces it with its own
 	solved.set_camera(vec3(0.0f, 6.0f, 16.0f), vec3(0.0f, 0.0f, 0.0f));
+	solved.set_lens(cam.fov_y, float(cam.width) / float(cam.height));
 	solved.solve(how);
+	cam.move(solved.camera_eye());
+	cam.point_at(solved.camera_target());
 
 	const std::vector<placement>& placed = solved.result();
 	objects.reserve(placed.size());

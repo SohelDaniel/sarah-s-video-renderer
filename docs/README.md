@@ -39,6 +39,7 @@ All the math is built on **vectors and matrices** (01).
 | 11 | [Scene description](11-scene-description.md) | How does the AI describe a scene? What's the baseline? | `scene_spec.h`, `layout.cpp`, `world.cpp` |
 | 12 | [Greedy placement](12-greedy-placement.md) | How do relations become positions? | `layout.cpp` |
 | 13 | [Refinement](13-refinement.md) | How is the layout polished? (gradient descent) | `layout.cpp` |
+| 14 | [Auto camera](14-auto-camera.md) | Where should the camera go? | `layout.cpp`, `world.cpp` |
 | | [Ranges and settings](ranges.md) | What values make sense? | `camera.h`, `object.h` |
 | | [C++ notes](cpp-notes.md) | What does this syntax mean? | everywhere |
 | | [Design](design.md) | Why is the code split up like this? | everywhere |

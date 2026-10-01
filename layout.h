@@ -17,6 +17,8 @@
 //             fit the relation and take the best one that's free
 //    refined: greedy, then everything moves a little at a time downhill on
 //             an "energy" (gradient descent) until it settles
+//    framed : like refined, but the camera is placed automatically so the
+//             whole scene fits in the picture
 // ============================================================================
 
 // Where one object ended up.
@@ -29,11 +31,15 @@ struct placement{
 
 class layout{
 public:
-	enum class method{ naive, greedy, refined };
+	enum class method{ naive, greedy, refined, framed };
 
 	// Where the camera will look from. Only used to judge what's hidden
 	// behind what on screen (the refinement tries to fix that).
 	void set_camera(vec3 eye,vec3 target);
+	// The lens the camera will use, for the automatic framing.
+	void set_lens(float fov_y,float aspect);
+	vec3 camera_eye()const;
+	vec3 camera_target()const;
 
 	// mesh_radii[i] = bounding radius of object i's mesh at size 1
 	// (same order as spec.objects). The layout never loads files itself.
@@ -93,6 +99,13 @@ private:
 		float depth;    // distance in front of the camera (<= 0: behind it)
 	};
 	seen look(int i)const;
+
+	void frame();
+	float fov_y  = 50.0f * 3.14159265f / 180.0f;
+	float aspect = 640.0f / 480.0f;
+	vec3 scene_center{0.0f, 0.0f, 0.0f};   // found by frame()
+	float scene_radius = 0.0f;
+	float camera_distance = 0.0f;
 	int count_hidden()const;
 
 	enum class verdict{ ok, weak, failed };
@@ -109,4 +122,5 @@ private:
 	vec3 eye{0.0f, 6.0f, 16.0f};
 	vec3 target{0.0f, 0.0f, 0.0f};
 	std::string method_name = "none";
+	bool framed = false;
 };

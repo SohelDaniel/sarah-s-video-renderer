@@ -21,18 +21,18 @@ layout (refined): 9 objects, 0 overlapping pairs, 0 pairs overlapping on screen
   refinement (energy should go down):
     step   0   E = 227.6333   (spring 0.0000, push 0.0000, relations 0.0000, screen 227.6333)
     step   1   E =  68.1100   (spring 2.7921, push 0.0000, relations 0.0000, screen 65.3179)
-    step   2   E =  33.1076   (spring 4.6414, push 0.0000, relations 0.0000, screen 28.4662)
-    step  50   E =   9.9942   (spring 9.3628, push 0.0000, relations 0.0000, screen 0.6313)
-    step 100   E =   9.9825   (spring 9.3528, push 0.0000, relations 0.0000, screen 0.6298)
-    step 150   E =   9.9794   (spring 9.3503, push 0.0000, relations 0.0000, screen 0.6291)
-    step 200   E =   9.9785   (spring 9.3498, push 0.0000, relations 0.0000, screen 0.6287)
-    step 250   E =   9.9783   (spring 9.3497, push 0.0000, relations 0.0000, screen 0.6286)
-    step 300   E =   9.9782   (spring 9.3497, push 0.0000, relations 0.0000, screen 0.6285)
-    step 350   E =   9.9782   (spring 9.3497, push 0.0000, relations 0.0000, screen 0.6284)
-    step 400   E =   9.9782   (spring 9.3498, push 0.0000, relations 0.0000, screen 0.6284)
-    step 450   E =   9.9782   (spring 9.3498, push 0.0000, relations 0.0000, screen 0.6284)
-    step 500   E =   9.9782   (spring 9.3498, push 0.0000, relations 0.0000, screen 0.6284)
-    steps where the energy went up: 0 of 500
+    step   2   E =  29.9342   (spring 5.2642, push 0.0000, relations 0.0000, screen 24.6700)
+    step  50   E =   9.9892   (spring 9.3588, push 0.0000, relations 0.0000, screen 0.6304)
+    step 100   E =   9.9806   (spring 9.3519, push 0.0000, relations 0.0000, screen 0.6286)
+    step 150   E =   9.9787   (spring 9.3503, push 0.0000, relations 0.0000, screen 0.6285)
+    step 200   E =   9.9783   (spring 9.3500, push 0.0000, relations 0.0000, screen 0.6283)
+    step 250   E =   9.9782   (spring 9.3500, push 0.0000, relations 0.0000, screen 0.6282)
+    step 300   E =   9.9782   (spring 9.3504, push 0.0000, relations 0.0000, screen 0.6278)
+    step 350   E =   9.9782   (spring 9.3499, push 0.0000, relations 0.0000, screen 0.6283)
+    step 400   E =   9.9782   (spring 9.3505, push 0.0000, relations 0.0000, screen 0.6277)
+    step 450   E =   9.9782   (spring 9.3501, push 0.0000, relations 0.0000, screen 0.6281)
+    step 500   E =   9.9783   (spring 9.3508, push 0.0000, relations 0.0000, screen 0.6275)
+    steps halved because they went uphill: 160
   problems in the description:
     octahedron near moon: there is no object called "moon" (relation ignored)
 wrote docs/images/scene3-refined.png

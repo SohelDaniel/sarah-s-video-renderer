@@ -1,5 +1,6 @@
 #include "layout.h"
 
+#include <algorithm>
 #include <cmath>
 #include <iomanip>
 #include <sstream>
@@ -90,6 +91,10 @@ void layout::solve(method how){
 		case method::naive:  place_naive();  method_name = "naive";  break;
 		case method::greedy: place_greedy(); method_name = "greedy"; break;
 		case method::refined: place_greedy(); refine(); method_name = "refined"; break;
+		case method::framed:
+			// frame first, so the screen term works in the real camera;
+			// then again, because refining moved things
+			place_greedy(); frame(); refine(); frame(); method_name = "framed"; break;
 	}
 }
 
@@ -239,6 +244,71 @@ void layout::place_greedy(){
 void layout::set_camera(vec3 new_eye,vec3 new_target){
 	eye = new_eye;
 	target = new_target;
+}
+
+void layout::set_lens(float new_fov_y,float new_aspect){
+	fov_y = new_fov_y;
+	aspect = new_aspect;
+}
+
+vec3 layout::camera_eye()const{
+	return eye;
+}
+
+vec3 layout::camera_target()const{
+	return target;
+}
+
+// The direction a view word looks FROM (from the scene towards the camera).
+static vec3 view_direction(view_word v){
+	switch(v){
+		case view_word::front:       return normalize(vec3( 0.0f, 0.1f,   1.0f));
+		case view_word::front_above: return normalize(vec3( 0.0f, 0.375f, 1.0f));
+		case view_word::left_above:  return normalize(vec3(-0.7f, 0.5f,   0.7f));
+		case view_word::right_above: return normalize(vec3( 0.7f, 0.5f,   0.7f));
+	}
+	return vec3(0.0f, 0.0f, 1.0f);
+}
+
+// ---------------------------------------------------------------------------
+//  Step D: place the camera so the whole scene fits (docs/14).
+//
+//  1. One sphere around the whole scene:
+//       center = middle of the box around all the objects' spheres
+//       radius = farthest any object's sphere reaches from that center
+//  2. The narrower of the two fields of view:
+//       fov_x = 2·atan(tan(fov_y / 2) · aspect)
+//       half  = min(fov_x, fov_y) / 2
+//  3. A sphere of radius R just fits inside a cone of half-angle `half`
+//     when its center is  R / sin(half)  from the tip:
+//       distance = R / sin(half)   (plus 5% for breathing room)
+//  4. eye = center + direction · distance, looking at the center.
+// ---------------------------------------------------------------------------
+void layout::frame(){
+	if(placed.empty()) return;
+
+	vec3 low  = placed[0].position;
+	vec3 high = placed[0].position;
+	for(const placement& p : placed){
+		for(int k = 0;k<3;k++){
+			low[k]  = std::min(low[k],  p.position[k] - p.radius);
+			high[k] = std::max(high[k], p.position[k] + p.radius);
+		}
+	}
+	scene_center = (low + high) * 0.5f;
+
+	scene_radius = 0.0f;
+	for(const placement& p : placed){
+		scene_radius = std::max(scene_radius, distance(p.position, scene_center) + p.radius);
+	}
+
+	float fov_x = 2.0f * std::atan(std::tan(fov_y / 2.0f) * aspect);
+	float half  = std::min(fov_x, fov_y) / 2.0f;
+	camera_distance = 1.05f * scene_radius / std::sin(half);
+
+	eye    = scene_center + view_direction(spec.view) * camera_distance;
+	target = scene_center;
+	framed = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -435,22 +505,42 @@ void layout::refine(){
 	};
 
 	log(0);
+	// Backtracking: try a step of size eta. If the energy went UP, the step
+	// jumped over the bottom of the valley, so undo it and try half the
+	// size. After a step that worked, let eta grow a little again. This way
+	// the energy can never go up, however steep the landscape is (a camera
+	// close to the scene makes the screen term much steeper, docs/14).
+	float eta = step_size;
 	float before = energy(home).total();
-	int uphill = 0;   // steps where the energy went UP: should stay 0
+	int shortened = 0;   // how many times a step had to be halved
 	for(int step = 1;step<=steps;step++){
 		std::vector<vec3> g = gradient(home);
-		for(size_t i = 0;i<placed.size();i++){
-			if(int(i) == anchor) continue;
-			placed[i].position = placed[i].position - g[i] * step_size;   // downhill
+		std::vector<vec3> old;
+		for(const placement& p : placed) old.push_back(p.position);
+
+		for(int attempt = 0;attempt<20;attempt++){
+			for(size_t i = 0;i<placed.size();i++){
+				if(int(i) == anchor) continue;
+				placed[i].position = old[i] - g[i] * eta;   // downhill
+			}
+			float after = energy(home).total();
+			// allow for float rounding: a float has ~7 significant digits, so
+			// an energy around 10 wobbles by a few millionths even at the bottom
+			if(after <= before * (1.0f + 1e-5f)){
+				before = after;
+				eta = std::min(eta * 1.25f, 4.0f * step_size);
+				break;
+			}
+			eta *= 0.5f;
+			shortened++;
+			if(attempt == 19){
+				// no step helps at all: we're at the bottom, stay put
+				for(size_t i = 0;i<placed.size();i++) placed[i].position = old[i];
+			}
 		}
-		float after = energy(home).total();
-		// allow for float rounding: a float has ~7 significant digits, so an
-		// energy around 10 wobbles by a few millionths even at the bottom
-		if(after > before * (1.0f + 1e-5f)) uphill++;
-		before = after;
 		if(step == 1 || step == 2 || step % 50 == 0) log(step);
 	}
-	energy_log.push_back("steps where the energy went up: " + std::to_string(uphill) + " of " + std::to_string(steps));
+	energy_log.push_back("steps halved because they went uphill: " + std::to_string(shortened));
 }
 
 const std::vector<placement>& layout::result()const{
@@ -542,6 +632,12 @@ std::string layout::report()const{
 	}
 	out << "  " << ok << " of " << total << " relations satisfied\n";
 
+	if(framed){
+		out << "  camera: from " << view_name(spec.view) << ", looking at (" << scene_center[0] << ", "
+		    << scene_center[1] << ", " << scene_center[2] << "), scene radius " << scene_radius
+		    << ", distance " << camera_distance << "\n";
+		out << "          eye at (" << eye[0] << ", " << eye[1] << ", " << eye[2] << ")\n";
+	}
 	if(!energy_log.empty()){
 		out << "  refinement (energy should go down):\n";
 		for(const std::string& line : energy_log) out << "    " << line << "\n";
