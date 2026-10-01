@@ -209,7 +209,8 @@ static std::vector<token> tokenize(const std::string& source){
 //    header     = "scene" [ text ] [ "view" view_word ]
 //    definition = name "=" shape { property }
 //    fact       = name phrase { [","] phrase }
-//    property   = size | color | "important" | "label" text | phrase | ","
+//    property   = size | color | "important" | label | phrase | ","
+//    label      = "label" [ "math" ] text { "math" | time "-" time | "always" }
 //    phrase     = relation_word name
 //               | "orbits" name [ number ("turn" | "turns") ] time "-" time
 //               | "flies_past" name time "-" time
@@ -479,9 +480,31 @@ void parser::phrase(object_spec& o,const token& first){
 		return;
 	}
 	if(first.value == "label"){
+		if(peek().kind == token_kind::word && peek().value == "math"){ next(); o.label_math = true; }
 		const token& words = next();
 		if(words.kind != token_kind::text) fail(words, "expected the label's words in quotes, like: label \"the sun\"");
 		o.label = words.value;
+		// what may follow the words, in any order
+		while(true){
+			if(peek().kind == token_kind::word && peek().value == "math"){ next(); o.label_math = true; continue; }
+			if(peek().kind == token_kind::word && peek().value == "always"){ next(); o.label_always = true; continue; }
+			if(peek().kind == token_kind::time){
+				o.label_start = time("");
+				const token& dash = next();
+				if(dash.kind != token_kind::dash) fail(dash, "expected '-' between the label's start and end times, like 2s-8s");
+				o.label_end = time("for when the label goes away, like 8s");
+				continue;
+			}
+			break;
+		}
+		if(o.label_math){
+			math_parse_result check = parse_math(o.label);
+			if(!check.error.empty()){
+				token at = words;
+				at.column = words.column + check.column;
+				fail(at, "in the label's formula: " + check.error);
+			}
+		}
 		return;
 	}
 	if(first.value == "fades_in" || first.value == "fades_out"){

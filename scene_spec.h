@@ -133,6 +133,10 @@ struct object_spec{
 	std::vector<motion> motions;   // empty = it stands still
 	std::vector<fade_step> fades;  // fading in or out (docs/24)
 	std::string label;             // words shown next to it (docs/28); empty = none
+	bool label_math = false;       // the label is a formula (docs/30)
+	bool label_always = false;     // never hidden: placed first, even if crowded
+	float label_start = 0.0f;      // shown from start to end; end < 0 = always
+	float label_end = -1.0f;
 
 	// Each of these adds a relation and returns the object itself, so they
 	// can be chained:  spec.add(...).near("cube").above("table");
@@ -203,7 +207,7 @@ public:
 
 	object_spec& add(const std::string& name,const std::string& mesh_file,px::Pixel color,
 	                 size_word size = size_word::normal,int importance = 1){
-		objects.push_back(object_spec{name, mesh_file, color, size, importance, {}, {}, {}, ""});
+		objects.push_back(object_spec{name, mesh_file, color, size, importance, {}, {}, {}, "", false, false, 0.0f, -1.0f});
 		return objects.back();
 	}
 

@@ -40,6 +40,7 @@ struct label_request{
 	point2 anchor;            // the object's center on screen
 	float radius;             // the object's circle on screen
 	bool visible = true;      // in front of the camera and in the picture
+	bool always = false;      // never hidden: placed first, and shown even if crowded
 };
 
 struct placed_label{
@@ -80,6 +81,8 @@ public:
 
 private:
 	bool free_at(const box2& b,size_t self,const std::vector<label_request>& requests,
+	             const std::vector<placed_label>& placed)const;
+	int crowding(const box2& b,size_t self,const std::vector<label_request>& requests,
 	             const std::vector<placed_label>& placed)const;
 
 	int width, height;

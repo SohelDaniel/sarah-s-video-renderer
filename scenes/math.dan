@@ -1,10 +1,13 @@
-# Math (docs/30): formulas, shown under the title, each for its own time.
+# Math (docs/30): formulas under the title, each for its own time, and
+# labels that are formulas too. m_1 and m_2 are always on (docs/28); the
+# "orbit" label only shows from 5 s to 15 s, fading in and out.
 
 scene "math"
 title "Gravity"
 math "F = G\frac{m_1 m_2}{r^2}" 0s-10s
 math "a^2 + b^2 = c^2,  \sqrt{x_1^2 + x_2^2}" 10s-20s
 
-sun    = sphere big gold important label "m_1"
-planet = octahedron red orbits sun 1 turn 0s-20s label "m_2"
+sun    = sphere big gold important label math "m_1" always
+planet = octahedron red orbits sun 1 turn 0s-20s label math "m_2" always
+moon   = tetrahedron small white orbits planet 2 turns 0s-20s label "orbit" 5s-15s
 arrow sun planet gold

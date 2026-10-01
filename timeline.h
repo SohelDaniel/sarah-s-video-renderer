@@ -92,6 +92,18 @@ inline float steepest(rate r){
 	return most;
 }
 
+// How visible something shown from `start` to `end` is at time t (docs/28):
+// 0 outside, 1 inside, and a quick fade over `fade` seconds at each end so
+// words don't pop. No fade-in if it starts at 0 (it's there from the
+// start), no fade-out if end < 0 (it never goes away).
+//   appear(2, 8, 2.15) = 0.5       appear(2, 8, 5) = 1       appear(2, 8, 9) = 0
+inline float appear(float start,float end,float t,float fade = 0.3f){
+	if(t < start || (end >= 0.0f && t > end)) return 0.0f;
+	float in  = start > 0.0f ? std::clamp((t - start) / fade, 0.0f, 1.0f) : 1.0f;
+	float out = end >= 0.0f ? std::clamp((end - t) / fade, 0.0f, 1.0f) : 1.0f;
+	return std::min(in, out);
+}
+
 // A stretch of time in seconds, e.g. from second 3 to second 6.
 struct time_span{
 	float start = 0.0f;

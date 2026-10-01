@@ -64,6 +64,24 @@ bool label_layout::free_at(const box2& b,size_t self,const std::vector<label_req
 	return true;
 }
 
+// How many things a box overlaps, and whether it leaves the picture (that
+// counts as 2, so labels stay on screen if they possibly can).
+int label_layout::crowding(const box2& b,size_t self,const std::vector<label_request>& requests,
+                           const std::vector<placed_label>& placed)const{
+	int count = 0;
+	if(b.x0 < 0 || b.y0 < 0 || b.x1 > width || b.y1 > height) count += 2;
+	for(size_t j = 0;j<placed.size();j++){
+		if(j != self && placed[j].shown && overlap(b, placed[j].where)) count++;
+	}
+	for(size_t j = 0;j<requests.size();j++){
+		if(j == self || !requests[j].visible) continue;
+		const label_request& o = requests[j];
+		box2 dot{o.anchor.x - o.radius, o.anchor.x + o.radius, o.anchor.y - o.radius, o.anchor.y + o.radius};
+		if(overlap(b, dot)) count++;
+	}
+	return count;
+}
+
 const std::vector<placed_label>& label_layout::place(const std::vector<label_request>& requests){
 	size_t n = requests.size();
 	previous = current;
@@ -81,7 +99,11 @@ const std::vector<placed_label>& label_layout::place(const std::vector<label_req
 	}
 	std::vector<size_t> order(n);
 	std::iota(order.begin(), order.end(), 0);
-	std::stable_sort(order.begin(), order.end(), [&](size_t a,size_t b){ return priority[a] > priority[b]; });
+	// always-on labels first (docs/28), then by priority
+	std::stable_sort(order.begin(), order.end(), [&](size_t a,size_t b){
+		if(requests[a].always != requests[b].always) return requests[a].always;
+		return priority[a] > priority[b];
+	});
 
 	for(size_t i : order){
 		const label_request& r = requests[i];
@@ -102,6 +124,16 @@ const std::vector<placed_label>& label_layout::place(const std::vector<label_req
 				break;
 			}
 			if(current[i].shown) break;
+		}
+		if(!current[i].shown && r.always){
+			// an always-on label is never hidden: take the side (next to the
+			// object) that overlaps the fewest things
+			int best = -1, least = 1 << 30;
+			for(int side : sides){
+				int c = crowding(candidate(r, side, gap), i, requests, current);
+				if(c < least){ least = c; best = side; }
+			}
+			current[i] = {true, candidate(r, best, gap), best, false};
 		}
 		if(!current[i].shown) continue;                     // nowhere to go: hidden this frame
 

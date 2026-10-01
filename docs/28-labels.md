@@ -158,6 +158,42 @@ labels) it's **26 side changes with, 50 without**. The 26 left are real
 moves: a planet swinging round to the other side of the sun has to move its
 label.
 
+## Timed and always-on labels
+
+A label can say **when** it shows, and that it must **never** be hidden:
+
+```
+moon   = tetrahedron small white orbits planet 2 turns 0s-20s label "orbit" 5s-15s
+sun    = sphere big gold important label math "m_1" always
+```
+
+**Timed.** A label (like a title or a formula) shows only during its range,
+and fades in and out over 0.3 s at the ends instead of popping
+(`appear` in `timeline.h`):
+
+```
+appear(start, end, t) = min( (t − start) / 0.3,  (end − t) / 0.3 ),   clamped to 0..1
+appear(2, 8, 2.15) = 0.15 / 0.3 = 0.5       halfway through the fade-in
+appear(2, 8, 5)    = 1                      fully there
+appear(2, 8, 8.5)  = 0                      gone
+```
+
+A range starting at 0 doesn't fade in: it's there from the first frame. The
+fade multiplies the text's alpha (24), and its shadow fades with it.
+
+**Always on.** Normally a label with no free spot is hidden that frame (step
+5). An `always` label is placed **first**, before the priority order, and if
+nothing is free it still goes **next to its object**, on the side that
+overlaps the fewest things. (Leaving the picture counts double, so it stays on
+screen if it possibly can.) With hysteresis it keeps that side, so it stays
+steadily beside the object.
+
+The test takes the crowd from below, finds the one label that had no room,
+marks it `always`, and checks it's now shown.
+
+**Formulas as labels.** `label math "m_1"` makes the label a formula (30):
+its box's width, and height plus depth, are the label's size for the layout.
+
 ## Tests
 
 ```
@@ -170,6 +206,11 @@ labels:
   PASS  'label "the sun"' is read as the sun's label
   PASS  15 crowded labels: 14 shown, 0 overlapping (0)
   PASS  keeping last frame's side means fewer flips: 0 with, 35 without
+  PASS  a label shown 2s-8s: hidden at 1.9 s, there at 5 s, gone at 8.5 s
+  PASS  halfway through its 0.3 s fade-in (2.15 s) and fade-out (7.85 s) it's half visible
+  PASS  a label with no time range is simply always there, from the first frame
+  PASS  'label math "m_1" 2s-8s always' is read as a formula, shown 2 s to 8 s, never hidden
+  PASS  the label that had no room is shown once it's marked always (label 6)
 ```
 
 In the crowd test, 15 labels are packed around points close together: 14

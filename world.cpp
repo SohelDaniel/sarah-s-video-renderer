@@ -18,7 +18,15 @@ std::vector<float> world::load_meshes(const scene_spec& spec){
 
 world::world(const scene_spec& spec,layout::method still_how,motion_plan::method moving_how)
 	: solved(spec, load_meshes(spec), still_how, moving_how), placer(cam.width, cam.height){
-	for(const object_spec& o : spec.objects) labels.push_back(o.label);
+	for(const object_spec& o : spec.objects){
+		world_label l{o.label, o.label_math, o.label_always, o.label_start, o.label_end, {}};
+		if(l.math && !l.text.empty()){
+			math_parse_result parsed = parse_math(l.text);
+			if(parsed.tree && fonts::serif() && fonts::italic()) l.formula = layout_math(*parsed.tree, 20.0f);
+			else l.math = false;
+		}
+		labels.push_back(l);
+	}
 	objects.reserve(spec.objects.size());
 	for(size_t i = 0;i<spec.objects.size();i++){
 		const object_spec& o = spec.objects[i];
@@ -115,21 +123,23 @@ void world::draw_overlays(render& renderer,float t){
 	// titles, across the top, centered (docs/27, 29); several stack downwards
 	float top = 12.0f;
 	for(const title_spec& s : titles){
-		if(t < s.start || (s.end >= 0.0f && t > s.end)) continue;
+		float seen = appear(s.start, s.end, t);
+		if(seen <= 0.0f) continue;
 		// as big as fits: 30 pixels, or smaller if it would run off the sides
 		float size = 30.0f;
 		float room = float(cam.width - 32);
 		float w = render::text_width(s.text, size);
 		if(w > room) size *= room / w;               // text width grows in step with size
 		float x = (cam.width - render::text_width(s.text, size)) / 2.0f;
-		renderer.draw_text(x, top, s.text, size, px::Pixel(240, 240, 245));
+		renderer.draw_text(x, top, s.text, size, px::Pixel(240, 240, 245, uint8_t(255 * seen)));
 		top += render::text_height(size) + 6.0f;
 	}
 	// formulas under the titles, centered, each during its own time range
 	for(const world_math& m : maths){
-		if(t < m.when.start || (m.when.end >= 0.0f && t > m.when.end)) continue;
+		float seen = appear(m.when.start, m.when.end, t);
+		if(seen <= 0.0f) continue;
 		float x = (cam.width - m.formula.width) / 2.0f;
-		renderer.draw_math(x, top + 4.0f, m.formula, px::Pixel(240, 240, 245));
+		renderer.draw_math(x, top + 4.0f, m.formula, px::Pixel(240, 240, 245), seen);
 		top += m.formula.height + m.formula.depth + 12.0f;
 	}
 
@@ -152,17 +162,24 @@ void world::draw_overlays(render& renderer,float t){
 	const float label_size = 17.0f;
 	std::vector<label_request> requests;
 	std::vector<size_t> owner;
+	std::vector<float> seen_amount;
 	for(size_t i = 0;i<objects.size();i++){
-		if(labels[i].empty()) continue;
-		label_request r{render::text_width(labels[i], label_size), render::text_height(label_size), {0, 0}, 0, false};
+		const world_label& l = labels[i];
+		if(l.text.empty()) continue;
+		float w = l.math ? l.formula.width : render::text_width(l.text, label_size);
+		float h = l.math ? l.formula.height + l.formula.depth : render::text_height(label_size);
+		label_request r{w, h, {0, 0}, 0, false, l.always};
+		float seen = appear(l.start, l.end, t);
 		float x, y, radius;
-		if(objects[i].opacity() > 0.05f && renderer.where_on_screen(objects[i].get_position(), objects[i].bounding_radius(), x, y, radius)){
+		if(seen > 0.0f && objects[i].opacity() > 0.05f
+		   && renderer.where_on_screen(objects[i].get_position(), objects[i].bounding_radius(), x, y, radius)){
 			r.anchor = {x, y};
 			r.radius = radius;
 			r.visible = x >= 0 && y >= 0 && x <= cam.width && y <= cam.height;
 		}
 		requests.push_back(r);
 		owner.push_back(i);
+		seen_amount.push_back(seen);
 	}
 	if(requests.empty()) return;
 	const std::vector<placed_label>& placed = placer.place(requests);
@@ -177,10 +194,12 @@ void world::draw_overlays(render& renderer,float t){
 			if(len > 1.0f){
 				float sx = requests[k].anchor.x + dx / len * requests[k].radius;
 				float sy = requests[k].anchor.y + dy / len * requests[k].radius;
-				renderer.draw_screen_line(sx, sy, c.x, c.y, 1.0f, px::Pixel(200, 200, 210, 200));
+				renderer.draw_screen_line(sx, sy, c.x, c.y, 1.0f, px::Pixel(200, 200, 210, uint8_t(200 * seen_amount[k])));
 			}
 		}
-		renderer.draw_text(b.x0, b.y0, labels[owner[k]], label_size, px::Pixel(240, 240, 245));
+		const world_label& l = labels[owner[k]];
+		if(l.math) renderer.draw_math(b.x0, b.y0, l.formula, px::Pixel(240, 240, 245), seen_amount[k]);
+		else       renderer.draw_text(b.x0, b.y0, l.text, label_size, px::Pixel(240, 240, 245, uint8_t(255 * seen_amount[k])));
 	}
 }
 

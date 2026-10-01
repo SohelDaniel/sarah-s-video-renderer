@@ -254,6 +254,27 @@ static void test_labels(){
 	}
 	check(overlaps == 0, "15 crowded labels: " + std::to_string(shown) + " shown, 0 overlapping (" + std::to_string(overlaps) + ")");
 
+	// timed words fade in and out over 0.3 s (docs/28)
+	check(appear(2, 8, 1.9f) == 0.0f && appear(2, 8, 5) == 1.0f && appear(2, 8, 8.5f) == 0.0f,
+	      "a label shown 2s-8s: hidden at 1.9 s, there at 5 s, gone at 8.5 s");
+	check(std::fabs(appear(2, 8, 2.15f) - 0.5f) < 1e-5f && std::fabs(appear(2, 8, 7.85f) - 0.5f) < 1e-5f,
+	      "halfway through its 0.3 s fade-in (2.15 s) and fade-out (7.85 s) it's half visible");
+	check(appear(0, -1, 0) == 1.0f, "a label with no time range is simply always there, from the first frame");
+
+	parse_result opts = parse_scene("sun = sphere label math \"m_1\" 2s-8s always\n");
+	const object_spec& sun = opts.spec.objects[0];
+	check(opts.ok() && sun.label_math && sun.label_always && sun.label_start == 2.0f && sun.label_end == 8.0f,
+	      "'label math \"m_1\" 2s-8s always' is read as a formula, shown 2 s to 8 s, never hidden");
+
+	// the crowd again: the one label that was hidden, marked always-on, is shown
+	size_t hidden = 0;
+	for(size_t i = 0;i<out.size();i++) if(!out[i].shown) hidden = i;
+	label_layout crowd2(640, 480);
+	std::vector<label_request> pinned = many;
+	pinned[hidden].always = true;
+	const std::vector<placed_label>& again = crowd2.place(pinned);
+	check(again[hidden].shown, "the label that had no room is shown once it's marked always (label " + std::to_string(hidden) + ")");
+
 	// flicker: B's object jitters back and forth (30 pixels) just right of
 	// A's, for 120 frames; count how often the labels switch side
 	auto flips = [](bool keep){
@@ -386,7 +407,12 @@ static bool same_spec(const scene_spec& a,const scene_spec& b,std::string& why){
 	if(a.objects.size() != b.objects.size()){ why = "different number of objects"; return false; }
 	if(a.arrows.size() != b.arrows.size()){ why = "different number of arrows"; return false; }
 	if(a.titles.size() != b.titles.size()){ why = "different number of titles"; return false; }
-	for(size_t i = 0;i<a.objects.size();i++) if(a.objects[i].label != b.objects[i].label){ why = "labels differ"; return false; }
+	for(size_t i = 0;i<a.objects.size();i++){
+		const object_spec& x = a.objects[i];
+		const object_spec& y = b.objects[i];
+		if(x.label != y.label || x.label_math != y.label_math || x.label_always != y.label_always
+		   || x.label_start != y.label_start || x.label_end != y.label_end){ why = "labels differ"; return false; }
+	}
 	if(a.view != b.view){ why = "different view"; return false; }
 	for(size_t i = 0;i<a.objects.size();i++){
 		const object_spec& x = a.objects[i];

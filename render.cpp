@@ -418,7 +418,7 @@ void render::finish(){
 			paint_text(t, 0, 0, t.color);
 		}else{
 			float offset = std::max(1.0f, t.size / 16.0f);
-			paint_outline_text(t, offset, offset, px::Pixel(0, 0, 0, 170));
+			paint_outline_text(t, offset, offset, px::Pixel(0, 0, 0, uint8_t(170 * t.color.a / 255)));
 			paint_outline_text(t, 0, 0, t.color);
 		}
 	}

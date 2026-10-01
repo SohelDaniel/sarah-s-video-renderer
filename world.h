@@ -2,6 +2,7 @@
 #include "camera.h"
 #include "frame_source.h"
 #include "label_layout.h"
+#include "math_layout.h"
 #include "mesh.h"
 #include "object.h"
 #include "scene_spec.h"
@@ -60,7 +61,13 @@ private:
 		math_box formula;
 	};
 	std::vector<world_math> maths;
-	std::vector<std::string> labels;      // labels[i] = object i's label ("" = none)
+	struct world_label{
+		std::string text;                 // "" = no label
+		bool math = false, always = false;
+		float start = 0.0f, end = -1.0f;
+		math_box formula;                 // if math: laid out once
+	};
+	std::vector<world_label> labels;      // labels[i] = object i's label
 	label_layout placer;
 	std::vector<std::string> arrow_errors;
 };

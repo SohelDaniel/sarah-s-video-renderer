@@ -161,6 +161,13 @@ drawn last, on the finished picture.
 Each formula is **laid out once**, when the scene is built, and only drawn
 every frame.
 
+### Formulas as labels
+
+`label math "m_1" always` (28): the label's size for the layout is the
+formula's box, so m₁ and m₂ above sit next to their objects like any label,
+and with `always` they're never hidden. Formulas fade in and out at the ends
+of their time range like titles.
+
 ## 5. Tests
 
 ```
