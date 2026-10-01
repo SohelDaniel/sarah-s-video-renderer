@@ -320,9 +320,8 @@ void layout::set_camera(vec3 new_eye,vec3 new_target){
 	target = new_target;
 }
 
-void layout::set_lens(float new_fov_y,float new_aspect){
-	fov_y = new_fov_y;
-	aspect = new_aspect;
+void layout::set_aspect(float width_over_height){
+	aspect = width_over_height;
 }
 
 vec3 layout::camera_eye()const{

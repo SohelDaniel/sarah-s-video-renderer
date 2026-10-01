@@ -18,6 +18,7 @@
 // Anti-aliasing (docs/25): --aa anywhere on the command line draws every
 // picture 2x2 times bigger and averages it down.
 static int aa_samples = 1;
+static camera picture_look;   // --hd: 1920x1080 and no circles (docs/34)
 // --video out.mp4: write a video instead of opening a window (docs/25)
 static std::string video_path;
 
@@ -328,6 +329,11 @@ static std::vector<char*> take_options(int argc,char** argv){
 	for(int k = 0;k<argc;k++){
 		std::string a = argv[k];
 		if(a == "--aa") aa_samples = 2;
+		else if(a == "--hd"){
+			picture_look.width = 1920;
+			picture_look.height = 1080;
+			picture_look.circles = false;
+		}
 		else if(a == "--video" && k + 1 < argc) video_path = argv[++k];
 		else rest.push_back(argv[k]);
 	}
@@ -393,7 +399,7 @@ int main(int raw_argc,char** raw_argv){
 		// a .dan file (docs/21). Played live: saving the file again reloads
 		// it, and every load writes <file>.report for the AI (docs/22).
 		if(which.size() > 4 && which.substr(which.size() - 4) == ".dan"){
-			live_scene live(which, motion_step(argc > 2 ? argv[2] : "framed"));
+			live_scene live(which, motion_step(argc > 2 ? argv[2] : "framed"), picture_look);
 			std::cout << live.last_report();
 			std::string picture = argc > 3 ? argv[3] : "";
 			if(!picture.empty()){

@@ -36,8 +36,10 @@ public:
 	// Where the camera will look from. Only used to judge what's hidden
 	// behind what on screen (the refinement tries to fix that).
 	void set_camera(vec3 eye,vec3 target);
-	// The lens the camera will use, for the automatic framing.
-	void set_lens(float fov_y,float aspect);
+	// The picture's width / height (4:3 by default; 16:9 for --hd, docs/34).
+	// Call before solve().
+	void set_aspect(float width_over_height);
+	float picture_aspect()const{ return aspect; }
 	vec3 camera_eye()const;
 	vec3 camera_target()const;
 	// Is a sphere at p with radius r completely inside the picture (docs/15)?

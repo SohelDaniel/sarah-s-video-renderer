@@ -16,13 +16,24 @@ std::vector<float> world::load_meshes(const scene_spec& spec){
 	return radii;
 }
 
-world::world(const scene_spec& spec,layout::method still_how,motion_plan::method moving_how)
-	: solved(spec, load_meshes(spec), still_how, moving_how), placer(cam.width, cam.height){
+// A camera making pictures of this size.
+static camera sized(int width,int height){
+	camera c;
+	c.width = width;
+	c.height = height;
+	return c;
+}
+
+world::world(const scene_spec& spec,layout::method still_how,motion_plan::method moving_how,int width,int height)
+	: cam(sized(width, height)),
+	  solved(spec, load_meshes(spec), still_how, moving_how, float(width) / float(height)),
+	  placer(width, height), ui(float(height) / 480.0f){
+	placer.scale = ui;
 	for(const object_spec& o : spec.objects){
 		world_label l{o.label, o.label_math, o.label_always, o.label_start, o.label_end, {}};
 		if(l.math && !l.text.empty()){
 			math_parse_result parsed = parse_math(l.text);
-			if(parsed.tree && fonts::serif() && fonts::italic()) l.formula = layout_math(*parsed.tree, 20.0f);
+			if(parsed.tree && fonts::serif() && fonts::italic()) l.formula = layout_math(*parsed.tree, 20.0f * ui);
 			else l.math = false;
 		}
 		labels.push_back(l);
@@ -97,7 +108,7 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 	// formulas are laid out once (docs/30); the parser already checked them
 	for(const title_spec& m : spec.maths){
 		math_parse_result parsed = parse_math(m.text);
-		if(parsed.tree && fonts::serif() && fonts::italic()) maths.push_back({m, layout_math(*parsed.tree, 30.0f)});
+		if(parsed.tree && fonts::serif() && fonts::italic()) maths.push_back({m, layout_math(*parsed.tree, 30.0f * ui)});
 	}
 
 	// arrows (docs/26): look the names up once
@@ -122,26 +133,26 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 // bounding radius (plus a little gap), so it touches neither.
 void world::draw_overlays(render& renderer,float t){
 	// titles, across the top, centered (docs/27, 29); several stack downwards
-	float top = 12.0f;
+	float top = 12.0f * ui;
 	for(const title_spec& s : titles){
 		float seen = appear(s.start, s.end, t);
 		if(seen <= 0.0f) continue;
 		// as big as fits: 30 pixels, or smaller if it would run off the sides
-		float size = 30.0f;
-		float room = float(cam.width - 32);
+		float size = 30.0f * ui;
+		float room = float(cam.width) - 32.0f * ui;
 		float w = render::text_width(s.text, size);
 		if(w > room) size *= room / w;               // text width grows in step with size
 		float x = (cam.width - render::text_width(s.text, size)) / 2.0f;
 		renderer.draw_text(x, top, s.text, size, px::Pixel(240, 240, 245, uint8_t(255 * seen)));
-		top += render::text_height(size) + 6.0f;
+		top += render::text_height(size) + 6.0f * ui;
 	}
 	// formulas under the titles, centered, each during its own time range
 	for(const world_math& m : maths){
 		float seen = appear(m.when.start, m.when.end, t);
 		if(seen <= 0.0f) continue;
 		float x = (cam.width - m.formula.width) / 2.0f;
-		renderer.draw_math(x, top + 4.0f, m.formula, px::Pixel(240, 240, 245), seen);
-		top += m.formula.height + m.formula.depth + 12.0f;
+		renderer.draw_math(x, top + 4.0f * ui, m.formula, px::Pixel(240, 240, 245), seen);
+		top += m.formula.height + m.formula.depth + 12.0f * ui;
 	}
 
 	for(const world_arrow& a : arrows){
@@ -160,7 +171,7 @@ void world::draw_overlays(render& renderer,float t){
 
 	// labels (docs/28): where each labelled object is on screen, then the
 	// label layout decides where its words go
-	const float label_size = 17.0f;
+	const float label_size = 17.0f * ui;
 	std::vector<label_request> requests;
 	std::vector<size_t> owner;
 	std::vector<float> seen_amount;
@@ -185,7 +196,7 @@ void world::draw_overlays(render& renderer,float t){
 	if(requests.empty()) return;
 	// no label may sit on the titles and formulas (docs/31)
 	placer.keep_out.clear();
-	if(top > 12.0f) placer.keep_out.push_back({0.0f, float(cam.width), 0.0f, top});
+	if(top > 12.0f * ui) placer.keep_out.push_back({0.0f, float(cam.width), 0.0f, top});
 	const std::vector<placed_label>& placed = placer.place(requests);
 	for(size_t k = 0;k<placed.size();k++){
 		if(!placed[k].shown) continue;
@@ -198,7 +209,7 @@ void world::draw_overlays(render& renderer,float t){
 			if(len > 1.0f){
 				float sx = requests[k].anchor.x + dx / len * requests[k].radius;
 				float sy = requests[k].anchor.y + dy / len * requests[k].radius;
-				renderer.draw_screen_line(sx, sy, c.x, c.y, 1.0f, px::Pixel(200, 200, 210, uint8_t(200 * seen_amount[k])));
+				renderer.draw_screen_line(sx, sy, c.x, c.y, ui, px::Pixel(200, 200, 210, uint8_t(200 * seen_amount[k])));
 			}
 		}
 		const world_label& l = labels[owner[k]];

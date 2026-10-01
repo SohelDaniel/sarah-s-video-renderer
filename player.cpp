@@ -25,6 +25,7 @@ void player::play(frame_source& source){
 	window screen("sarah's video player", source.cam().width, source.cam().height);
 	render renderer(source.cam().width, source.cam().height, samples);  // made once, reused every frame
 	renderer.clipping = clipping;
+	renderer.show_circles = source.cam().circles;
 
 	// steady_clock only ever goes forward (unlike the wall clock, which can
 	// jump if the computer changes its time), so it's the one for timing
@@ -117,6 +118,7 @@ void player::record(frame_source& source,const std::string& filename){
 	camera& first = source.cam();
 	int width = first.width, height = first.height;
 	render renderer(width, height, samples);
+	renderer.show_circles = first.circles;
 
 	// ffmpeg reads raw pictures from its input ("-i -"): 4 bytes per pixel,
 	// r g b a, width x height each, and turns them into an H.264 video.
@@ -160,6 +162,7 @@ void player::save_still(frame_source& source,float t,const std::string& filename
 	camera& cam = source.cam();
 	render renderer(cam.width, cam.height, samples);
 	renderer.clipping = clipping;
+	renderer.show_circles = cam.circles;
 	cam.update(t);
 	for(object* o : source.objects()){
 		o->update(t);

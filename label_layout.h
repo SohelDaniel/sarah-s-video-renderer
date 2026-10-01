@@ -79,6 +79,9 @@ public:
 	std::vector<box2> keep_out;
 
 	static constexpr float gap = 3.0f;           // between an object's circle and its label
+	// the gaps above are for a 480-pixel-tall picture; a taller one
+	// multiplies them by this (docs/34)
+	float scale = 1.0f;
 	static constexpr int gradient_steps = 2;     // per frame (step 9: it's already close)
 
 private:

@@ -34,6 +34,12 @@ public:
 	// only remembered here and drawn by finish(), on top of everything:
 	// red if it overlaps another one in this frame, grey if not.
 	void draw_bounds(vec3 center,float radius);
+	bool show_circles = true;          // false: draw_bounds does nothing (docs/34)
+
+	// Sizes on the picture (text, line widths, gaps) are chosen for a
+	// picture 480 pixels tall. A taller one scales them all by this, so a
+	// 1080p frame looks like a sharper 480p frame, not a smaller one (docs/34).
+	float ui_scale()const;
 	// A line between two points in the world, `width` pixels wide, with
 	// smooth edges, hidden behind things that are in front of it (docs/26).
 	// Like see-through things, it's drawn by finish(), after the solid ones.

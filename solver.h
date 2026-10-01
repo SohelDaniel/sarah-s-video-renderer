@@ -14,8 +14,10 @@
 class scene_solver{
 public:
 	// mesh_radii[i] = bounding radius of object i's mesh at size 1
+	// aspect = the picture's width / height (docs/34)
 	scene_solver(const scene_spec& spec,const std::vector<float>& mesh_radii,
-	             layout::method still_how,motion_plan::method moving_how);
+	             layout::method still_how,motion_plan::method moving_how,
+	             float aspect = 640.0f / 480.0f);
 
 	const split_scene& parts()const;
 	const layout& still()const;
@@ -37,7 +39,8 @@ private:
 	std::vector<obstacle> obstacles()const;
 	std::vector<path> make_paths(const scene_spec& spec,const std::vector<float>& mesh_radii)const;
 
-	split_scene split;      // declared first: everything below is built from it
+	float aspect;           // the picture's shape, needed by solve_still
+	split_scene split;      // everything below is built from it
 	layout still_layout;
 	motion_plan planner;
 };

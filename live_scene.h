@@ -21,7 +21,9 @@
 // AI reads to see how its scene turned out.
 class live_scene : public frame_source{
 public:
-	live_scene(const std::string& path,motion_plan::method how);
+	// look = the picture every loaded scene makes: its size, and whether the
+	// bounding circles are drawn (docs/34)
+	live_scene(const std::string& path,motion_plan::method how,const camera& look = camera());
 
 	camera& cam() override;
 	const std::vector<object*>& objects() override;
@@ -46,6 +48,6 @@ private:
 
 	std::unique_ptr<world> current;   // the scene on screen (owned: replaced on reload)
 	std::vector<object*> pointers;
-	camera empty_camera;              // shown until there's a scene
+	camera empty_camera;              // shown until there's a scene; also the size and circles for every scene
 	std::string report;
 };

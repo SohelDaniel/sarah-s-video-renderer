@@ -168,7 +168,7 @@ void render::draw_line(vec3 a,vec3 b,float width,px::Pixel color){
 }
 
 void render::draw_arrow(vec3 a,vec3 b,px::Pixel color){
-	lines.push_back({a, b, 2.5f, color, true});
+	lines.push_back({a, b, 2.5f * ui_scale(), color, true});
 }
 
 float render::line_coverage(float px,float py,float x0,float y0,float x1,float y1,float width){
@@ -212,7 +212,7 @@ void render::rasterize_line(const line& l){
 	if(length < 1.0f) return;
 	float ux = dx / length, uy = dy / length;                // along the line
 	if(l.arrowhead){
-		head = std::min(14.0f * samples, length * 0.5f);     // its length, in pixels
+		head = std::min(14.0f * ui_scale() * samples, length * 0.5f);   // its length, in pixels
 		vec3 base(sb[0] - ux * head, sb[1] - uy * head, sb[2]);
 		left  = vec3(base[0] - uy * head * 0.45f, base[1] + ux * head * 0.45f, sb[2]);
 		right = vec3(base[0] + uy * head * 0.45f, base[1] - ux * head * 0.45f, sb[2]);
@@ -327,7 +327,11 @@ void render::fill(const vec3& v1,const vec3& v2,const vec3& v3,
 }
 
 void render::draw_bounds(vec3 center,float radius){
-	overlay.push_back({center, radius});
+	if(show_circles) overlay.push_back({center, radius});
+}
+
+float render::ui_scale()const{
+	return float(image.Height()) / float(samples) / 480.0f;
 }
 
 void render::finish(){
@@ -431,7 +435,7 @@ void render::finish(){
 	// formulas (docs/30): the same soft shadow, then the glyphs and bars
 	for(const math_item& m : maths){
 		px::Pixel shadow(0, 0, 0, uint8_t(170 * m.color.a / 255));
-		paint_math(m, 1.5f, 1.5f, shadow);
+		paint_math(m, 1.5f * ui_scale(), 1.5f * ui_scale(), shadow);
 		paint_math(m, 0.0f, 0.0f, m.color);
 	}
 	maths.clear();

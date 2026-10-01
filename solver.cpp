@@ -12,8 +12,9 @@ static std::vector<float> still_radii(const split_scene& parts,const std::vector
 }
 
 scene_solver::scene_solver(const scene_spec& spec,const std::vector<float>& mesh_radii,
-                           layout::method still_how,motion_plan::method moving_how)
-	: split(split_motion(spec)),
+                           layout::method still_how,motion_plan::method moving_how,float aspect)
+	: aspect(aspect),
+	  split(split_motion(spec)),
 	  still_layout(split.still, still_radii(split, mesh_radii)),
 	  planner(solve_still(still_how), make_paths(spec, mesh_radii)){
 	planner.solve(moving_how);
@@ -105,7 +106,8 @@ std::vector<obstacle> scene_solver::solve_still(layout::method how){
 	float band = words_band(s);
 	std::vector<float> widths;
 	for(const object_spec& o : s.objects) widths.push_back(estimate_label_width(o));
-	still_layout.set_words(band, widths, 480);
+	still_layout.set_words(band, widths, 480);   // sizes in 480-pixel units: they scale with the picture (docs/34)
+	still_layout.set_aspect(aspect);
 	still_layout.solve(how);
 	return obstacles();
 }

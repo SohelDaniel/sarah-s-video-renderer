@@ -32,6 +32,7 @@ public:
 
 	int width  = 640;      // picture size in pixels
 	int height = 480;
+	bool circles = true;   // draw the bounding circles (a debugging aid; off for --hd, docs/34)
 	std::string folder = "out";  // take() saves to folder/shot_1.png, shot_2.png, ...
 
 	// ---- right away: sets how the camera starts (at second 0) ----

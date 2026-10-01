@@ -118,11 +118,12 @@ const std::vector<placed_label>& label_layout::place(const std::vector<label_req
 		if(hysteresis && previous[i].shown && previous[i].side >= 0) sides.push_back(previous[i].side);
 		for(int s = 0;s<4;s++) if(std::find(sides.begin(), sides.end(), s) == sides.end()) sides.push_back(s);
 
-		for(float distance : {gap, 3.0f * gap + r.height}){
+		float g = gap * scale;
+		for(float distance : {g, 3.0f * g + r.height}){
 			for(int side : sides){
 				box2 b = candidate(r, side, distance);
 				if(!free_at(b, i, requests, current)) continue;
-				current[i] = {true, b, side, distance > gap};
+				current[i] = {true, b, side, distance > g};
 				break;
 			}
 			if(current[i].shown) break;
@@ -132,10 +133,10 @@ const std::vector<placed_label>& label_layout::place(const std::vector<label_req
 			// object) that overlaps the fewest things
 			int best = -1, least = 1 << 30;
 			for(int side : sides){
-				int c = crowding(candidate(r, side, gap), i, requests, current);
+				int c = crowding(candidate(r, side, g), i, requests, current);
 				if(c < least){ least = c; best = side; }
 			}
-			current[i] = {true, candidate(r, best, gap), best, false};
+			current[i] = {true, candidate(r, best, g), best, false};
 		}
 		if(!current[i].shown) continue;                     // nowhere to go: hidden this frame
 
@@ -160,7 +161,7 @@ const std::vector<placed_label>& label_layout::place(const std::vector<label_req
 				if(j == i || !requests[j].visible) continue;
 				float dx = p.x - requests[j].anchor.x, dy = p.y - requests[j].anchor.y;
 				float d = std::sqrt(dx * dx + dy * dy);
-				if(d < best){ best = d; nearest = requests[j].anchor; reach = requests[j].radius + 10.0f; }
+				if(d < best){ best = d; nearest = requests[j].anchor; reach = requests[j].radius + 10.0f * scale; }
 			}
 			p = gradient_step(p, s, nearest, best < 1e9f ? reach : 0.0f);
 		}

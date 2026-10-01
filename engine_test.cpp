@@ -521,6 +521,39 @@ static void test_live_reload(){
 	std::filesystem::remove(live.report_path());
 }
 
+// Any picture size (docs/34): sizes on the picture scale with its height,
+// and the solver frames for the picture's shape.
+static void test_hd(){
+	std::printf("\nany picture size:\n");
+	render small(640, 480), big(1920, 1080, 2);
+	check(small.ui_scale() == 1.0f && big.ui_scale() == 2.25f,
+	      "sizes scale with the height: 1 at 480, 2.25 at 1080 (a 30 px title becomes 67.5 px), samples don't count");
+
+	scene_spec spec = parse_scene_file("scenes/showcase.dan").spec;
+	world hd(spec, layout::method::framed, motion_plan::method::framed, 1920, 1080);
+	world sd(spec, layout::method::framed, motion_plan::method::framed);
+	check(hd.cam.width == 1920 && hd.cam.height == 1080 && sd.cam.width == 640 && sd.cam.height == 480,
+	      "a world made for 1920x1080 has a camera of that size; the default is still 640x480");
+
+	std::vector<float> radii;
+	for(const object_spec& o : spec.objects) radii.push_back(mesh(o.mesh_file).bounding_radius());
+	scene_solver wide(spec, radii, layout::method::framed, motion_plan::method::framed, 16.0f / 9.0f);
+	scene_solver narrow(spec, radii, layout::method::framed, motion_plan::method::framed);
+	check(std::fabs(wide.still().picture_aspect() - 16.0f / 9.0f) < 1e-6f
+	      && std::fabs(narrow.still().picture_aspect() - 4.0f / 3.0f) < 1e-6f,
+	      "the solver frames for the picture's shape: 16:9 for HD, 4:3 by default");
+	layout::metrics m = wide.still().measure();
+	check(m.off_screen == 0 && m.hidden == 0 && m.labels_without_room == 0 && wide.moving_off_screen() == 0,
+	      "the showcase framed for 16:9: everything in the picture, nothing hidden, every label has room");
+
+	label_layout placer(1920, 1080);
+	placer.scale = 2.25f;
+	label_request r{40, 10, {500, 500}, 2, true, false};
+	const std::vector<placed_label>& placed = placer.place({r});
+	check(placed[0].shown && std::fabs(placed[0].where.x0 - (500 + 2 + 3 * 2.25f)) < 1e-4f,
+	      "label gaps scale too: 3 px becomes 6.75 px at 1080");
+}
+
 int main(){
 	test_clipping();
 	test_fly_camera();
@@ -534,6 +567,7 @@ int main(){
 	test_looping();
 	test_scene_language();
 	test_live_reload();
+	test_hd();
 	std::printf("\n%s: %d check%s failed\n", failures == 0 ? "ALL PASSED" : "FAILED", failures, failures == 1 ? "" : "s");
 	return failures == 0 ? 0 : 1;
 }

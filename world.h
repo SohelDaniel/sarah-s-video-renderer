@@ -22,8 +22,10 @@
 // pointing at them.
 class world{
 public:
+	// width x height: the picture's size in pixels (docs/34)
 	world(const scene_spec& spec,layout::method still_how,
-	      motion_plan::method moving_how = motion_plan::method::naive);
+	      motion_plan::method moving_how = motion_plan::method::naive,
+	      int width = 640,int height = 480);
 
 	camera cam;
 
@@ -70,6 +72,9 @@ private:
 	std::vector<world_label> labels;      // labels[i] = object i's label
 	label_layout placer;
 	std::vector<std::string> arrow_errors;
+	// every size on the picture (text, gaps) is chosen for 480 pixels tall,
+	// and multiplied by this: height / 480 (docs/34)
+	float ui = 1.0f;
 };
 
 // A world as a frame source, for the player (docs/22).

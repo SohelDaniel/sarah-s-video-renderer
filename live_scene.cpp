@@ -6,8 +6,8 @@
 #include <sstream>
 
 
-live_scene::live_scene(const std::string& path,motion_plan::method how)
-	: path(path), how(how), last_check(std::chrono::steady_clock::now()){
+live_scene::live_scene(const std::string& path,motion_plan::method how,const camera& look)
+	: path(path), how(how), last_check(std::chrono::steady_clock::now()), empty_camera(look){
 	check_now();
 }
 
@@ -73,7 +73,9 @@ bool live_scene::load(){
 	bool swapped = false;
 	if(parsed.ok()){
 		try{
-			auto next = std::make_unique<world>(parsed.spec, layout::method::framed, how);
+			auto next = std::make_unique<world>(parsed.spec, layout::method::framed, how,
+			                                    empty_camera.width, empty_camera.height);
+			next->cam.circles = empty_camera.circles;
 			out << next->report();
 			// still objects slowly spin in place, like the other solved scenes
 			for(object* o : next->still_objects()) o->rotate(0.6f + 6.283f, 0.3f, 0.0f, 20.0f);
