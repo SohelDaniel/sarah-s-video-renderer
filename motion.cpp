@@ -528,33 +528,25 @@ void motion_plan::plan_flights(){
 	}
 }
 
+// Spheres the camera has to fit so every moving object stays in the picture
+// for the whole video (docs/16, docs/33). Instead of holding every place a
+// thing COULD be (a fat ring round a whole orbit), follow where it really
+// is: a sphere at its position every dt seconds. Between two samples it
+// moves at most speed·dt, so at any moment it's within speed·dt/2 of the
+// nearest sample. Growing each sphere by that covers every moment.
 std::vector<obstacle> motion_plan::bounds()const{
 	std::vector<obstacle> spheres;
+	if(moving.empty()) return spheres;
+	float last = duration();
+	// the collision checks' step (gap/(4·fastest), so the padding is at most
+	// gap/8), but no more than 2000 samples per object
+	float dt = std::max(sample_step(), last / 2000.0f);
 	for(size_t k = 0;k<moving.size();k++){
-		const path& p = moving[k];
-		if(p.kind == motion_kind::orbits){
-			// a moon's circle travels with its planet, and the planet's
-			// spheres already include the moon's reach
-			if(p.around_path >= 0) continue;
-			// 32 spheres around the circle. A point of the circle is never
-			// more than half a step's chord, 2·R·sin(π/64), from the nearest
-			// one, so growing each by that covers the whole ring. One big
-			// sphere would also work, but it's as tall as it is wide, and an
-			// orbit is flat (docs/16).
-			const int n = 32;
-			float cover = reach(k) + 2.0f * p.orbit_radius * std::sin(3.14159265f / (2.0f * n));
-			for(int k = 0;k<n;k++){
-				float angle = two_pi * float(k) / float(n);
-				vec3 point = p.center + vec3(p.orbit_radius * std::cos(angle), 0.0f, -p.orbit_radius * std::sin(angle));
-				spheres.push_back({p.name, point, cover});
-			}
-		}else if(p.kind == motion_kind::flies_past && p.around_path >= 0){
-			continue;   // measured from a mover: inside that mover's reach (docs/32)
-		}else{
-			// fly-by, or the approach of a hit (once stuck, it rides along
-			// inside its target's reach)
-			spheres.push_back({p.name, p.from, p.radius});
-			spheres.push_back({p.name, p.to, p.radius});
+		float pad = 0.5f * speed_of(k) * dt;
+		for(int step = 0;;step++){
+			float t = std::min(step * dt, last);
+			spheres.push_back({moving[k].name, position(k, t), moving[k].radius + pad});
+			if(t >= last) break;
 		}
 	}
 	return spheres;

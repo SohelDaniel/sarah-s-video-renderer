@@ -398,6 +398,11 @@ objects.
 
 ## 8. Step E4: framing the paths
 
+> **Since 33** the camera fits where each moving thing actually **is**,
+> sampled over time, instead of the spheres below. This section is the
+> first version, kept because the reasoning still holds; its numbers are
+> from that version (scene 4 is now framed at 18.95 instead of 19.90).
+
 Step D (14) fits the camera around every **still** object. Now it also has
 to fit every **path**:
 

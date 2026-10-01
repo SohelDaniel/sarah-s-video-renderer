@@ -63,6 +63,7 @@ All the math is built on **vectors and matrices** (01).
 | 30 | [Math](30-math.md) | How does our small TeX lay out a formula? | `math_layout.cpp` |
 | 31 | [Room for words](31-room-for-words.md) | How does the solver leave room for titles and labels? | `layout.cpp`, `solver.cpp` |
 | 32 | [Flying past movers](32-flyby-movers.md) | How does something fly past a thing that is itself moving? | `motion.cpp`, `solver.cpp` |
+| 33 | [Framing by sampling](33-framing-by-sampling.md) | How does the camera fit where moving things really are? | `motion.cpp` |
 | | [Ranges and settings](ranges.md) | What values make sense? | `camera.h`, `object.h` |
 | | [C++ notes](cpp-notes.md) | What does this syntax mean? | everywhere |
 | | [Design](design.md) | Why is the code split up like this? | everywhere |

@@ -2,27 +2,27 @@ layout (framed): 2 objects, 0 overlapping pairs, 0 pairs overlapping on screen
   objects not fully in the picture: 0
   objects (in placement order):
     sun         big     r= 1.40  at (  0.00,   0.00,   0.00)
-    rock        normal  r= 0.80  at (  2.62,   0.00,   0.00)
+    rock        normal  r= 0.80  at (  2.63,   0.00,   0.00)
   relations:
     ok      rock near sun
   1 of 1 relations satisfied
-  camera: from front_above, looking at (0.00, 0.00, 1.54), scene radius 12.28, distance 19.71 (sphere fit: 30.50)
-          eye at (0.00, 6.92, 20.00)
+  camera: from front_above, looking at (0.04, 0.00, 2.73), scene radius 11.31, distance 18.76 (sphere fit: 28.09)
+          eye at (0.04, 6.59, 20.30)
   refinement (energy should go down):
-    step   0   E =   0.0089   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0089)
-    step   1   E =   0.0037   (spring 0.0001, push 0.0000, relations 0.0000, screen 0.0037)
-    step   2   E =   0.0014   (spring 0.0002, push 0.0000, relations 0.0000, screen 0.0012)
-    step  50   E =   0.0005   (spring 0.0004, push 0.0000, relations 0.0000, screen 0.0000)
-    step 100   E =   0.0005   (spring 0.0004, push 0.0000, relations 0.0000, screen 0.0000)
-    step 150   E =   0.0005   (spring 0.0004, push 0.0000, relations 0.0000, screen 0.0000)
-    step 200   E =   0.0005   (spring 0.0004, push 0.0000, relations 0.0000, screen 0.0000)
-    step 250   E =   0.0005   (spring 0.0004, push 0.0000, relations 0.0000, screen 0.0000)
-    step 300   E =   0.0005   (spring 0.0004, push 0.0000, relations 0.0000, screen 0.0000)
-    step 350   E =   0.0005   (spring 0.0004, push 0.0000, relations 0.0000, screen 0.0000)
-    step 400   E =   0.0005   (spring 0.0004, push 0.0000, relations 0.0000, screen 0.0000)
-    step 450   E =   0.0005   (spring 0.0004, push 0.0000, relations 0.0000, screen 0.0000)
-    step 500   E =   0.0005   (spring 0.0004, push 0.0000, relations 0.0000, screen 0.0000)
-    steps halved because they went uphill: 164
+    step   0   E =   0.0114   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0114)
+    step   1   E =   0.0049   (spring 0.0001, push 0.0000, relations 0.0000, screen 0.0048)
+    step   2   E =   0.0018   (spring 0.0003, push 0.0000, relations 0.0000, screen 0.0016)
+    step  50   E =   0.0006   (spring 0.0006, push 0.0000, relations 0.0000, screen 0.0000)
+    step 100   E =   0.0006   (spring 0.0006, push 0.0000, relations 0.0000, screen 0.0000)
+    step 150   E =   0.0006   (spring 0.0006, push 0.0000, relations 0.0000, screen 0.0000)
+    step 200   E =   0.0006   (spring 0.0006, push 0.0000, relations 0.0000, screen 0.0000)
+    step 250   E =   0.0006   (spring 0.0006, push 0.0000, relations 0.0000, screen 0.0000)
+    step 300   E =   0.0006   (spring 0.0006, push 0.0000, relations 0.0000, screen 0.0000)
+    step 350   E =   0.0006   (spring 0.0006, push 0.0000, relations 0.0000, screen 0.0000)
+    step 400   E =   0.0006   (spring 0.0006, push 0.0000, relations 0.0000, screen 0.0000)
+    step 450   E =   0.0006   (spring 0.0006, push 0.0000, relations 0.0000, screen 0.0000)
+    step 500   E =   0.0006   (spring 0.0006, push 0.0000, relations 0.0000, screen 0.0000)
+    steps halved because they went uphill: 163
     step   0   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
     step   1   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
     step   2   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
@@ -36,13 +36,13 @@ layout (framed): 2 objects, 0 overlapping pairs, 0 pairs overlapping on screen
     step 400   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
     step 450   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
     step 500   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
-    steps halved because they went uphill: 156
+    steps halved because they went uphill: 160
 motion (framed): 3 moving objects, 0 colliding pairs
-  checked every 0.0279 s (fastest moves 3.5793 per second)
+  checked every 0.0279 s (fastest moves 3.5803 per second)
   paths:
-    planet     orbits sun, 0.00-20.00 s: radius 6.35, 1.00 turns
+    planet     orbits sun, 0.00-20.00 s: radius 6.36, 1.00 turns
     comet      hits planet (which moves), 8.00-12.00 s: from (-5.14, 0.00, 11.73), touching at (-5.14, 0.00, 5.40) at 12.00 s, then sticks
-    meteor     hits rock, 3.00-6.00 s: from (2.62, 0.00, 6.90), touching at (2.62, 0.00, 1.30) at 6.00 s, then sticks
+    meteor     hits rock, 3.00-6.00 s: from (2.63, 0.00, 6.90), touching at (2.63, 0.00, 1.30) at 6.00 s, then sticks
   planned hit: comet touches planet at 12.00 s (gap 0.00) as planned
   planned hit: meteor touches rock at 6.00 s (gap 0.00) as planned
   moving objects that leave the picture at some moment: 0

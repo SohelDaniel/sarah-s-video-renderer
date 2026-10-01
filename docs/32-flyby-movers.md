@@ -147,10 +147,11 @@ the next one tried; if none were clear, the report would say so.
 ## 5. Framing: two passes
 
 The camera has to see everything that moves (16, section 8). Each moving
-thing becomes a few spheres for the framing (`bounds()`): an orbit is 32
-spheres round its circle, a fly-by is its two ends. A fly-by measured from a
-mover adds nothing: it's inside the planet's reach, which the orbit's
-spheres already include.
+thing becomes spheres for the framing (`bounds()`). At first, an orbit was
+32 spheres round its circle, each as big as the planet's whole reach, and a
+fly-by measured from a mover added nothing, being inside that reach. Since
+33 the camera follows where each thing really is over time instead, which
+frames this scene from 29.4 instead of 39.1.
 
 Planning paths needs the still objects' places, and placing the still
 objects needs room for the paths. So when there are paths, the solver

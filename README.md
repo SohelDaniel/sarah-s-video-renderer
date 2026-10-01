@@ -100,7 +100,9 @@ The circles are each object's bounding sphere: red = overlapping something.
   point-to-circle distances (moons included, through a planet's "reach"),
   fly-by lines checked with point-to-segment distances, and time sampling
   that provably can't miss a collision ([docs/16](docs/16-motion-placement.md));
-  fly-bys past things that are themselves moving ([docs/32](docs/32-flyby-movers.md))
+  fly-bys past things that are themselves moving ([docs/32](docs/32-flyby-movers.md));
+  the camera frames where moving things really are over time, with the same
+  can't-miss bound ([docs/33](docs/33-framing-by-sampling.md))
 - **intended collisions** (`hits ... at 12s`): intercepts a moving target
   exactly on time, only that pair may touch, then it sticks
   ([docs/18](docs/18-intended-collisions.md))
@@ -150,6 +152,7 @@ make run SCENE=2      scene 2: a small solar system, 20 s
 ./main scenes/broken.dan    ... or one full of mistakes, to see the error messages
 ./main scenes/labels.dan --aa                 labels, titles, a moon and a comet, with smooth edges
 ./main scenes/math.dan --aa                   formulas, and formulas as labels
+./main scenes/showcase.dan --aa               everything at once
 ./main stress flyby_mover                     a probe flying past a planet that is itself orbiting
 ./main scenes/labels.dan --aa --video out.mp4 the same, as an mp4 (needs ffmpeg)
 ./main clip on|off    standing inside a scene, with or without near-plane clipping

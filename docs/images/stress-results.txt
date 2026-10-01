@@ -50,15 +50,15 @@ view_right     naive       9       36      36     0     0 of 7       1        0 
 motion         naive       6        1       1     0     0 of 1       0        0      0      4        0
                greedy      6        0       0     0     1 of 1       0        0      0      4        0
                refined     6        0       0     0     1 of 1       0        0      0      4        0
-               framed      6        0       0     0     1 of 1       0        0    322      4        0
+               framed      6        0       0     0     1 of 1       0        0      0      4        0
 motion_typos   naive       8       10      10     0     0 of 0       4        0      0      3        0
                greedy      8        0       3     0     0 of 0       4        0      0      3        0
                refined     8        0       0     0     0 of 0       4        0    169      3        0
-               framed      8        0       0     0     0 of 0       4        0    340      3        0
+               framed      8        0       0     0     0 of 0       4        0    314      3        0
 impact         naive       5        1       1     0     0 of 1       0        0      0      3        2
                greedy      5        0       0     0     1 of 1       0        0      0      3        0
                refined     5        0       0     0     1 of 1       0        0      0      3        0
-               framed      5        0       0     0     1 of 1       0        0    320      3        0
+               framed      5        0       0     0     1 of 1       0        0    323      3        0
 labelled       naive       9       36      36     0     0 of 8       0        0      0      0        0
                greedy      9        0       8     0     8 of 8       0        0      0      0        0
                refined     9        0       0     3     0 of 8       0        0    178      0        0
@@ -70,7 +70,7 @@ flyby_mover    naive       5        1       1     0     0 of 1       0        0 
 eased          naive       6        1       1     0     0 of 1       0        0      0      4        2
                greedy      6        0       0     0     1 of 1       0        0      0      4        0
                refined     6        0       0     0     1 of 1       0        0      0      4        0
-               framed      6        0       0     0     1 of 1       0        0    160      4        0
+               framed      6        0       0     0     1 of 1       0        0    324      4        0
 
 checks:
   PASS  lazy           every position is a real number (no NaN / infinity)
