@@ -64,6 +64,7 @@ std::vector<path> scene_solver::make_paths(const scene_spec& spec,const std::vec
 		p.turns  = m.turns;
 		p.start  = m.start;
 		p.end    = m.end;
+		p.how    = m.how;
 		// split_motion made sure the other object exists: it either stands
 		// still, or (for an orbit) moves itself
 		for(size_t k = 0;k<split.still.objects.size();k++){

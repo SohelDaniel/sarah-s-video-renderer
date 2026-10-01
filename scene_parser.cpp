@@ -93,6 +93,11 @@ static const std::map<std::string, relation_kind> relation_words = {
 	{"in_front_of", relation_kind::in_front_of}, {"behind", relation_kind::behind},
 };
 
+static const std::map<std::string, rate> rate_words = {
+	{"linear", rate::linear}, {"smooth", rate::smooth}, {"sine", rate::sine},
+	{"rush_into", rate::rush_into}, {"rush_from", rate::rush_from}, {"there_and_back", rate::there_and_back},
+};
+
 static const std::map<std::string, view_word> view_words = {
 	{"front", view_word::front}, {"front_above", view_word::front_above},
 	{"left_above", view_word::left_above}, {"right_above", view_word::right_above},
@@ -239,6 +244,7 @@ private:
 	void property(object_spec& o);
 	void phrase(object_spec& o,const token& first);
 	std::string name(const std::string& after);
+	rate optional_rate();
 	float time(const std::string& after);
 	float number(const std::string& after);
 
@@ -384,6 +390,9 @@ void parser::phrase(object_spec& o,const token& first){
 		const token& dash = next();
 		if(dash.kind != token_kind::dash) fail(dash, "expected '-' between the start and end times, like 0s-20s");
 		float end = time("for when the orbit ends, like 20s");
+		if(peek().kind == token_kind::word && rate_words.count(peek().value)){
+			fail(peek(), "orbits always go at a steady speed, so a loop has no jump (leave out '" + peek().value + "')");
+		}
 		o.orbits(other, turns, start, end);
 		return;
 	}
@@ -393,7 +402,7 @@ void parser::phrase(object_spec& o,const token& first){
 		const token& dash = next();
 		if(dash.kind != token_kind::dash) fail(dash, "expected '-' between the start and end times, like 4s-10s");
 		float end = time("for when it ends, like 10s");
-		o.flies_past(other, start, end);
+		o.flies_past(other, start, end, optional_rate());
 		return;
 	}
 	if(first.value == "hits"){
@@ -406,8 +415,9 @@ void parser::phrase(object_spec& o,const token& first){
 			next();
 			approach = when - time("after 'from', like 8s");
 		}
+		rate how = optional_rate();
 		if(peek().kind == token_kind::word && peek().value == "sticks") next();   // sticking is what hits do
-		o.hits(other, when, approach);
+		o.hits(other, when, approach, how);
 		return;
 	}
 
@@ -435,6 +445,18 @@ void parser::fact(){
 		if(t.kind != token_kind::word) fail(t, "unexpected " + describe(t));
 		phrase(*o, t);
 	}
+}
+
+// an easing word, if there is one (docs/23): linear when there isn't
+rate parser::optional_rate(){
+	if(peek().kind == token_kind::word){
+		auto it = rate_words.find(peek().value);
+		if(it != rate_words.end()){
+			next();
+			return it->second;
+		}
+	}
+	return rate::linear;
 }
 
 std::string parser::name(const std::string& after){

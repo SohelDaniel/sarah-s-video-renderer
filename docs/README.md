@@ -53,6 +53,7 @@ All the math is built on **vectors and matrices** (01).
 | 20 | [Walking around (and looping)](20-controls-and-looping.md) | How do WASD and the mouse work? | `fly_camera.cpp`, `window.cpp`, `player.cpp` |
 | 21 | [The dan language](21-scene-language.md) | How does text become a scene? How are mistakes reported? | `scene_parser.cpp`, `scenes/` |
 | 22 | [Live reload](22-live-reload.md) | How does editing the file update the window? What does the AI read? | `live_scene.cpp`, `frame_source.h` |
+| 23 | [Easing](23-easing.md) | How do things speed up and slow down? | `timeline.h`, `motion.cpp` |
 | | [Ranges and settings](ranges.md) | What values make sense? | `camera.h`, `object.h` |
 | | [C++ notes](cpp-notes.md) | What does this syntax mean? | everywhere |
 | | [Design](design.md) | Why is the code split up like this? | everywhere |

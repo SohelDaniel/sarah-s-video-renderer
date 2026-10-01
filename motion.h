@@ -57,6 +57,7 @@ struct path{
 	int around = -1;          // which still obstacle it moves around / past (or -1)
 	int around_path = -1;     // orbits and hits: which moving object it goes round / hits (or -1)
 	float start = 0.0f, end = 0.0f;
+	rate how = rate::linear;  // fly-bys and hits can ease (docs/23)
 
 	// orbits: a circle in the horizontal plane through `center`
 	vec3 center{0.0f, 0.0f, 0.0f};
@@ -74,7 +75,8 @@ struct path{
 	// (before `start` it waits at the beginning, after `end` it stays at the
 	// end). Fly-bys don't use `center`. motion_plan::position fills it in.
 	vec3 at(float t,const vec3& center)const;
-	// How fast it goes along its own path (world units per second)
+	// The fastest it goes along its own path (world units per second): the
+	// steady speed, times how steep its easing curve gets (docs/23)
 	float speed()const;
 };
 

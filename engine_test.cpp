@@ -139,6 +139,28 @@ static void test_fly_camera(){
 	check(close(a.eye, b.eye, 0.0f) && a.yaw == b.yaw && a.pitch == b.pitch, "the same inputs always give the same camera");
 }
 
+// ---- easing (docs/23) ----
+static void test_easing(){
+	std::printf("easing:\n");
+	bool ends = true;
+	for(rate r : {rate::linear, rate::smooth, rate::sine, rate::rush_into, rate::rush_from}){
+		if(std::fabs(shape(r, 0.0f)) > 1e-6f || std::fabs(shape(r, 1.0f) - 1.0f) > 1e-6f) ends = false;
+	}
+	check(ends, "every curve starts at 0 and ends at 1");
+	check(std::fabs(shape(rate::there_and_back, 1.0f)) < 1e-6f && std::fabs(shape(rate::there_and_back, 0.5f) - 1.0f) < 1e-6f,
+	      "there_and_back is at 1 halfway and back at 0 at the end");
+	check(std::fabs(shape(rate::smooth, 0.5f) - 0.5f) < 1e-6f, "smooth is exactly halfway at t = 0.5");
+	float predicted = 10.0f * 0.25f / (1.0f - 2.0f * sigmoid(-5.0f));
+	check(std::fabs(steepest(rate::smooth) - predicted) < 0.01f,
+	      "smooth's steepest slope matches the formula 10/4 / (1 - 2 sigma(-5)) = " + std::to_string(predicted));
+	check(std::fabs(steepest(rate::sine) - 1.5708f) < 0.01f, "sine's steepest slope is pi/2");
+
+	parse_result p = parse_scene("sun = sphere\ncomet = pyramid flies_past sun 4s-10s smooth\n");
+	check(p.ok() && p.spec.objects[1].motions[0].how == rate::smooth, "'flies_past sun 4s-10s smooth' is read as smooth");
+	parse_result o = parse_scene("sun = sphere\nplanet = cube orbits sun 1 turn 0s-20s smooth\n");
+	check(!o.ok(), "an orbit with a rate is an error (orbits stay steady, so loops have no jump)");
+}
+
 // ---- looping (docs/20) ----
 static void test_looping(){
 	std::printf("looping:\n");
@@ -263,6 +285,7 @@ static void test_live_reload(){
 int main(){
 	test_clipping();
 	test_fly_camera();
+	test_easing();
 	test_looping();
 	test_scene_language();
 	test_live_reload();

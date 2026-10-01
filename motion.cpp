@@ -46,6 +46,9 @@ split_scene split_motion(const scene_spec& spec){
 			parts.errors.push_back(what + ": it can't move around itself (it stands still instead)");
 		}else if(!(m.end > m.start)){
 			parts.errors.push_back(what + ": it ends before it starts (it stands still instead)");
+		}else if(m.kind == motion_kind::hits && m.how == rate::there_and_back){
+			parts.errors.push_back(what + ": there_and_back comes back, so it would never arrive"
+			                       " (it stands still instead)");
 		}else{
 			moves[i] = true;
 			target[i] = other;
@@ -113,6 +116,7 @@ split_scene split_motion(const scene_spec& spec){
 
 vec3 path::at(float t,const vec3& center)const{
 	float f = std::clamp((t - start) / (end - start), 0.0f, 1.0f);
+	if(kind != motion_kind::orbits) f = shape(how, f);   // easing (docs/23)
 	if(kind == motion_kind::orbits){
 		// the same turn as rotate_y (docs/03): x' = x·cos + z·sin, z' = -x·sin + z·cos,
 		// applied to the point (orbit_radius, 0, 0); so object::rotate_around
@@ -126,7 +130,10 @@ vec3 path::at(float t,const vec3& center)const{
 float path::speed()const{
 	float length = kind == motion_kind::orbits ? two_pi * orbit_radius * std::fabs(turns)
 	                                           : distance(from, to);
-	return length / (end - start);
+	// an eased path covers the same distance in the same time, but at its
+	// steepest moment it goes steepest(how) times faster than the average
+	float fastest = kind == motion_kind::orbits ? 1.0f : steepest(how);
+	return fastest * length / (end - start);
 }
 
 motion_plan::motion_plan(const std::vector<obstacle>& still,std::vector<path> moving)
@@ -639,7 +646,7 @@ std::string motion_plan::report()const{
 		std::string center = p.around_path >= 0 ? moving[p.around_path].name + " (which moves)" : still[p.around].name;
 		out << "    " << std::left << std::setw(10) << p.name << std::right << " "
 		    << motion_name(p.kind) << " " << center << ", "
-		    << p.start << "-" << p.end << " s: ";
+		    << p.start << "-" << p.end << " s" << (p.how != rate::linear ? std::string(" ") + rate_name(p.how) : "") << ": ";
 		if(p.kind == motion_kind::orbits){
 			out << "radius " << p.orbit_radius << ", " << p.turns << " turns";
 		}else if(p.kind == motion_kind::hits){

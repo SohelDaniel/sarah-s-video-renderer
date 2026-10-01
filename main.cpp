@@ -26,6 +26,7 @@
 //   ./main 5 framed           things that collide on purpose (docs/18)
 //   ./main clip on|off        standing in a scene, with/without near-plane clipping (docs/19)
 //   ./main walk prefix        pictures of walking around scene 3 with pretend keys (docs/20)
+//   ./main ease x.png         every easing curve as a row of snapshots (docs/23)
 //   ./main scenes/x.dan       a scene written in the dan language (docs/21); edit and
 //                             save the file while it plays and it reloads (docs/22)
 //   ./main scenes/x.dan framed x.png 7   ... saved as a picture at 7 seconds
@@ -198,6 +199,38 @@ void clipping_demo(bool clip,const std::string& picture){
 	else                video.save_still(cam, scene, 0.0f, picture);
 }
 
+// Easing (docs/23), as one picture: each row is a ball going left to right
+// with a different rate, photographed at 11 equal moments (t = 0, 0.1, ..
+// 1). Where the snapshots bunch up it's slow; where they spread out, fast.
+//   rows, top to bottom: linear, smooth, sine, rush_into, rush_from, there_and_back
+void easing_demo(const std::string& picture){
+	mesh sphere("shapes/sphere.obj");
+	const rate rates[6] = {rate::linear, rate::smooth, rate::sine, rate::rush_into, rate::rush_from, rate::there_and_back};
+	const px::Pixel colors[6] = {px::Pixel(200, 200, 210), px::Pixel(80, 160, 230), px::Pixel(120, 200, 90),
+	                             px::Pixel(240, 220, 80), px::Pixel(230, 130, 60), px::Pixel(200, 120, 220)};
+	std::vector<object> balls;
+	balls.reserve(66);
+	for(int row = 0;row<6;row++){
+		for(int k = 0;k<=10;k++){
+			float f = shape(rates[row], k / 10.0f);
+			object ball(sphere, colors[row]);
+			ball.scale(0.28f);
+			ball.move(vec3(-6.0f + 12.0f * f, 3.75f - 1.5f * row, 0.0f));
+			balls.push_back(ball);
+		}
+	}
+	camera cam;
+	cam.move(vec3(0.0f, 0.0f, 13.0f));
+	cam.point_at(vec3(0.0f, 0.0f, 0.0f));
+	cam.update(0.0f);
+	render r(cam.width, cam.height);
+	r.begin(cam);
+	for(const object& b : balls) b.draw(r);
+	r.finish();
+	r.save(picture);
+	std::cout << "wrote " << picture << "\n";
+}
+
 // The free camera (docs/20), driven by pretend key presses instead of a real
 // keyboard, so the docs can show what walking looks like. Start at the
 // solved camera of scene 3; walk forward while going down (W + Shift); then
@@ -292,6 +325,9 @@ int main(int argc,char** argv){
 		else if(which == "3"){
 			solved_scene(lazy_ai_scene(), still_step(argc > 2 ? argv[2] : "framed"), motion_plan::method::naive,
 			             argc > 3 ? argv[3] : "", 0.0f);
+		}
+		else if(which == "ease"){
+			easing_demo(argc > 2 ? argv[2] : "easing.png");
 		}
 		else if(which == "walk"){
 			walk_demo(argc > 2 ? argv[2] : "walk-");

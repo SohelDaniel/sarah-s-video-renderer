@@ -59,6 +59,10 @@ impact         naive       5        1       1     0     0 of 1       0        0 
                greedy      5        0       0     0     1 of 1       0        0      0      3        0
                refined     5        0       0     0     1 of 1       0        0      0      3        0
                framed      5        0       0     0     1 of 1       0        0      0      3        0
+eased          naive       6        1       1     0     0 of 1       0        0      0      4        2
+               greedy      6        0       0     0     1 of 1       0        0      0      4        0
+               refined     6        0       0     0     1 of 1       0        0      0      4        0
+               framed      6        0       0     0     1 of 1       0        0      0      4        0
 
 checks:
   PASS  lazy           every position is a real number (no NaN / infinity)
@@ -196,5 +200,14 @@ checks:
   PASS  impact         planned hits touch exactly on time (2 of 2)
   PASS  impact         moving objects stay in the picture (0 leave it)
   PASS  impact         reports its mistakes (0 of at least 0)
+  PASS  eased          every position is a real number (no NaN / infinity)
+  PASS  eased          solving twice gives exactly the same layout
+  PASS  eased          no overlaps after framing (0)
+  PASS  eased          everything inside the picture (0 outside)
+  PASS  eased          nothing hidden behind something else on screen (0 pairs)
+  PASS  eased          moving objects never collide (0 pairs)
+  PASS  eased          planned hits touch exactly on time (2 of 2)
+  PASS  eased          moving objects stay in the picture (0 leave it)
+  PASS  eased          reports its mistakes (0 of at least 0)
 
 ALL PASSED: 0 checks failed

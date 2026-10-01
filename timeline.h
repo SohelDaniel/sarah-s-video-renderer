@@ -31,10 +31,72 @@ inline float loop_time(float t,float duration){
 	return std::fmod(t, duration);
 }
 
+// ---------------------------------------------------------------------------
+//  Easing (docs/23): how a change speeds up and slows down.
+//
+//  progress f goes from 0 to 1 at a steady pace. A rate reshapes it:
+//  "smooth" starts slowly, speeds up in the middle and settles gently at the
+//  end. Always f(0) = 0; every rate except there_and_back ends at f(1) = 1.
+//  These are Manim's rate functions (manim/utils/rate_functions.py).
+// ---------------------------------------------------------------------------
+enum class rate{ linear, smooth, sine, rush_into, rush_from, there_and_back };
+
+inline const char* rate_name(rate r){
+	switch(r){
+		case rate::linear:         return "linear";
+		case rate::smooth:         return "smooth";
+		case rate::sine:           return "sine";
+		case rate::rush_into:      return "rush_into";
+		case rate::rush_from:      return "rush_from";
+		case rate::there_and_back: return "there_and_back";
+	}
+	return "?";
+}
+
+inline float sigmoid(float x){
+	return 1.0f / (1.0f + std::exp(-x));
+}
+
+// Manim's smooth: an S-shaped sigmoid, squeezed so it goes exactly from
+// (0, 0) to (1, 1). 10 sets how sharp the S is.
+//   smooth(t) = ( σ(10·(t − ½)) − σ(−5) ) / ( 1 − 2·σ(−5) )
+inline float smooth_curve(float t){
+	float lowest = sigmoid(-5.0f);
+	return std::clamp((sigmoid(10.0f * (t - 0.5f)) - lowest) / (1.0f - 2.0f * lowest), 0.0f, 1.0f);
+}
+
+inline float shape(rate r,float f){
+	const float pi = 3.14159265f;
+	switch(r){
+		case rate::linear:         return f;
+		case rate::smooth:         return smooth_curve(f);
+		case rate::sine:           return -(std::cos(pi * f) - 1.0f) / 2.0f;          // ease in and out, gentler
+		case rate::rush_into:      return 2.0f * smooth_curve(f / 2.0f);              // slow start, fast end
+		case rate::rush_from:      return 2.0f * smooth_curve(f / 2.0f + 0.5f) - 1.0f; // fast start, slow end
+		case rate::there_and_back: return smooth_curve(f < 0.5f ? 2.0f * f : 2.0f * (1.0f - f));  // out and back again
+	}
+	return f;
+}
+
+// The steepest the curve ever gets: how much faster than steady it moves at
+// its fastest moment (linear = 1, smooth ≈ 2.53). Measured by looking at
+// 1000 small steps. The collision checks need it (docs/23).
+inline float steepest(rate r){
+	if(r == rate::linear) return 1.0f;   // steady by definition (measuring gives 1.00004)
+	float most = 0.0f;
+	const int n = 1000;
+	for(int k = 1;k<=n;k++){
+		float slope = (shape(r, float(k) / n) - shape(r, float(k - 1) / n)) * n;
+		most = std::max(most, std::fabs(slope));
+	}
+	return most;
+}
+
 // A stretch of time in seconds, e.g. from second 3 to second 6.
 struct time_span{
 	float start = 0.0f;
 	float end   = 0.0f;
+	rate how = rate::linear;   // how it eases (docs/23)
 
 	// How far through the span we are at time t: 0 = not started, 1 = done.
 	//   start = 3, end = 6
@@ -42,9 +104,9 @@ struct time_span{
 	//   t = 4.5 ->  0.5   (halfway)
 	//   t = 9   ->  1     (finished, stays at the end value)
 	float progress(float t)const{
-		if(end <= start) return t >= start ? 1.0f : 0.0f; // no length: jump
+		if(end <= start) return t >= start ? shape(how, 1.0f) : 0.0f; // no length: jump
 		float f = (t - start) / (end - start);
-		return std::clamp(f, 0.0f, 1.0f);
+		return shape(how, std::clamp(f, 0.0f, 1.0f));
 	}
 };
 

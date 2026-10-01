@@ -39,8 +39,8 @@ public:
 	void point_at(vec3 target);
 
 	// ---- over time: flies there between second `start` and `end` ----
-	void move(vec3 eye,float start,float end);
-	void point_at(vec3 target,float start,float end);
+	void move(vec3 eye,float start,float end,rate how = rate::linear);
+	void point_at(vec3 target,float start,float end,rate how = rate::linear);
 
 	// Work out where the camera is at time t (seconds). Call once per frame.
 	void update(float t);

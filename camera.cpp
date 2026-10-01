@@ -21,14 +21,14 @@ void camera::point_at(vec3 target){
 
 // ---- over time: schedule a change; f is how far through it we are (0..1) ----
 
-void camera::move(vec3 eye,float start,float end){
-	path.add({start, end}, [eye](viewpoint& v,float f){
+void camera::move(vec3 eye,float start,float end,rate how){
+	path.add({start, end, how}, [eye](viewpoint& v,float f){
 		v.eye = lerp(v.eye, eye, f);
 	});
 }
 
-void camera::point_at(vec3 target,float start,float end){
-	path.add({start, end}, [target](viewpoint& v,float f){
+void camera::point_at(vec3 target,float start,float end,rate how){
+	path.add({start, end, how}, [target](viewpoint& v,float f){
 		v.target = lerp(v.target, target, f);
 	});
 }

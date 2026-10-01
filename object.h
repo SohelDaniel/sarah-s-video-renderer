@@ -43,10 +43,11 @@ public:
 	// ---- over time: the same, but it happens between second `start` and `end` ----
 	// move, rotate and scale go TO the value given.
 	// rotate_around swings BY the angles given (a quarter orbit, a full orbit...).
-	void move(vec3 to,float start,float end);
-	void rotate(float rot_y,float rot_x,float start,float end);
-	void rotate_around(vec3 around,float rot_y,float rot_x,float start,float end);
-	void scale(float scale_by,float start,float end);
+	// The last argument says how it eases (docs/23): linear = steady.
+	void move(vec3 to,float start,float end,rate how = rate::linear);
+	void rotate(float rot_y,float rot_x,float start,float end,rate how = rate::linear);
+	void rotate_around(vec3 around,float rot_y,float rot_x,float start,float end,rate how = rate::linear);
+	void scale(float scale_by,float start,float end,rate how = rate::linear);
 
 	// Work out where the object is at time t (seconds). Call once per frame.
 	void update(float t);

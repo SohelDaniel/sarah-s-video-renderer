@@ -181,6 +181,7 @@ From [stress-results.txt](images/stress-results.txt), after the full solve:
 | motion (added with 16) | 6, 4 of them moving | 0 | 0 | 0 | 1 of 1 | 0 |
 | motion_typos (added with 17) | 8, 2 of them moving | 0 | 0 | 0 | 0 of 0 | 5 |
 | impact (added with 18) | 5, 3 of them moving, 2 planned hits | 0 | 0 | 0 | 1 of 1 | 0 |
+| eased (added with 23) | 6, 4 of them moving, eased | 0 | 0 | 0 | 1 of 1 | 0 |
 
 **ALL PASSED: 0 checks failed.**
 

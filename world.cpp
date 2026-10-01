@@ -46,7 +46,7 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 			}else{
 				// fly-by, or a hit's approach (stuck to its target below)
 				thing.move(p.from);
-				thing.move(p.to, p.start, p.end);
+				thing.move(p.to, p.start, p.end, p.how);
 			}
 		}
 		objects.push_back(thing);

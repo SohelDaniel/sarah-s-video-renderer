@@ -50,27 +50,27 @@ void object::scale(float scale_by){
 
 // ---- over time: schedule a change; f is how far through it we are (0..1) ----
 
-void object::move(vec3 to,float start,float end){
-	motion.add({start, end}, [to](pose& p,float f){
+void object::move(vec3 to,float start,float end,rate how){
+	motion.add({start, end, how}, [to](pose& p,float f){
 		p.position = lerp(p.position, to, f);
 	});
 }
 
-void object::rotate(float rot_y,float rot_x,float start,float end){
-	motion.add({start, end}, [rot_y, rot_x](pose& p,float f){
+void object::rotate(float rot_y,float rot_x,float start,float end,rate how){
+	motion.add({start, end, how}, [rot_y, rot_x](pose& p,float f){
 		p.rot_y = lerp(p.rot_y, rot_y, f);
 		p.rot_x = lerp(p.rot_x, rot_x, f);
 	});
 }
 
-void object::rotate_around(vec3 around,float rot_y,float rot_x,float start,float end){
-	motion.add({start, end}, [around, rot_y, rot_x](pose& p,float f){
+void object::rotate_around(vec3 around,float rot_y,float rot_x,float start,float end,rate how){
+	motion.add({start, end, how}, [around, rot_y, rot_x](pose& p,float f){
 		orbit(p, around, rot_y, rot_x, f);
 	});
 }
 
-void object::scale(float scale_by,float start,float end){
-	motion.add({start, end}, [scale_by](pose& p,float f){
+void object::scale(float scale_by,float start,float end,rate how){
+	motion.add({start, end, how}, [scale_by](pose& p,float f){
 		p.size = lerp(p.size, scale_by, f);
 	});
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include "pixel.h"
+#include "timeline.h"
 
 #include <deque>
 #include <string>
@@ -111,6 +112,7 @@ struct motion{
 	float turns = 1.0f;   // orbits only
 	float start = 0.0f;   // seconds
 	float end   = 0.0f;
+	rate how = rate::linear;   // how it eases (docs/23); orbits stay linear
 };
 
 // One object in the scene, as described.
@@ -137,13 +139,13 @@ struct object_spec{
 		motions.push_back({motion_kind::orbits, other, turns, start, end});
 		return *this;
 	}
-	object_spec& flies_past(const std::string& other,float start,float end){
-		motions.push_back({motion_kind::flies_past, other, 0.0f, start, end});
+	object_spec& flies_past(const std::string& other,float start,float end,rate how = rate::linear){
+		motions.push_back({motion_kind::flies_past, other, 0.0f, start, end, how});
 		return *this;
 	}
 	// arrives at `time`, after flying for `approach` seconds, and sticks
-	object_spec& hits(const std::string& other,float time,float approach = 4.0f){
-		motions.push_back({motion_kind::hits, other, 0.0f, time - approach, time});
+	object_spec& hits(const std::string& other,float time,float approach = 4.0f,rate how = rate::linear){
+		motions.push_back({motion_kind::hits, other, 0.0f, time - approach, time, how});
 		return *this;
 	}
 

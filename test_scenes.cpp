@@ -54,6 +54,20 @@ scene_spec impact_scene(){
 	return spec;
 }
 
+// Scene 5 with easing (docs/23): the comet and meteor ease in and out, and a
+// probe flies past the sun, rushing in. Easing makes them faster at their
+// fastest, so the collision checks have to look more often.
+static scene_spec eased_scene(){
+	scene_spec spec;
+	spec.add("sun",    "shapes/sphere.obj",      px::Pixel(250, 200,  60), size_word::big, 10);
+	spec.add("rock",   "shapes/icosahedron.obj", colors[4]).near("sun");
+	spec.add("planet", "shapes/octahedron.obj",  colors[6]).orbits("sun", 1.0f, 0.0f, 20.0f);
+	spec.add("comet",  "shapes/pyramid.obj",     colors[5], size_word::small).hits("planet", 12.0f, 4.0f, rate::smooth);
+	spec.add("meteor", "shapes/tetrahedron.obj", colors[3], size_word::small).hits("rock", 6.0f, 3.0f, rate::rush_into);
+	spec.add("probe",  "shapes/cube.obj",        colors[0], size_word::small).flies_past("sun", 2.0f, 9.0f, rate::rush_into);
+	return spec;
+}
+
 // Every way a motion can't work.
 static scene_spec motion_mistakes(){
 	scene_spec spec;
@@ -166,5 +180,6 @@ std::vector<test_scene> all_test_scenes(){
 		{"motion",        "orbits, a moon, and a fly-by crossing a crowded spot", lazy_motion_scene(),             0},
 		{"motion_typos",  "every way a motion can't work",                    motion_mistakes(),                   5},
 		{"impact",        "collisions that are meant to happen, on time",     impact_scene(),                      0},
+		{"eased",         "eased hits and fly-bys: faster at their fastest",  eased_scene(),                       0},
 	};
 }
