@@ -18,6 +18,8 @@
 // Anti-aliasing (docs/25): --aa anywhere on the command line draws every
 // picture 2x2 times bigger and averages it down.
 static int aa_samples = 1;
+// --video out.mp4: write a video instead of opening a window (docs/25)
+static std::string video_path;
 
 // usage: ./main [1|2|3] [solver step] [picture.png]
 //   ./main    or  ./main 1   the old 3-picture scene, as a 12 second video
@@ -33,6 +35,7 @@ static int aa_samples = 1;
 //   ./main ease x.png         every easing curve as a row of snapshots (docs/23)
 //   ./main aa prefix          scene 3 without and with anti-aliasing, plus close-ups (docs/25)
 //   --aa                      add to any of these: smooth edges (anti-aliasing, docs/25)
+//   --video out.mp4           add to any scene: record an mp4 instead of opening a window
 //   ./main scenes/x.dan       a scene written in the dan language (docs/21); edit and
 //                             save the file while it plays and it reloads (docs/22)
 //   ./main scenes/x.dan framed x.png 7   ... saved as a picture at 7 seconds
@@ -95,6 +98,7 @@ void example_scene(){
 	// ================= Play it =================
 	player video(12.0f);
 	video.samples = aa_samples;
+	video.record_to = video_path;
 	video.play(cam, scene);
 }
 
@@ -172,6 +176,7 @@ void solar_system(){
 	// ================= Play it =================
 	player video(20.0f);
 	video.samples = aa_samples;
+	video.record_to = video_path;
 	video.play(cam, scene);
 }
 
@@ -203,6 +208,7 @@ void clipping_demo(bool clip,const std::string& picture){
 
 	player video(10.0f);
 	video.samples = aa_samples;
+	video.record_to = video_path;
 	video.clipping = clip;
 	if(picture.empty()) video.play(cam, scene);
 	else                video.save_still(cam, scene, 0.0f, picture);
@@ -291,6 +297,7 @@ void solved_scene(const scene_spec& spec,layout::method still_how,motion_plan::m
 
 	player video(w.duration());
 	video.samples = aa_samples;
+	video.record_to = video_path;
 	if(picture.empty()) video.play(w.cam, w.scene());
 	else                video.save_still(w.cam, w.scene(), t, picture);
 }
@@ -318,6 +325,7 @@ static std::vector<char*> take_options(int argc,char** argv){
 	for(int k = 0;k<argc;k++){
 		std::string a = argv[k];
 		if(a == "--aa") aa_samples = 2;
+		else if(a == "--video" && k + 1 < argc) video_path = argv[++k];
 		else rest.push_back(argv[k]);
 	}
 	return rest;
@@ -373,6 +381,7 @@ int main(int raw_argc,char** raw_argv){
 			}
 			player video(live.seconds());
 	video.samples = aa_samples;
+	video.record_to = video_path;
 			video.play(live);
 			return 0;
 		}

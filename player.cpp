@@ -4,6 +4,7 @@
 #include "window.h"
 
 #include <chrono>
+#include <cstdio>
 #include <iostream>
 #include <stdexcept>
 
@@ -17,6 +18,10 @@ void player::play(camera& cam,const std::vector<object*>& scene){
 }
 
 void player::play(frame_source& source){
+	if(!record_to.empty()){
+		record(source, record_to);
+		return;
+	}
 	window screen("sarah's video player", source.cam().width, source.cam().height);
 	render renderer(source.cam().width, source.cam().height, samples);  // made once, reused every frame
 	renderer.clipping = clipping;
@@ -93,6 +98,55 @@ void player::play(frame_source& source){
 
 	std::cout << "played " << frames << " frames in " << real << " s ("
 	          << frames / real << " frames per second)\n";
+}
+
+// A file name inside single quotes, for the shell: ' itself becomes '\''
+// (end the quotes, an escaped quote, start them again). The repo's own
+// folder has a ' in its name, so this matters.
+static std::string shell_quote(const std::string& text){
+	std::string out = "'";
+	for(char c : text){
+		if(c == '\'') out += "'\\''";
+		else out += c;
+	}
+	return out + "'";
+}
+
+void player::record(frame_source& source,const std::string& filename){
+	camera& first = source.cam();
+	int width = first.width, height = first.height;
+	render renderer(width, height, samples);
+
+	// ffmpeg reads raw pictures from its input ("-i -"): 4 bytes per pixel,
+	// r g b a, width x height each, and turns them into an H.264 video.
+	// yuv420p is the color format every video player understands.
+	std::string command = "ffmpeg -y -loglevel error -f rawvideo -pix_fmt rgba -s "
+	                    + std::to_string(width) + "x" + std::to_string(height)
+	                    + " -framerate " + std::to_string(frames_per_second)
+	                    + " -i - -c:v libx264 -pix_fmt yuv420p -crf 18 " + shell_quote(filename);
+	FILE* pipe = popen(command.c_str(), "w");
+	if(!pipe) throw std::runtime_error("could not start ffmpeg (install it with: brew install ffmpeg)");
+
+	// FIXED steps of time, not the real clock: frame k shows the moment
+	// k / 60 s, however long it took to draw. So nothing is skipped and the
+	// video plays at exactly the right speed (docs/25).
+	int frames = int(std::ceil(source.seconds() * frames_per_second));
+	std::cout << "recording " << frames << " frames (" << source.seconds() << " s at "
+	          << frames_per_second << " fps) to " << filename << std::endl;
+	for(int k = 0;k<frames;k++){
+		float t = float(k) / float(frames_per_second);
+		camera& cam = source.cam();
+		cam.update(t);
+		for(object* o : source.objects()) o->update(t);
+		renderer.begin(cam);
+		for(const object* o : source.objects()) o->draw(renderer);
+		renderer.finish();
+		const px::Image& picture = renderer.picture();
+		fwrite(picture.Data(), sizeof(px::Pixel), size_t(width) * size_t(height), pipe);
+	}
+	int status = pclose(pipe);
+	if(status != 0) throw std::runtime_error("ffmpeg failed (exit " + std::to_string(status) + "): is it installed? brew install ffmpeg");
+	std::cout << "wrote " << filename << std::endl;
 }
 
 void player::save_still(camera& cam,const std::vector<object*>& scene,float t,const std::string& filename){

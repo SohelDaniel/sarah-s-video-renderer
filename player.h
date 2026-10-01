@@ -30,11 +30,17 @@ public:
 	bool loop = true;
 	// anti-aliasing (docs/25): 1 = off, 2 = draw 2x2 times bigger and average
 	int samples = 1;
+	// if set, play() writes an mp4 here instead of opening a window (docs/25)
+	std::string record_to;
+	int frames_per_second = 60;
 
 	void play(camera& cam,const std::vector<object*>& scene);
 	// Play from any source of frames, e.g. a .dan file that reloads itself
 	// when it changes (docs/22). The video's length comes from the source.
 	void play(frame_source& source);
+	// Render every frame at fixed steps (1/60 s), and send them to ffmpeg to
+	// make an mp4 (docs/25). Throws if ffmpeg can't be run.
+	void record(frame_source& source,const std::string& filename);
 
 	// Instead of playing: draw the single frame at time t and save it as a
 	// PNG. Used for the pictures in docs/.
