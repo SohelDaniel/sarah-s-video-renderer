@@ -35,6 +35,9 @@ public:
 	void create(float start,float end);
 	// turn into another flat shape from `start` to `end` (docs/43), point by point
 	void morph_to(const flat_shape& next,float start,float end);
+	// a 3D object draws itself in from `start` to `end` (docs/44): its edges
+	// trace out, then its faces fade in
+	void draw_in(float start,float end);
 
 	// ---- right away: sets how the object starts (at second 0) ----
 
@@ -105,6 +108,8 @@ private:
 	std::vector<morph_step> morphs;
 	const flat_shape* first_flat = nullptr;   // the shape before any morph
 	flat_shape between;                       // the in-between shape, rebuilt each frame of a morph
+	float draw_start = 0.0f, draw_end = -1.0f;   // end < start: no draw-in
+	float drawn_in = 1.0f;                       // how far through it is, at the last update
 	px::Pixel color;
 	timeline<pose> motion;  // how it starts + every change scheduled on it
 	pose now;               // where it is at the current time (its own motion)

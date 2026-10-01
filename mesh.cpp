@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 
@@ -95,6 +96,7 @@ void mesh::smooth_normals(){
 		for(int k = 0;k<3;k++) faces_at[size_t(t[k] - 1)].push_back(int(i));
 	}
 	const float least = std::cos(crease_degrees * 3.14159265f / 180.0f);
+	find_edges(face_normal);
 	normals.assign(faces.size() * 3, vec3(0.0f, 0.0f, 0.0f));
 	for(size_t i = 0;i<faces.size();i++){
 		for(int k = 0;k<3;k++){
@@ -107,6 +109,29 @@ void mesh::smooth_normals(){
 			normals[3 * i + size_t(k)] = normalize(sum);   // never 0: face i always counts itself
 		}
 	}
+}
+
+// Every edge belongs to one face (an open edge) or two. An edge is a crease
+// if its two faces bend away from each other by more than the crease angle,
+// the same test as for smooth shading (docs/36):
+//     dot(n1, n2) < cos 40° = 0.766
+// (docs/44)
+void mesh::find_edges(const std::vector<vec3>& face_normal){
+	std::map<std::pair<int, int>, std::vector<size_t>> faces_of;   // edge (smaller vertex first) -> its faces
+	for(size_t i = 0;i<faces.size();i++){
+		for(int k = 0;k<3;k++){
+			int a = faces[i][k] - 1, b = faces[i][(k + 1) % 3] - 1;
+			faces_of[{std::min(a, b), std::max(a, b)}].push_back(i);
+		}
+	}
+	const float least = std::cos(crease_degrees * 3.14159265f / 180.0f);
+	std::vector<std::pair<int, int>> all;
+	for(const auto& [edge, around] : faces_of){
+		all.push_back(edge);
+		bool crease = around.size() != 2 || dot(face_normal[around[0]], face_normal[around[1]]) < least;
+		if(crease) edges.push_back(edge);
+	}
+	if(edges.empty()) edges = all;   // smooth all over: trace its whole grid
 }
 
 vec3 mesh::corner_normal(int i,int k)const{

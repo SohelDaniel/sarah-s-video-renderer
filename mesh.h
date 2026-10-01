@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <string>
 #include "vec3.h"
+#include <utility>
 #include <vector>
 
 struct triangle{
@@ -34,6 +35,11 @@ public:
 	// come out smooth; real corners (a cube's) stay sharp.
 	vec3 corner_normal(int i,int k)const;
 	static constexpr float crease_degrees = 40.0f;
+	// The edges a draw-in traces (docs/44), as pairs of vertex numbers
+	// (from 0): where faces meet at more than the crease angle (a cube's 12,
+	// not the diagonals across its flat faces), or, if it has no creases at
+	// all (a sphere), every edge.
+	const std::vector<std::pair<int, int>>& outline_edges()const{ return edges; }
 
 private:
 	std::string name;
@@ -41,6 +47,8 @@ private:
 	std::vector<triangle> faces;
 	float radius = 0.0f;
 	std::vector<vec3> normals;   // 3 per face: normals[3 * i + k]
+	std::vector<std::pair<int, int>> edges;
+	void find_edges(const std::vector<vec3>& face_normal);
 	void smooth_normals();
 	float corner_angle(size_t i,int v)const;
 

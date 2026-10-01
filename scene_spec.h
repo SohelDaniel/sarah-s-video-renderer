@@ -146,6 +146,8 @@ struct object_spec{
 	std::vector<flat_change> changes;   // a flat shape turning into others (docs/43)
 	std::string graph;             // a graph's function, like "sin(x)" (docs/42)
 	float graph_from = -5.0f, graph_to = 5.0f;   // its x range
+	float draw_start = 0.0f;       // a 3D object drawing itself in (docs/44); end < 0 = just there
+	float draw_end = -1.0f;
 
 	// Each of these adds a relation and returns the object itself, so they
 	// can be chained:  spec.add(...).near("cube").above("table");
@@ -227,7 +229,7 @@ public:
 
 	object_spec& add(const std::string& name,const std::string& mesh_file,px::Pixel color,
 	                 size_word size = size_word::normal,int importance = 1){
-		objects.push_back(object_spec{name, mesh_file, color, size, importance, {}, {}, {}, "", false, false, 0.0f, -1.0f, "", false, 0.0f, -1.0f, {}, "", -5.0f, 5.0f});
+		objects.push_back(object_spec{name, mesh_file, color, size, importance, {}, {}, {}, "", false, false, 0.0f, -1.0f, "", false, 0.0f, -1.0f, {}, "", -5.0f, 5.0f, 0.0f, -1.0f});
 		return objects.back();
 	}
 

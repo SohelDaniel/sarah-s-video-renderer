@@ -72,6 +72,7 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 			// a three-quarter view, so the faces of flat-sided shapes are easy to
 			// tell apart. The bounding sphere doesn't care how it's turned.
 			thing.rotate(0.6f, 0.3f);
+			if(o.draw_end >= 0.0f) thing.draw_in(o.draw_start, o.draw_end);   // docs/44
 		}else{
 			// a flat shape faces back along the camera's view (docs/40): its plane
 			// is parallel to the picture, so from there it looks exactly 2D.

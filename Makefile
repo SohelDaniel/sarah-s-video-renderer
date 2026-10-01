@@ -70,6 +70,7 @@ stills: $(TARGET) $(TEST_TARGET)
 	@for t in 2.5 8; do ./$(TARGET) scenes/graph.dan framed docs/images/graph-$$t.png $$t --aa > /dev/null; done
 	@./$(TARGET) scenes/graph.dan framed docs/images/graph-side.png 8 --aa --eye 12,4,6 > /dev/null
 	@for t in 2.5 4.5 6.5; do ./$(TARGET) scenes/morph.dan framed docs/images/morph-$$t.png $$t --aa > /dev/null; done
+	@for t in 0.8 1.6 2.6 3.6; do ./$(TARGET) scenes/draw.dan framed docs/images/draw-$$t.png $$t --aa > /dev/null; done
 	@rm -f scenes/*.report
 	@./solver_test > docs/images/stress-results.txt || true
 	@# our PNG writer doesn't compress (docs/pixel.h); macOS's sips can, ~50x smaller

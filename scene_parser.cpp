@@ -216,6 +216,7 @@ static std::vector<token> tokenize(const std::string& source){
 //    property   = size | color | "important" | "filled" | create | label | phrase | ","
 //    create     = "create" [ time "-" time ]               (flat shapes only, docs/41)
 //    becomes    = "becomes" flat_shape "at" time "-" time   (flat shapes only, docs/43)
+//    draw_in    = "draw_in" [ time "-" time ]               (3D objects only, docs/44)
 //    graph      = "graph" text [ "from" number "to" number ]   (a shape, docs/42)
 //    (shape: a mesh word, or a flat one: circle square triangle hexagon star, docs/40)
 //    label      = "label" [ "math" ] text { "math" | time "-" time | "always" }
@@ -580,6 +581,21 @@ void parser::property(object_spec& o){
 		}
 		return;
 	}
+	if(t.value == "draw_in"){
+		// draw_in [ time "-" time ]      (3D objects, docs/44): 2 s from the start if no times
+		if(!o.flat.empty()) fail(t, "flat shapes draw themselves in with create; draw_in is for 3D objects");
+		o.draw_start = 0.0f;
+		o.draw_end = 2.0f;
+		if(peek().kind == token_kind::time){
+			const token& from = peek();
+			o.draw_start = time("");
+			const token& dash = next();
+			if(dash.kind != token_kind::dash) fail(dash, "expected '-' between the start and end times, like 0s-2s");
+			o.draw_end = time("for when it's fully drawn, like 2s");
+			if(o.draw_end <= o.draw_start) fail(from, "drawing it in has to end after it starts");
+		}
+		return;
+	}
 	if(t.value == "becomes"){
 		// becomes shape "at" time "-" time      (docs/43)
 		if(o.flat.empty() || o.flat == "graph") fail(t, "only flat shapes (" + join(flat_shape_words()) + ") can become another shape");
@@ -694,7 +710,7 @@ void parser::phrase(object_spec& o,const token& first){
 		return;
 	}
 
-	std::vector<std::string> known = {"important", "orbits", "flies_past", "hits", "fades_in", "fades_out", "label", "filled", "create", "becomes"};
+	std::vector<std::string> known = {"important", "orbits", "flies_past", "hits", "fades_in", "fades_out", "label", "filled", "create", "becomes", "draw_in"};
 	for(const auto& m : {keys_of(size_words), keys_of(color_words), keys_of(relation_words)}){
 		known.insert(known.end(), m.begin(), m.end());
 	}

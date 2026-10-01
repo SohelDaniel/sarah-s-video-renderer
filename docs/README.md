@@ -74,6 +74,7 @@ All the math is built on **vectors and matrices** (01).
 | 41 | [Create](41-create.md) | How does a shape draw itself in along its outline? | `shapes2d.cpp`, `object.cpp` |
 | 42 | [Graphs](42-graphs.md) | How does "sin(x)" become axes, ticks and a curve? | `expression.cpp`, `shapes2d.cpp` |
 | 43 | [Morph](43-morph.md) | How does a square melt into a circle without twisting? | `shapes2d.cpp`, `object.cpp` |
+| 44 | [Draw-in](44-draw-in.md) | How does a 3D object trace its edges and then fill in? | `mesh.cpp`, `object.cpp` |
 | | [Ranges and settings](ranges.md) | What values make sense? | `camera.h`, `object.h` |
 | | [C++ notes](cpp-notes.md) | What does this syntax mean? | everywhere |
 | | [Design](design.md) | Why is the code split up like this? | everywhere |

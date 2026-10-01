@@ -915,6 +915,51 @@ static void test_morph(){
 	      "'becomes circle at 2s-3s becomes star at 4s-5s' is two changes; a cube can't, and changes can't overlap");
 }
 
+// Draw-in (docs/44): 3D objects tracing their edges, then filling in.
+static void test_draw_in(){
+	std::printf("\ndraw-in:\n");
+	mesh box("shapes/cube.obj"), tent("shapes/pyramid.obj"), ball("shapes/sphere.obj");
+	check(box.outline_edges().size() == 12 && tent.outline_edges().size() == 8,
+	      "a cube traces its 12 creases (not the 6 diagonals across its flat faces); a pyramid its 8");
+	check(ball.outline_edges().size() == 1440, "a sphere has no creases, so it traces all 1440 edges of its grid");
+
+	camera cam;
+	cam.width = 120;
+	cam.height = 120;
+	cam.move(vec3(3.0f, 2.0f, 5.0f));
+	cam.point_at(vec3(0.0f, 0.0f, 0.0f));
+	cam.update(0.0f);
+	auto picture = [&](bool drawing,float t){
+		object o(box, px::Pixel(230, 130, 60));
+		if(drawing) o.draw_in(1.0f, 3.0f);
+		o.update(t);
+		render r(cam.width, cam.height);
+		r.begin(cam);
+		o.draw(r);
+		r.finish();
+		return r.picture();
+	};
+	px::Image empty = picture(true, 0.5f), solid = picture(false, 0.0f), done = picture(true, 3.0f), half = picture(true, 1.6f);
+	px::Image nothing(cam.width, cam.height);
+	{ render blank(cam.width, cam.height); blank.begin(cam); blank.finish(); nothing = blank.picture(); }
+	auto differ = [&](const px::Image& a,const px::Image& b){
+		int n = 0;
+		for(int y = 0;y<cam.height;y++) for(int x = 0;x<cam.width;x++){
+			px::Pixel p = a.Get(x, y), q = b.Get(x, y);
+			if(p.r != q.r || p.g != q.g || p.b != q.b) n++;
+		}
+		return n;
+	};
+	check(differ(empty, nothing) == 0, "before its draw-in starts, nothing is drawn");
+	check(differ(done, solid) == 0, "when it's done, it's exactly the plain solid cube");
+	check(differ(half, nothing) > 50 && differ(half, solid) > 50, "half way (lines tracing, faces not yet in) it's neither");
+
+	parse_result ok = parse_scene("c = cube draw_in 1s-3s\nb = sphere draw_in\n");
+	parse_result flat = parse_scene("r = circle draw_in\n");
+	check(ok.ok() && ok.spec.objects[0].draw_start == 1.0f && ok.spec.objects[0].draw_end == 3.0f && ok.spec.objects[1].draw_end == 2.0f
+	      && !flat.ok(), "'draw_in 1s-3s' and 'draw_in' (0 s to 2 s) are read; a flat shape uses create instead");
+}
+
 int main(){
 	test_clipping();
 	test_fly_camera();
@@ -938,6 +983,7 @@ int main(){
 	test_create();
 	test_graphs();
 	test_morph();
+	test_draw_in();
 	std::printf("\n%s: %d check%s failed\n", failures == 0 ? "ALL PASSED" : "FAILED", failures, failures == 1 ? "" : "s");
 	return failures == 0 ? 0 : 1;
 }

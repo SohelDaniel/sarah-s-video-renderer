@@ -1,6 +1,9 @@
 #include "object.h"
 #include "transform.h"
 
+#include <algorithm>
+#include <cmath>
+
 
 // Swing a pose around the point `around`, by `amount` (0..1) of the full turn.
 // Shared by the right-away and the over-time rotate_around.
@@ -32,6 +35,11 @@ object::object(const flat_shape& flat,px::Pixel color)
 
 void object::set_flat_look(flat_look l){
 	look = l;
+}
+
+void object::draw_in(float start,float end){
+	draw_start = start;
+	draw_end = end;
 }
 
 void object::create(float start,float end){
@@ -124,6 +132,7 @@ void object::update(float t){
 		}
 		look = create_look((t - create_start) / (create_end - create_start), filled, graph);
 	}
+	if(draw_end > draw_start) drawn_in = std::clamp((t - draw_start) / (draw_end - draw_start), 0.0f, 1.0f);
 	if(!morphs.empty()){
 		// which shape it is now, or which two it's between
 		flat = first_flat;
@@ -199,6 +208,24 @@ void object::draw(render& renderer)const{
 	if(now.opacity <= 0.001f) return;                      // invisible: nothing to draw
 	if(flat){
 		renderer.draw_flat(*flat, model_matrix(), color, now.opacity, look);
+	}else if(drawn_in < 1.0f){
+		// Drawing in (docs/44), p = drawn_in:
+		//   lines = smooth(min(1, p / 0.6))       every edge grows from its first end
+		//   faces = smooth(max(0, (p − 0.5) / 0.5)) the faces fade in, the lines out
+		if(drawn_in <= 0.0f) return;
+		float lines = smooth_curve(std::min(1.0f, drawn_in / 0.6f));
+		float faces = smooth_curve(std::max(0.0f, (drawn_in - 0.5f) / 0.5f));
+		mat4<float> m = model_matrix();
+		px::Pixel edge = color;
+		edge.a = uint8_t(std::lround(255.0f * now.opacity * (1.0f - faces)));
+		if(edge.a > 0){
+			for(const auto& [a, b] : shape->outline_edges()){
+				vec3 p = transform_point(m, shape->vertex(a));
+				vec3 q = transform_point(m, shape->vertex(b));
+				renderer.draw_line(p, p + (q - p) * lines, 1.5f * renderer.ui_scale(), edge);
+			}
+		}
+		if(faces > 0.0f) renderer.draw_see_through(*shape, m, color, now.opacity * faces);
 	}else if(now.opacity < 0.999f){
 		renderer.draw_see_through(*shape, model_matrix(), color, now.opacity);
 	}else{

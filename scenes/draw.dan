@@ -1,0 +1,10 @@
+# Draw-in (docs/44): 3D objects drawing themselves in. Their edges trace out
+# (a cube's 12 creases, a sphere's whole grid), then the faces fade in.
+
+scene "draw"
+title "Drawing in" write 1s
+
+cube    = cube big orange important draw_in 0s-2s
+ball    = sphere blue right_of cube draw_in 1s-3s
+tent    = pyramid white left_of cube draw_in 2s-4s
+ring    = torus teal above cube draw_in 3s-5s
