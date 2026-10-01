@@ -14,7 +14,9 @@ class render{
 public:
 	// Makes the image and depth buffer once. Reuse the same render for every
 	// frame so we don't allocate a new picture 60 times a second.
-	render(int width,int height);
+	// samples = 2 draws everything twice as wide and tall, then averages each
+	// 2x2 block into one pixel: smooth edges (anti-aliasing, docs/25).
+	render(int width,int height,int samples = 1);
 
 	// Start a new picture: wipe the image and depth buffer, and set up the
 	// matrices for where the camera is right now. Call before drawing.
@@ -55,7 +57,10 @@ private:
 	void fill(const vec3& v1,const vec3& v2,const vec3& v3,
 	          const vec3& s1,const vec3& s2,const vec3& s3,px::Pixel color);
 
-	px::Image image;
+	px::Image image;                   // what's drawn into (samples times bigger)
+	px::Image result;                  // the finished picture, when samples > 1
+	int samples = 1;
+	px::Image& out();                  // the picture at its real size
 	std::vector<float> depth;          // closest depth drawn so far, per pixel
 	mat4<float> view_projection;       // projection * view
 	mat4<float> to_screen;             // viewport

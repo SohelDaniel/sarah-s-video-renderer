@@ -18,7 +18,7 @@ void player::play(camera& cam,const std::vector<object*>& scene){
 
 void player::play(frame_source& source){
 	window screen("sarah's video player", source.cam().width, source.cam().height);
-	render renderer(source.cam().width, source.cam().height);  // made once, reused every frame
+	render renderer(source.cam().width, source.cam().height, samples);  // made once, reused every frame
 	renderer.clipping = clipping;
 
 	// steady_clock only ever goes forward (unlike the wall clock, which can
@@ -96,7 +96,7 @@ void player::play(frame_source& source){
 }
 
 void player::save_still(camera& cam,const std::vector<object*>& scene,float t,const std::string& filename){
-	render renderer(cam.width, cam.height);
+	render renderer(cam.width, cam.height, samples);
 	renderer.clipping = clipping;
 	cam.update(t);
 	for(object* o : scene){

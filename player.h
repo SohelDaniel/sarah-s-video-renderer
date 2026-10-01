@@ -28,6 +28,8 @@ public:
 	bool clipping = true;
 	// start again from 0 when the video ends, until the window is closed
 	bool loop = true;
+	// anti-aliasing (docs/25): 1 = off, 2 = draw 2x2 times bigger and average
+	int samples = 1;
 
 	void play(camera& cam,const std::vector<object*>& scene);
 	// Play from any source of frames, e.g. a .dan file that reloads itself

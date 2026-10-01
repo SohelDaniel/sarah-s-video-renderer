@@ -55,6 +55,7 @@ All the math is built on **vectors and matrices** (01).
 | 22 | [Live reload](22-live-reload.md) | How does editing the file update the window? What does the AI read? | `live_scene.cpp`, `frame_source.h` |
 | 23 | [Easing](23-easing.md) | How do things speed up and slow down? | `timeline.h`, `motion.cpp` |
 | 24 | [Fades](24-fades.md) | How do things fade? Why is see-through hard? | `render.cpp`, `object.cpp` |
+| 25 | [Anti-aliasing and video](25-antialiasing-and-video.md) | Why are edges jagged? How is an mp4 made? | `render.cpp`, `main.cpp` |
 | | [Ranges and settings](ranges.md) | What values make sense? | `camera.h`, `object.h` |
 | | [C++ notes](cpp-notes.md) | What does this syntax mean? | everywhere |
 | | [Design](design.md) | Why is the code split up like this? | everywhere |

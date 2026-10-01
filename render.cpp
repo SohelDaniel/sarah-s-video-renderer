@@ -10,11 +10,17 @@
 // the color behind everything
 static const px::Pixel background(20, 20, 28);
 
-render::render(int width,int height)
-	:image(width, height, background),
-	 depth(size_t(width) * size_t(height), std::numeric_limits<float>::infinity()),
-	 to_screen(viewport(width, height)),
+render::render(int width,int height,int samples)
+	:image(width * samples, height * samples, background),
+	 result(width, height, background),
+	 samples(samples),
+	 depth(size_t(width * samples) * size_t(height * samples), std::numeric_limits<float>::infinity()),
+	 to_screen(viewport(width * samples, height * samples)),
 	 light_dir(normalize(vec3(0.4f, 0.8f, 0.6f))){}
+
+px::Image& render::out(){
+	return samples > 1 ? result : image;
+}
 
 void render::begin(const camera& cam){
 	image.Clear(background);
@@ -222,6 +228,25 @@ void render::finish(){
 	opacity = 1.0f;
 	waiting.clear();
 
+	// Anti-aliasing (docs/25): everything was drawn samples x samples times
+	// bigger. Each final pixel is the average of its block of small ones, so
+	// a pixel that an edge cuts through gets a color in between.
+	if(samples > 1){
+		int n = samples * samples;
+		for(int y = 0;y<result.Height();y++){
+			for(int x = 0;x<result.Width();x++){
+				int r = 0, g = 0, b = 0;
+				for(int sy = 0;sy<samples;sy++){
+					for(int sx = 0;sx<samples;sx++){
+						px::Pixel p = image.Get(x * samples + sx, y * samples + sy);
+						r += p.r; g += p.g; b += p.b;
+					}
+				}
+				result.Draw(x, y, px::Pixel(uint8_t((r + n / 2) / n), uint8_t((g + n / 2) / n), uint8_t((b + n / 2) / n)));
+			}
+		}
+	}
+
 	// A sphere seen through a camera looks (almost exactly) like a circle.
 	// Its screen radius: project the center, and a point on the sphere's
 	// edge straight "up" from the camera's point of view, and measure the
@@ -240,16 +265,18 @@ void render::finish(){
 		if(!project(c.center, mid) || !project(c.center + camera_up * c.radius, edge)) continue;
 		float dx = edge[0] - mid[0];
 		float dy = edge[1] - mid[1];
-		int r = int(std::lround(std::sqrt(dx * dx + dy * dy)));
-		image.DrawCircle(int(std::lround(mid[0])), int(std::lround(mid[1])), r, color);
+		// (projected into the big image; the circles go on the final one, so
+		// divide by samples, otherwise a 1-pixel line would average away)
+		int r = int(std::lround(std::sqrt(dx * dx + dy * dy) / samples));
+		out().DrawCircle(int(std::lround(mid[0] / samples)), int(std::lround(mid[1] / samples)), r, color);
 	}
 	overlay.clear();
 }
 
 bool render::save(const std::string& filename)const{
-	return image.Save(filename);
+	return picture().Save(filename);
 }
 
 const px::Image& render::picture()const{
-	return image;
+	return samples > 1 ? result : image;
 }
