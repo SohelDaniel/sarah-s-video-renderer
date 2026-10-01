@@ -41,7 +41,8 @@ public:
 	vec3 camera_eye()const;
 	vec3 camera_target()const;
 	// Is a sphere at p with radius r completely inside the picture (docs/15)?
-	bool in_picture(const vec3& p,float r)const;
+	// edge_scale < 1 shrinks the picture's edges, to leave a margin.
+	bool in_picture(const vec3& p,float r,float edge_scale = 1.0f)const;
 	// Make the automatic camera also fit this sphere (a motion path, docs/16),
 	// then place the camera again. Only does anything after method::framed.
 	void include_in_frame(const vec3& center,float radius);
@@ -130,6 +131,8 @@ private:
 	vec3 scene_center{0.0f, 0.0f, 0.0f};   // found by frame()
 	float scene_radius = 0.0f;
 	float camera_distance = 0.0f;
+	float sphere_distance = 0.0f;           // the safe (loose) distance from the sphere fit
+	bool fits_at(float distance,const std::vector<std::pair<vec3, float>>& spheres);
 	int count_hidden()const;
 	int count_off_screen()const;
 

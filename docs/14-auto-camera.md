@@ -121,41 +121,99 @@ eye = (2, 0, 0) + 7.454 · (0, 0.35112, 0.93633) = (2, 2.617, 6.979)
 ```
 
 The camera stands 7.45 away, in front and a bit above, looking at (2, 0, 0).
-The two spheres fill the picture from top to bottom (minus the 5%).
+That's **guaranteed** to fit, but it's loose: the two spheres sit side by
+side, so the scene is twice as wide as it is tall, while the big sphere
+around it is as tall as it is wide.
 
-## 4. Where it fits in the solver
+## 4. Tight framing: binary search
+
+The sphere fit is a safe **upper bound**: at 7.454 everything fits. The
+tightest distance is somewhere between 0 (the camera inside the scene) and
+that. So keep the direction and **binary-search** the distance:
 
 ```
-greedy  →  frame  →  refine  →  frame
+low = 0,  high = 7.454                    (high always fits, low never does)
+repeat 30 times:
+    mid = (low + high) / 2
+    does everything fit at mid?    yes → high = mid      no → low = mid
+camera distance = high
+```
+
+"Fits" means every sphere passes the off-screen test from 15 with 5% of the
+picture kept free at each edge:
+`|x| + r/depth ≤ 0.95 · edge_x` and `|y| + r/depth ≤ 0.95 · edge_y`.
+
+Each step halves the range, so 30 steps shrink it about a billion times
+(2³⁰). It works because "fits" only changes once: everything closer
+than the answer doesn't fit, and everything farther does.
+
+### The two-sphere example, step by step
+
+| step | low | high | mid | fits at mid? |
+|---|---|---|---|---|
+| 1 | 0 | 7.454 | 3.727 | no |
+| 2 | 3.727 | 7.454 | 5.590 | yes |
+| 3 | 3.727 | 5.590 | 4.658 | no |
+| 4 | 4.658 | 5.590 | 5.124 | yes |
+| 5 | 4.658 | 5.124 | 4.891 | no |
+| 6 | 4.891 | 5.124 | 5.008 | no |
+| … | | | | |
+| 30 | | **5.079** | | |
+
+**Check it on paper.** At the answer, the spheres just touch the left and
+right margins. Seen from the camera, each sphere's center is 2 to the side
+(they're at x = 0 and 4, and the camera aims at x = 2), and its radius is 1,
+both at depth ≈ D:
+
+```
+(2 + 1) / D = 0.95 · tan(25°) · 4/3 = 0.95 · 0.46631 · 1.3333 = 0.5907
+D = 3 / 0.5907 = 5.079 ✓
+```
+
+**5.08 instead of 7.45**: the spheres look about 1.5× bigger, and they still
+fit. The width is what limits it here, not the height, which is exactly what
+the sphere fit couldn't see.
+
+## 5. Where it fits in the solver
+
+```
+greedy  →  frame  →  refine  →  frame  →  refine  →  frame
 ```
 
 - **Frame before refining**, because the screen term (13) needs to know
   where the camera will really be. Otherwise refinement would un-hide things
   for the wrong camera.
-- **Frame again after**, because refining moved things. The second framing
-  only changes the camera a little, so what refinement achieved still holds.
+- **Frame again after**, because refining moved things.
+- **Refine and frame once more.** The tight framing reacts to small moves
+  (it's tight!). With only one round, the final camera moved enough that the
+  `crowd` stress test went from 0 to 6 pairs hidden on screen. A second
+  round lets refinement see the camera it's really going to get. The stress
+  tests now check "nothing hidden on screen" for every scene, so this can't
+  come back unnoticed.
 
 Moving objects' paths are included too, since step E4 ([16](16-motion-placement.md)).
 
-## 5. Result
+## 6. Result
 
 From the report ([scene3-framed.txt](images/scene3-framed.txt)):
 
 ```
 layout (framed): 9 objects, 0 overlapping pairs, 0 pairs overlapping on screen
-  camera: from front_above, looking at (-0.27, 0.81, -0.25), scene radius 5.85, distance 14.53
-          eye at (-0.27, 5.91, 13.36)
+  camera: from front_above, looking at (-0.29, 0.85, -0.27), scene radius 5.88, distance 12.80 (sphere fit: 14.62)
+          eye at (-0.29, 5.35, 11.72)
 ```
 
-Check it: 1.05 · 5.85 / sin(25°) = 6.1425 / 0.42262 = **14.53** ✓
+Check the sphere fit: 1.05 · 5.88 / sin(25°) = 6.174 / 0.42262 = **14.61** ✓
+(14.62 with the unrounded radius). The binary search then brings it in to
+**12.80**.
 
 | refined (fixed camera at (0, 6, 16)) | framed (camera placed by the solver) |
 |---|---|
 | ![refined](images/scene3-refined.png) | ![framed](images/scene3-framed.png) |
 
 The fixed camera was 17.1 away (√(6² + 16²)) and pointed at the origin.
-The solver's camera is 14.5 away and aims at the scene's real center, so the
-scene is centered and fills more of the picture. On a scene that's bigger
+The solver's camera is 12.8 away and aims at the scene's real center, so the
+scene is centered and fills the picture. On a scene that's bigger
 than the fixed camera can see, it backs away instead.
 
 ### Something it showed up: the step size

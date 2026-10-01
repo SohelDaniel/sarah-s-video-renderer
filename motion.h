@@ -82,8 +82,8 @@ public:
 	void solve(method how);
 
 	const std::vector<path>& paths()const;
-	// Spheres that hold each whole path: for an orbit, its circle; for a
-	// fly-by, its two end points (the segment lies between them).
+	// Spheres that hold each whole path: for an orbit, 32 spheres around its
+	// circle; for a fly-by, its two end points (the segment lies between them).
 	std::vector<obstacle> bounds()const;
 	// the time between two checks (docs/16)
 	float sample_step()const;

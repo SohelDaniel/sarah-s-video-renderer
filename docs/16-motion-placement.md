@@ -368,39 +368,49 @@ objects.
 
 ## 8. Step E4: framing the paths
 
-Step D (14) fits the camera around a sphere that holds every **still**
-object. Now it also has to hold every **path**:
+Step D (14) fits the camera around every **still** object. Now it also has
+to fit every **path**:
 
-| Path | Sphere that holds all of it |
+| Path | Spheres that hold all of it |
 |---|---|
-| orbit (center c, radius R, object radius r) | center c, radius **R + r** |
-| fly-by (A → B, object radius r) | two spheres: **A** and **B**, radius r |
+| orbit (center c, radius R, object radius r) | **32 spheres** spread around the circle, each of radius r + 2R·sin(π/64) |
+| fly-by (A → B, object radius r) | **two spheres**, at A and at B, radius r |
 
-For the fly-by, two spheres are enough: every point of the segment lies
-between A and B, so it's never farther from the scene's center than the
-farther of the two ends. (Distance from a point is a "convex" function: on
-a straight line, it's largest at one of the ends.) So the sphere around
-everything that holds both ends also holds the whole path.
+**Why 32 spheres for an orbit?** One sphere of radius R + r around the center
+would hold the whole ring too, but it's as tall as it is wide, and an orbit
+is flat. That's a lot of empty space for the camera to make room for. 32
+points around the circle are 360°/32 = 11.25° apart. Any point of the ring is
+at most half a step from one of them, and **at most 2R·sin(π/64)** away (that's a safe bound for half a step's
+chord). So growing
+each sphere by that covers the whole ring.
+
+**Why two spheres for a fly-by?** Every point of the segment lies between A
+and B, and the distance from a point is "convex": along a straight line,
+it's largest at one of the ends. So whatever fits both ends fits the whole
+path.
 
 `scene_solver` hands these to the layout (`include_in_frame`) and frames
-again (`reframe`). A new check walks every path with the same sample step as
-section 4 and counts moving objects that leave the picture at **any**
-moment.
+again (`reframe`), with the tight binary search from 14. A new check walks
+every path with the same sample step as section 4 and counts moving objects
+that leave the picture at **any** moment.
 
 ### Worked example
 
 ```
-planet1's orbit:  center (0, 0, 0),  radius 4.60 + 0.80 = 5.40
-planet2's orbit:  center (0, 0, 0),  radius 6.67 + 0.87 = 7.53
-comet's ends:     (±7.53, 2.67, 0),  radius 0.87
-farthest from the center: a comet end, √(7.53² + 2.67²) + 0.87 = 7.99 + 0.87 = 8.86
-distance = 1.05 · 8.86 / sin(25°) = 22.00                                          (14)
+planet1's ring:  R = 4.60,  32 spheres of radius 0.80 + 2·4.60·sin(π/64) = 0.80 + 0.45 = 1.25
+planet2's ring:  R = 6.67,  32 spheres of radius 0.87 + 2·6.67·sin(π/64) = 0.87 + 0.65 = 1.52
+comet's ends:    (±7.53, 2.67, 0),  radius 0.87
+
+box in y:  from −1.52 (the rings) to 2.67 + 0.87 = 3.54 (the comet)  →  center y = 1.01
+farthest:  a comet end,  √(7.53² + (2.67 − 1.01)²) + 0.87 = 7.71 + 0.87 = 8.58
+sphere fit:  1.05 · 8.58 / sin(25°) = 21.31,   then the binary search → 16.73
 ```
 
 | | flights (E3) | framed (E4) |
 |---|---|---|
-| camera distance | 7.21 | **22.00** |
-| scene radius | 2.90 (still objects only) | **8.86** (with the paths) |
+| what the camera fits | still objects only | still objects **and every path** |
+| scene radius | 2.90 | **8.58** |
+| camera distance | 4.91 | **16.73** (sphere fit: 21.31) |
 | moving objects that leave the picture | 3 | **0** |
 
 From [scene4-flights.txt](images/scene4-flights.txt) and
@@ -411,18 +421,10 @@ too: **moving objects stay in the picture** is a hard check for every scene.
 |---|---|---|---|
 | ![](images/scene4-framed-0.png) | ![](images/scene4-framed-3.png) | ![](images/scene4-framed-7.png) | ![](images/scene4-framed-12.png) |
 
-### The honest limit: a sphere is a loose fit
-
-Everything is always in the picture now, but the scene looks small. The
-camera fits one **sphere** around everything, and this scene is wide and
-flat (two flat orbits and a sideways fly-by). A sphere is as tall as it is
-wide, so there's empty space above and below. The fit is safe but loose.
-
-The better way, and a good next step: keep the camera's direction, then
-**binary-search the distance**. Find the smallest distance at which every
-sphere's projection is still inside the picture (`in_picture`, 15). That
-would also make scene 3's framing tighter, so it should be done for both at
-once, with 14 updated.
+The objects still look smallish, and that's correct. The camera has to fit
+the **whole** sweep of planet2's orbit and the comet's 15-unit path for the
+entire video, not just one moment. At any single moment most of that room
+is empty.
 
 ---
 

@@ -48,7 +48,8 @@ The circles are each object's bounding sphere: red = overlapping something.
 - greedy placement over candidate spots
 - gradient-descent refinement with spring, overlap, relation and
   **screen-space visibility** terms, plus a backtracking line search
-- automatic camera framing from a view word
+- automatic camera framing from a view word, tightened by a binary search on
+  the projected size
 - **moving objects** (`orbits`, `flies_past`): exact orbit radii from
   point-to-circle distances, fly-by lines checked with point-to-segment
   distances, and time sampling that provably can't miss a collision
@@ -111,8 +112,6 @@ scene description ─► layout solver ─► world ─► model → view → pr
   AI to write them, with the solver's report sent back as feedback
 - orbits around moving objects (a moon around a planet), with parent/child
   transforms
-- tighter camera framing (binary search on projected size instead of one
-  bounding sphere)
 - near-plane clipping, then walking around the scene with WASD + mouse
 - looping playback
 

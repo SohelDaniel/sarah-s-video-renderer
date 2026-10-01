@@ -147,9 +147,11 @@ void layout::solve(method how){
 		case method::greedy: place_greedy(); method_name = "greedy"; break;
 		case method::refined: place_greedy(); refine(); method_name = "refined"; break;
 		case method::framed:
-			// frame first, so the screen term works in the real camera;
-			// then again, because refining moved things
-			place_greedy(); frame(); refine(); frame(); method_name = "framed"; break;
+			// frame first, so the screen term works in the real camera; then
+			// again, because refining moved things. The tight framing reacts to
+			// small moves, so refine once more for the new camera and frame a
+			// last time (docs/14).
+			place_greedy(); frame(); refine(); frame(); refine(); frame(); method_name = "framed"; break;
 	}
 }
 
@@ -363,11 +365,37 @@ void layout::frame(){
 
 	float fov_x = 2.0f * std::atan(std::tan(fov_y / 2.0f) * aspect);
 	float half  = std::min(fov_x, fov_y) / 2.0f;
-	camera_distance = 1.05f * scene_radius / std::sin(half);
+	sphere_distance = 1.05f * scene_radius / std::sin(half);
 
+	// The sphere fit is safe but loose: a wide, flat scene gets lots of empty
+	// space above and below. So: keep the direction, and binary-search the
+	// smallest distance at which every sphere is still inside the picture,
+	// with 5% of the picture kept free at the edges.
+	//   too close -> something sticks out -> move the bottom of the range up
+	//   fits      -> try closer           -> move the top of the range down
+	// 30 halvings shrink the range by 2^30, about a billion times.
+	float low_d = 0.0f, high_d = sphere_distance;
+	for(int grow = 0;grow<20 && !fits_at(high_d, spheres);grow++) high_d *= 1.5f;
+	for(int k = 0;k<30;k++){
+		float mid = (low_d + high_d) / 2.0f;
+		if(fits_at(mid, spheres)) high_d = mid;
+		else                      low_d  = mid;
+	}
+	camera_distance = high_d;
 	eye    = scene_center + view_direction(spec.view) * camera_distance;
 	target = scene_center;
 	framed = true;
+}
+
+// Does every sphere fit in the picture, with a 5% margin, when the camera
+// stands `distance` from the scene's center? (Moves the camera to check.)
+bool layout::fits_at(float distance,const std::vector<std::pair<vec3, float>>& spheres){
+	eye    = scene_center + view_direction(spec.view) * distance;
+	target = scene_center;
+	for(const auto& s : spheres){
+		if(!in_picture(s.first, s.second, 0.95f)) return false;
+	}
+	return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -422,15 +450,15 @@ int layout::count_hidden()const{
 // The screen edges are at x = ±tan(fov_x / 2) and y = ±tan(fov_y / 2) in
 // look()'s units, so an object's circle is inside when its center plus its
 // radius stays within them, on both axes (docs/15).
-bool layout::in_picture(const vec3& p,float r)const{
+bool layout::in_picture(const vec3& p,float r,float edge_scale)const{
 	camera_axes a = axes_of(eye, target);
 	vec3 v = p - eye;
 	float depth = dot(v, a.forward);
 	if(depth <= 0.0f) return false;
 	float x = dot(v, a.right) / depth;
 	float y = dot(v, a.up) / depth;
-	float edge_y = std::tan(fov_y / 2.0f);
-	float edge_x = edge_y * aspect;
+	float edge_y = std::tan(fov_y / 2.0f) * edge_scale;
+	float edge_x = std::tan(fov_y / 2.0f) * aspect * edge_scale;
 	return std::fabs(x) + r / depth <= edge_x && std::fabs(y) + r / depth <= edge_y;
 }
 
@@ -790,7 +818,7 @@ std::string layout::report()const{
 	if(framed){
 		out << "  camera: from " << view_name(spec.view) << ", looking at (" << scene_center[0] << ", "
 		    << scene_center[1] << ", " << scene_center[2] << "), scene radius " << scene_radius
-		    << ", distance " << camera_distance << "\n";
+		    << ", distance " << camera_distance << " (sphere fit: " << sphere_distance << ")\n";
 		out << "          eye at (" << eye[0] << ", " << eye[1] << ", " << eye[2] << ")\n";
 	}
 	if(!energy_log.empty()){

@@ -300,7 +300,18 @@ std::vector<obstacle> motion_plan::bounds()const{
 	std::vector<obstacle> spheres;
 	for(const path& p : moving){
 		if(p.kind == motion_kind::orbits){
-			spheres.push_back({p.name, p.center, p.orbit_radius + p.radius});
+			// 32 spheres around the circle. A point of the circle is never
+			// more than half a step's chord, 2·R·sin(π/64), from the nearest
+			// one, so growing each by that covers the whole ring. One big
+			// sphere would also work, but it's as tall as it is wide, and an
+			// orbit is flat (docs/16).
+			const int n = 32;
+			float cover = p.radius + 2.0f * p.orbit_radius * std::sin(3.14159265f / (2.0f * n));
+			for(int k = 0;k<n;k++){
+				float angle = two_pi * float(k) / float(n);
+				vec3 point = p.center + vec3(p.orbit_radius * std::cos(angle), 0.0f, -p.orbit_radius * std::sin(angle));
+				spheres.push_back({p.name, point, cover});
+			}
 		}else{
 			spheres.push_back({p.name, p.from, p.radius});
 			spheres.push_back({p.name, p.to, p.radius});

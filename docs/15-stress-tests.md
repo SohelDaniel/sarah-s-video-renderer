@@ -59,6 +59,7 @@ After the full solve (`framed`), every scene must pass:
 5. **its mistakes are reported**: at least as many errors as the scene has
 6. **moving objects never collide** (added with step E3, 16)
 7. **moving objects stay in the picture** at every moment (added with step E4, 16)
+8. **nothing is hidden behind something else on screen** (added with tight framing, 14)
 
 If any check fails, `make test` fails.
 

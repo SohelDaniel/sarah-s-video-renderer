@@ -2,19 +2,19 @@ scene          step     objs overlaps  hidden   off  relations errors warnings h
 lazy           naive       9       36      36     0     0 of 7       1        0      0      0        0
                greedy      9        0       6     0     7 of 7       1        0      0      0        0
                refined     9        0       0     0     7 of 7       1        0    172      0        0
-               framed      9        0       0     0     7 of 7       1        0    161      0        0
+               framed      9        0       0     0     7 of 7       1        0    332      0        0
 crowd          naive      21      210     210     0     0 of 20      0        0      0      0        0
                greedy     21        0      26     0    12 of 20      0        0      0      0        0
                refined    21        0       0     0    12 of 20      0        1    177      0        0
-               framed     21        0       0     0    12 of 20      0        1    173      0        0
+               framed     21        0       0     0    11 of 20      0        2    341      0        0
 chain          naive      15      105     105     0     0 of 14      0        0      0      0        0
                greedy     15        0       0    10    14 of 14      0        0      0      0        0
                refined    15        0       0    10    14 of 14      0        0    169      0        0
-               framed     15        0       0     0    14 of 14      0        0    166      0        0
+               framed     15        0       0     0    14 of 14      0        0    344      0        0
 cycle          naive       3        3       3     0     0 of 3       1        0      0      0        0
                greedy      3        0       0     0     2 of 3       1        0      0      0        0
                refined     3        0       0     0     2 of 3       1        1    175      0        0
-               framed      3        0       0     0     2 of 3       1        1    173      0        0
+               framed      3        0       0     0     2 of 3       1        2    347      0        0
 contradiction  naive       4        6       6     0     0 of 2       2        0      0      0        0
                greedy      4        0       0     0     2 of 2       2        0      0      0        0
                refined     4        0       0     0     2 of 2       2        0    175      0        0
@@ -22,11 +22,11 @@ contradiction  naive       4        6       6     0     0 of 2       2        0 
 sizes          naive       5       10      10     0     0 of 4       0        0      0      0        0
                greedy      5        0       0     0     4 of 4       0        0      0      0        0
                refined     5        0       0     0     4 of 4       0        0    174      0        0
-               framed      5        0       0     0     4 of 4       0        0    175      0        0
+               framed      5        0       0     0     4 of 4       0        0      0      0        0
 typos          naive       5       10      10     0     0 of 1       4        0      0      0        0
                greedy      5        0       2     0     1 of 1       4        0      0      0        0
                refined     5        0       0     0     1 of 1       4        1    173      0        0
-               framed      5        0       0     0     1 of 1       4        1    176      0        0
+               framed      5        0       0     0     1 of 1       4        1    337      0        0
 empty          naive       0        0       0     0     0 of 0       0        0      0      0        0
                greedy      0        0       0     0     0 of 0       0        0      0      0        0
                refined     0        0       0     0     0 of 0       0        0      0      0        0
@@ -38,15 +38,15 @@ single         naive       1        0       0     0     0 of 0       0        0 
 view_front     naive       9       36      36     0     0 of 7       1        0      0      0        0
                greedy      9        0       6     0     7 of 7       1        0      0      0        0
                refined     9        0       0     0     7 of 7       1        0    172      0        0
-               framed      9        0       0     0     7 of 7       1        0    161      0        0
+               framed      9        0       0     0     7 of 7       1        0    335      0        0
 view_left      naive       9       36      36     0     0 of 7       1        0      0      0        0
                greedy      9        0       6     0     7 of 7       1        0      0      0        0
                refined     9        0       0     0     7 of 7       1        0    172      0        0
-               framed      9        0       0     0     7 of 7       1        0    161      0        0
+               framed      9        0       0     0     7 of 7       1        0    331      0        0
 view_right     naive       9       36      36     0     0 of 7       1        0      0      0        0
                greedy      9        0       6     0     7 of 7       1        0      0      0        0
                refined     9        0       0     0     7 of 7       1        0    172      0        0
-               framed      9        0       0     0     7 of 7       1        0    174      0        0
+               framed      9        0       0     0     7 of 7       1        0    342      0        0
 motion         naive       6        3       3     0     0 of 1       1        0      0      3        0
                greedy      6        0       0     0     1 of 1       1        0      0      3        0
                refined     6        0       0     0     1 of 1       1        0      0      3        0
@@ -57,6 +57,7 @@ checks:
   PASS  lazy           solving twice gives exactly the same layout
   PASS  lazy           no overlaps after framing (0)
   PASS  lazy           everything inside the picture (0 outside)
+  PASS  lazy           nothing hidden behind something else on screen (0 pairs)
   PASS  lazy           moving objects never collide (0 pairs)
   PASS  lazy           moving objects stay in the picture (0 leave it)
   PASS  lazy           reports its mistakes (1 of at least 1)
@@ -64,6 +65,7 @@ checks:
   PASS  crowd          solving twice gives exactly the same layout
   PASS  crowd          no overlaps after framing (0)
   PASS  crowd          everything inside the picture (0 outside)
+  PASS  crowd          nothing hidden behind something else on screen (0 pairs)
   PASS  crowd          moving objects never collide (0 pairs)
   PASS  crowd          moving objects stay in the picture (0 leave it)
   PASS  crowd          reports its mistakes (0 of at least 0)
@@ -71,6 +73,7 @@ checks:
   PASS  chain          solving twice gives exactly the same layout
   PASS  chain          no overlaps after framing (0)
   PASS  chain          everything inside the picture (0 outside)
+  PASS  chain          nothing hidden behind something else on screen (0 pairs)
   PASS  chain          moving objects never collide (0 pairs)
   PASS  chain          moving objects stay in the picture (0 leave it)
   PASS  chain          reports its mistakes (0 of at least 0)
@@ -78,6 +81,7 @@ checks:
   PASS  cycle          solving twice gives exactly the same layout
   PASS  cycle          no overlaps after framing (0)
   PASS  cycle          everything inside the picture (0 outside)
+  PASS  cycle          nothing hidden behind something else on screen (0 pairs)
   PASS  cycle          moving objects never collide (0 pairs)
   PASS  cycle          moving objects stay in the picture (0 leave it)
   PASS  cycle          reports its mistakes (1 of at least 1)
@@ -85,6 +89,7 @@ checks:
   PASS  contradiction  solving twice gives exactly the same layout
   PASS  contradiction  no overlaps after framing (0)
   PASS  contradiction  everything inside the picture (0 outside)
+  PASS  contradiction  nothing hidden behind something else on screen (0 pairs)
   PASS  contradiction  moving objects never collide (0 pairs)
   PASS  contradiction  moving objects stay in the picture (0 leave it)
   PASS  contradiction  reports its mistakes (2 of at least 2)
@@ -92,6 +97,7 @@ checks:
   PASS  sizes          solving twice gives exactly the same layout
   PASS  sizes          no overlaps after framing (0)
   PASS  sizes          everything inside the picture (0 outside)
+  PASS  sizes          nothing hidden behind something else on screen (0 pairs)
   PASS  sizes          moving objects never collide (0 pairs)
   PASS  sizes          moving objects stay in the picture (0 leave it)
   PASS  sizes          reports its mistakes (0 of at least 0)
@@ -99,6 +105,7 @@ checks:
   PASS  typos          solving twice gives exactly the same layout
   PASS  typos          no overlaps after framing (0)
   PASS  typos          everything inside the picture (0 outside)
+  PASS  typos          nothing hidden behind something else on screen (0 pairs)
   PASS  typos          moving objects never collide (0 pairs)
   PASS  typos          moving objects stay in the picture (0 leave it)
   PASS  typos          reports its mistakes (4 of at least 4)
@@ -106,6 +113,7 @@ checks:
   PASS  empty          solving twice gives exactly the same layout
   PASS  empty          no overlaps after framing (0)
   PASS  empty          everything inside the picture (0 outside)
+  PASS  empty          nothing hidden behind something else on screen (0 pairs)
   PASS  empty          moving objects never collide (0 pairs)
   PASS  empty          moving objects stay in the picture (0 leave it)
   PASS  empty          reports its mistakes (0 of at least 0)
@@ -113,6 +121,7 @@ checks:
   PASS  single         solving twice gives exactly the same layout
   PASS  single         no overlaps after framing (0)
   PASS  single         everything inside the picture (0 outside)
+  PASS  single         nothing hidden behind something else on screen (0 pairs)
   PASS  single         moving objects never collide (0 pairs)
   PASS  single         moving objects stay in the picture (0 leave it)
   PASS  single         reports its mistakes (0 of at least 0)
@@ -120,6 +129,7 @@ checks:
   PASS  view_front     solving twice gives exactly the same layout
   PASS  view_front     no overlaps after framing (0)
   PASS  view_front     everything inside the picture (0 outside)
+  PASS  view_front     nothing hidden behind something else on screen (0 pairs)
   PASS  view_front     moving objects never collide (0 pairs)
   PASS  view_front     moving objects stay in the picture (0 leave it)
   PASS  view_front     reports its mistakes (1 of at least 1)
@@ -127,6 +137,7 @@ checks:
   PASS  view_left      solving twice gives exactly the same layout
   PASS  view_left      no overlaps after framing (0)
   PASS  view_left      everything inside the picture (0 outside)
+  PASS  view_left      nothing hidden behind something else on screen (0 pairs)
   PASS  view_left      moving objects never collide (0 pairs)
   PASS  view_left      moving objects stay in the picture (0 leave it)
   PASS  view_left      reports its mistakes (1 of at least 1)
@@ -134,6 +145,7 @@ checks:
   PASS  view_right     solving twice gives exactly the same layout
   PASS  view_right     no overlaps after framing (0)
   PASS  view_right     everything inside the picture (0 outside)
+  PASS  view_right     nothing hidden behind something else on screen (0 pairs)
   PASS  view_right     moving objects never collide (0 pairs)
   PASS  view_right     moving objects stay in the picture (0 leave it)
   PASS  view_right     reports its mistakes (1 of at least 1)
@@ -141,6 +153,7 @@ checks:
   PASS  motion         solving twice gives exactly the same layout
   PASS  motion         no overlaps after framing (0)
   PASS  motion         everything inside the picture (0 outside)
+  PASS  motion         nothing hidden behind something else on screen (0 pairs)
   PASS  motion         moving objects never collide (0 pairs)
   PASS  motion         moving objects stay in the picture (0 leave it)
   PASS  motion         reports its mistakes (1 of at least 1)

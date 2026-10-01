@@ -7,9 +7,23 @@ layout (framed): 3 objects, 0 overlapping pairs, 0 pairs overlapping on screen
   relations:
     ok      rock near sun
   1 of 1 relations satisfied
-  camera: from front_above, looking at (0.50, 0.00, 0.00), scene radius 2.90, distance 7.21
-          eye at (0.50, 2.53, 6.75)
+  camera: from front_above, looking at (0.50, 0.00, 0.00), scene radius 2.90, distance 4.91 (sphere fit: 7.21)
+          eye at (0.50, 1.72, 4.60)
   refinement (energy should go down):
+    step   0   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step   1   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step   2   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step  50   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 100   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 150   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 200   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 250   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 300   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 350   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 400   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 450   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 500   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    steps halved because they went uphill: 0
     step   0   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
     step   1   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
     step   2   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)

@@ -115,6 +115,7 @@ int main(){
 		check(same_positions(once, twice), t.name, "solving twice gives exactly the same layout");
 		check(s.overlaps == 0, t.name, "no overlaps after framing (" + std::to_string(s.overlaps) + ")");
 		check(s.off_screen == 0, t.name, "everything inside the picture (" + std::to_string(s.off_screen) + " outside)");
+		check(s.hidden == 0, t.name, "nothing hidden behind something else on screen (" + std::to_string(s.hidden) + " pairs)");
 		int collisions = once.plan().measure().collisions;
 		check(collisions == 0, t.name, "moving objects never collide (" + std::to_string(collisions) + " pairs)");
 		int leaving = once.moving_off_screen();
