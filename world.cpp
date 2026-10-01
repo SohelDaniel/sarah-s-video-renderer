@@ -138,6 +138,30 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 	}
 }
 
+// A title or formula's pieces, with its top-left corner at (x, y). While
+// it's being written (docs/38), each piece follows border_then_fill at its
+// own lagged progress; otherwise every piece is simply there.
+static void draw_words(render& renderer,const vgroup& group,const title_spec& when,float x,float y,
+                       px::Pixel color,float shadow,float t){
+	float progress = when.write > 0.0f ? (t - when.start) / when.write : 1.0f;
+	int n = int(group.pieces.size());
+	for(int i = 0;i<n;i++){
+		const vpiece& p = group.pieces[size_t(i)];
+		piece_look look = progress < 1.0f ? border_then_fill(piece_progress(i, n, progress)) : piece_look{};
+		renderer.draw_vpiece(p, x + p.at.x, y + p.at.y, color, look, shadow);
+	}
+}
+
+// How visible a title or formula is at t: appear() (24, 28), except that a
+// written one has no fade-in, since writing is how it comes in.
+static float seen_at(const title_spec& when,float t){
+	float seen = appear(when.start, when.end, t);
+	if(when.write > 0.0f && t >= when.start && (when.end < 0.0f || t <= when.end)){
+		seen = when.end >= 0.0f ? std::clamp((when.end - t) / 0.3f, 0.0f, 1.0f) : 1.0f;
+	}
+	return seen;
+}
+
 // Each arrow goes from the surface of one object to the surface of the
 // other: from center to center, shortened at each end by that object's
 // bounding radius (plus a little gap), so it touches neither.
@@ -145,26 +169,22 @@ void world::draw_overlays(render& renderer,float t){
 	// titles, across the top, centered (docs/27, 29); several stack downwards
 	float top = 12.0f * ui;
 	for(const world_title& s : titles){
-		float seen = appear(s.when.start, s.when.end, t);
+		float seen = seen_at(s.when, t);
 		if(seen <= 0.0f) continue;
 		float x = (cam.width - render::text_width(s.when.text, s.size)) / 2.0f;
 		px::Pixel color(240, 240, 245, uint8_t(255 * seen));
 		if(s.paths.pieces.empty()) renderer.draw_text(x, top, s.when.text, s.size, color);
-		for(const vpiece& p : s.paths.pieces){
-			renderer.draw_vpiece(p, x + p.at.x, top + p.at.y, color, piece_look{}, std::max(1.0f, s.size / 16.0f));
-		}
+		draw_words(renderer, s.paths, s.when, x, top, color, std::max(1.0f, s.size / 16.0f), t);
 		top += render::text_height(s.size) + 6.0f * ui;
 	}
 	// formulas under the titles, centered, each during its own time range
 	for(const world_math& m : maths){
-		float seen = appear(m.when.start, m.when.end, t);
+		float seen = seen_at(m.when, t);
 		if(seen <= 0.0f) continue;
 		float x = (cam.width - m.formula.width) / 2.0f;
 		float y = top + 4.0f * ui;
 		px::Pixel color(240, 240, 245, uint8_t(std::lround(255.0f * seen)));
-		for(const vpiece& p : m.paths.pieces){
-			renderer.draw_vpiece(p, x + p.at.x, y + p.at.y, color, piece_look{}, 1.5f * ui);
-		}
+		draw_words(renderer, m.paths, m.when, x, y, color, 1.5f * ui, t);
 		top += m.formula.height + m.formula.depth + 12.0f * ui;
 	}
 

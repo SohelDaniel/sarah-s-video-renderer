@@ -59,3 +59,17 @@ float loop_length(const std::vector<point2>& loop);
 // The first `fraction` of a closed loop, measured along it (0..1): the
 // points up to there, ending at a point in between if it stops mid-side.
 std::vector<point2> loop_prefix(const std::vector<point2>& loop,float fraction);
+
+// ---- Write (docs/38) ----
+// Writing n pieces takes `progress` from 0 to 1. Each piece gets its own
+// stretch of it, overlapping the next (Manim's lag_ratio):
+//     w = 1 / (1 + lag·(n − 1))      how long each piece takes
+//     piece i starts at i · lag · w  so the last one ends exactly at 1
+// Returns how far piece i is, 0..1.
+constexpr float write_lag = 0.2f;
+float piece_progress(int i,int n,float progress);
+// One piece being written, p = 0..1 (Manim's DrawBorderThenFill):
+//   first half:  its outline grows along the loops (stroke 0 -> 1)
+//   second half: the fill comes up (0 -> 1) as the outline fades (1 -> 0)
+// Both halves eased with smooth (23). At p = 1 it's plainly there.
+piece_look border_then_fill(float p);

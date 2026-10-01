@@ -204,8 +204,9 @@ static std::vector<token> tokenize(const std::string& source){
 //    scene      = { line }
 //    line       = [ header | arrow | definition | fact ] end_of_line
 //    arrow      = "arrow" name name [ color ] [ time "-" time ]
-//    title      = "title" text [ time "-" time ]
-//    math       = "math" text [ time "-" time ]          (the text is checked by parse_math, docs/30)
+//    title      = "title" text [ time "-" time ] [ write ]
+//    math       = "math" text [ time "-" time ] [ write ] (the text is checked by parse_math, docs/30)
+//    write      = "write" [ time ]                        (1 s if no time, docs/38)
 //    header     = "scene" [ text ] [ "view" view_word ]
 //    definition = name "=" shape { property }
 //    fact       = name phrase { [","] phrase }
@@ -247,6 +248,7 @@ private:
 	void arrow();
 	void title();
 	void formula();
+	void write_in(title_spec& s,const std::string& what);
 	void definition();
 	void fact();
 	void property(object_spec& o);
@@ -375,7 +377,32 @@ void parser::arrow(){
 	}
 }
 
-// title = "title" text [ time "-" time ]      (docs/27)
+// 2.5 -> "2.5s", 3 -> "3s"
+static std::string format_seconds(float seconds){
+	std::ostringstream out;
+	out << seconds << "s";
+	return out.str();
+}
+
+// write = "write" [ time ]      (docs/38): drawn in over that long (1 s if
+// no time is given), from the start of its time range.
+void parser::write_in(title_spec& s,const std::string& what){
+	if(!(peek().kind == token_kind::word && peek().value == "write")) return;
+	next();   // "write"
+	s.write = 1.0f;
+	if(peek().kind == token_kind::dash) fail(peek(), "writing can't take a negative time; write a time like 2s");
+	if(peek().kind == token_kind::time){
+		const token& t = peek();
+		s.write = time("");
+		if(s.write <= 0.0f) fail(t, "writing has to take some time, like write 2s");
+		if(s.end >= 0.0f && s.start + s.write > s.end){
+			fail(t, "the " + what + " is only shown for " + format_seconds(s.end - s.start)
+			        + ", so writing it can't take " + format_seconds(s.write));
+		}
+	}
+}
+
+// title = "title" text [ time "-" time ] [ write ]      (docs/27, 38)
 void parser::title(){
 	next();   // "title"
 	const token& words = next();
@@ -387,11 +414,12 @@ void parser::title(){
 		if(dash.kind != token_kind::dash) fail(dash, "expected '-' between the start and end times, like 0s-5s");
 		s.end = time("for when the title goes away, like 5s");
 	}
+	write_in(s, "title");
 	if(!at_end_of_line()) fail(peek(), "unexpected " + describe(peek()) + " after the title");
 	result.spec.titles.push_back(s);
 }
 
-// math = "math" text [ time "-" time ]      (docs/30)
+// math = "math" text [ time "-" time ] [ write ]      (docs/30, 38)
 void parser::formula(){
 	next();   // "math"
 	const token& words = next();
@@ -410,6 +438,7 @@ void parser::formula(){
 		if(dash.kind != token_kind::dash) fail(dash, "expected '-' between the start and end times, like 0s-5s");
 		s.end = time("for when the formula goes away, like 5s");
 	}
+	write_in(s, "formula");
 	if(!at_end_of_line()) fail(peek(), "unexpected " + describe(peek()) + " after the formula");
 	result.spec.maths.push_back(s);
 }

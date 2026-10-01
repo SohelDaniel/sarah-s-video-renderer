@@ -669,6 +669,38 @@ static void test_vector_paths(){
 	check(worst <= 1, "an 'o' filled from its loops looks the same as its cached glyph (at most " + std::to_string(worst) + " apart)");
 }
 
+// Write (docs/38): letters drawn in, outline first, then filled.
+static void test_write(){
+	std::printf("\nwrite:\n");
+	// 5 pieces ("E = mc^2"): each takes w = 1/(1 + 0.2·4) = 0.5556 of the time
+	float w = 1.0f / 1.8f;
+	check(std::fabs(piece_progress(2, 5, 2 * 0.2f * w)) < 1e-5f && std::fabs(piece_progress(2, 5, 2 * 0.2f * w + w) - 1.0f) < 1e-5f,
+	      "of 5 pieces, the 3rd starts at 0.2222 and takes 0.5556 of the writing");
+	check(piece_progress(4, 5, 0.4444f) < 0.001f && piece_progress(4, 5, 1.0f) == 1.0f && piece_progress(0, 5, w) == 1.0f,
+	      "the last starts at 0.4444 and ends exactly at 1; the first is done at 0.5556");
+
+	piece_look start = border_then_fill(0.0f), quarter = border_then_fill(0.25f), three = border_then_fill(0.75f), done = border_then_fill(1.0f);
+	check(start.stroke == 0.0f && start.fill == 0.0f, "at 0 nothing shows: no outline drawn yet, no fill");
+	check(std::fabs(quarter.stroke - 0.5f) < 1e-5f && quarter.fill == 0.0f && quarter.stroke_alpha == 1.0f,
+	      "at 0.25 half the outline is drawn (smooth(0.5) = 0.5), and nothing is filled");
+	check(three.stroke == 1.0f && std::fabs(three.fill - 0.5f) < 1e-5f && std::fabs(three.stroke_alpha - 0.5f) < 1e-5f,
+	      "at 0.75 the outline is whole, the fill half up, the outline half faded");
+	check(done.still(), "at 1 it's simply there (drawn like any still letter)");
+
+	math_parse_result half = parse_math("\\frac{1}{2}");
+	vgroup f = math_paths(layout_math(*half.tree, 30.0f));
+	check(f.pieces.size() == 3 && f.pieces[0].key == -1, "a fraction's bar is written first, before its top and bottom");
+
+	parse_result two = parse_scene("math \"E = mc^2\" 0s-10s write 2s\ntitle \"Hi\" write\n");
+	check(two.ok() && two.spec.maths[0].write == 2.0f && two.spec.titles[0].write == 1.0f,
+	      "'write 2s' writes it in over 2 s; 'write' alone takes 1 s");
+	parse_result zero = parse_scene("title \"Hi\" 0s-5s write 0s\n");
+	parse_result longer = parse_scene("title \"Hi\" 2s-3s write 2s\n");
+	parse_result minus = parse_scene("title \"Hi\" write -1s\n");
+	check(!zero.ok() && !longer.ok() && !minus.ok() && minus.errors[0].column == 18,
+	      "'write 0s', writing for longer than it's shown, and 'write -1s' are mistakes (the '-' at column 18)");
+}
+
 int main(){
 	test_clipping();
 	test_fly_camera();
@@ -686,6 +718,7 @@ int main(){
 	test_linear_light();
 	test_smooth_shading();
 	test_vector_paths();
+	test_write();
 	std::printf("\n%s: %d check%s failed\n", failures == 0 ? "ALL PASSED" : "FAILED", failures, failures == 1 ? "" : "s");
 	return failures == 0 ? 0 : 1;
 }

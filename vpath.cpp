@@ -1,6 +1,8 @@
 #include "vpath.h"
 #include "font.h"
+#include "timeline.h"
 
+#include <algorithm>
 #include <cmath>
 
 
@@ -50,7 +52,14 @@ vgroup math_paths(const math_box& formula){
 		p.height = r.height;
 		// a bar is a rectangle: one loop of 4 corners, going round
 		p.loops = {{{0.0f, 0.0f}, {r.width, 0.0f}, {r.width, r.height}, {0.0f, r.height}}};
-		group.pieces.push_back(std::move(p));
+		// In reading order (Write draws pieces in this order, docs/38): just
+		// before the first letter that starts at or after the bar's left end,
+		// so a fraction's line comes before its top and bottom.
+		size_t where = group.pieces.size();
+		for(size_t k = 0;k<group.pieces.size();k++){
+			if(group.pieces[k].key >= 0 && group.pieces[k].at.x >= r.x - 0.01f){ where = k; break; }
+		}
+		group.pieces.insert(group.pieces.begin() + long(where), std::move(p));
 	}
 	return group;
 }
@@ -85,4 +94,28 @@ std::vector<point2> loop_prefix(const std::vector<point2>& loop,float fraction){
 		left -= side;
 	}
 	return part;
+}
+
+float piece_progress(int i,int n,float progress){
+	if(progress >= 1.0f) return 1.0f;              // exactly done (rounding could leave 0.9999999)
+	if(n <= 1) return std::clamp(progress, 0.0f, 1.0f);
+	float w = 1.0f / (1.0f + write_lag * float(n - 1));
+	float start = float(i) * write_lag * w;
+	return std::clamp((progress - start) / w, 0.0f, 1.0f);
+}
+
+piece_look border_then_fill(float p){
+	piece_look look;
+	if(p >= 1.0f) return look;                 // done: just there, like any still piece
+	if(p < 0.5f){
+		look.fill = 0.0f;
+		look.stroke = smooth_curve(p / 0.5f);
+		look.stroke_alpha = 1.0f;
+	}else{
+		float f = smooth_curve((p - 0.5f) / 0.5f);
+		look.fill = f;
+		look.stroke = 1.0f;
+		look.stroke_alpha = 1.0f - f;
+	}
+	return look;
 }

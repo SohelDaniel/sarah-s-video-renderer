@@ -1,0 +1,11 @@
+# Write (docs/38): the title and the formula draw themselves in, letter by
+# letter: first the outline, then the fill, each letter a little after the
+# one before (like Manim's Write).
+
+scene "write"
+title "Newton's gravity" 0s-20s write 1.5s
+math "F = G\frac{m_1 m_2}{r^2}" 1s-20s write 2s
+
+sun    = sphere big gold important label math "m_1" always
+planet = octahedron red orbits sun 1 turn 0s-20s label math "m_2" always
+arrow sun planet gold

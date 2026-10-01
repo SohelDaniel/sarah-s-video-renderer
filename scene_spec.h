@@ -192,6 +192,7 @@ struct title_spec{
 	std::string text;
 	float start = 0.0f;
 	float end = -1.0f;   // shown from start to end; end < 0 = always
+	float write = 0.0f;  // > 0: drawn in letter by letter over this many seconds from start (docs/38)
 };
 
 // The whole scene, as described.
