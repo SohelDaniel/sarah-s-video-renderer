@@ -281,6 +281,91 @@ frames the still objects (E4).
 
 ---
 
+## 7. Step E3: fly-by paths
+
+A fly-by is a straight segment. The naive one went right through the
+middle of the sun. Now the planner tries lines that **pass** it, in this
+order:
+
+```
+sides:      in front (+z, towards the usual camera), above, below, behind
+distances:  D = r_comet + r_sun + gap,  then ×1.5, ×2, ×3, ×4
+```
+
+and takes the first line that's clear of **both** kinds of things.
+
+### Against still objects: exact
+
+The closest point of a segment A → B to a point q:
+
+```
+s       = clamp( dot(q − A, B − A) / |B − A|² ,  0, 1 )     how far along the segment (0 = A, 1 = B)
+closest = A + s · (B − A)
+```
+
+`dot(q − A, B − A) / |B − A|²` is the projection from 01: how far along the
+line q is. Clamping keeps it on the segment, so past the ends, the end
+itself is the closest point. The distance from `closest` to q must be at
+least `r + r_q + gap`.
+
+Example: the rock at q = (2.6, 0, 0), and the "above" line from
+A = (−7.53, 2.67, 0) to B = (7.53, 2.67, 0):
+
+```
+B − A = (15.06, 0, 0),   q − A = (10.13, −2.67, 0)
+s = (10.13 · 15.06) / 15.06² = 10.13 / 15.06 = 0.673
+closest = (−7.53 + 0.673 · 15.06, 2.67, 0) = (2.6, 2.67, 0)      straight above the rock
+distance = 2.67 ≥ need = 0.87 + 0.8 + 0.4 = 2.07   ✓ clear
+```
+
+### Against moving objects: sampling
+
+Both things move, so there's no single formula. The candidate is checked
+by time sampling, exactly as in section 4, over the whole video. That
+includes the time **before** the fly-by starts and **after** it ends,
+because the comet waits at its start and end points then, and something
+could run into it there.
+
+### Worked example: why not the line in front?
+
+The first candidate is in front of the sun: z = 2.67, y = 0. Against the
+still objects it's fine (the same numbers as above, just sideways). But it
+lies in the planets' orbit plane, and it crosses planet2's orbit (R = 6.67)
+at x = ±√(6.67² − 2.67²) = ±6.11. Sampling finds that **at 8.84 s**,
+planet2 comes within 0.07 of the comet, below the gap/4 = 0.1 it needs. ✗
+
+The next candidate, **above** (y = 2.67, z = 0), is 2.67 above the orbit
+plane. A planet would have to be within 0.87 + 0.87 + 0.4 = 2.13 of it, and
+it's always at least 2.67 away. That's clear at every moment, without
+sampling even needing to find it. ✓
+
+The report ([scene4-flights.txt](images/scene4-flights.txt)):
+
+```
+motion (flights): 3 moving objects, 0 colliding pairs
+    planet1    orbits sun, 0.00-20.00 s: radius 4.60, 1.00 turns
+    planet2    orbits sun, 0.00-20.00 s: radius 6.67, 2.00 turns
+    comet      flies_past sun, 4.00-10.00 s: from (-7.53, 2.67, 0.00) to (7.53, 2.67, 0.00)
+```
+
+| | naive (E1) | orbits (E2) | flights (E3) |
+|---|---|---|---|
+| colliding pairs | 9 | 4 | **0** |
+
+| 0 s | 3 s | 7 s | 12 s |
+|---|---|---|---|
+| ![](images/scene4-flights-0.png) | ![](images/scene4-flights-3.png) | ![](images/scene4-flights-7.png) | ![](images/scene4-flights-12.png) |
+
+Every circle stays grey for the whole video. The stress tests now check
+this too: **moving objects never collide** is a hard check for every scene
+(15).
+
+What's left: at 7 s the comet is at the top edge, cut off, and planet2's
+wide orbit leaves the picture. The camera still frames only the still
+objects.
+
+---
+
 ## Try it on paper
 
 1. Planet2 (R = 2.67, 2 turns over 0 → 20 s, start angle 0). Where is it at

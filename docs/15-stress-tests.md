@@ -56,6 +56,7 @@ After the full solve (`framed`), every scene must pass:
 3. **no overlaps**
 4. **everything is inside the picture**
 5. **its mistakes are reported**: at least as many errors as the scene has
+6. **moving objects never collide** (added with step E3, 16)
 
 If any check fails, `make test` fails.
 

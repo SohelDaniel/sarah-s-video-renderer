@@ -85,7 +85,7 @@ int main(){
 
 	std::vector<test_scene> scenes = all_test_scenes();
 
-	const motion_plan::method moving = motion_plan::method::naive;
+	const motion_plan::method moving = motion_plan::method::flights;
 
 	std::printf("%-14s %-8s %4s %8s %7s %5s %10s %6s %8s %6s %6s %8s\n", "scene", "step", "objs", "overlaps",
 	            "hidden", "off", "relations", "errors", "warnings", "halved", "moving", "collide");
@@ -115,6 +115,8 @@ int main(){
 		check(same_positions(once, twice), t.name, "solving twice gives exactly the same layout");
 		check(s.overlaps == 0, t.name, "no overlaps after framing (" + std::to_string(s.overlaps) + ")");
 		check(s.off_screen == 0, t.name, "everything inside the picture (" + std::to_string(s.off_screen) + " outside)");
+		int collisions = once.plan().measure().collisions;
+		check(collisions == 0, t.name, "moving objects never collide (" + std::to_string(collisions) + " pairs)");
 		check(errors >= t.expected_errors, t.name,
 		      "reports its mistakes (" + std::to_string(errors) + " of at least " + std::to_string(t.expected_errors) + ")");
 	}

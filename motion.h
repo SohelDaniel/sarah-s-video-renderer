@@ -19,6 +19,9 @@
 //    orbits : every orbit gets the smallest radius whose whole circle stays
 //             clear of the still objects and of the other orbits around the
 //             same center (fly-bys still naive)
+//    flights: orbits as above, and every fly-by tries lines in front of,
+//             above, below and behind what it passes, and takes the first
+//             one that never comes too close to anything
 // ============================================================================
 
 
@@ -70,7 +73,7 @@ struct path{
 
 class motion_plan{
 public:
-	enum class method{ naive, orbits };
+	enum class method{ naive, orbits, flights };
 
 	motion_plan(const std::vector<obstacle>& still,std::vector<path> moving);
 
@@ -90,7 +93,12 @@ public:
 private:
 	void place_naive();
 	void plan_orbits();
+	void plan_flights();
+	bool clear_of_still(const path& p)const;
+	bool clear_of_moving(size_t k)const;
+	std::vector<std::string> warnings;
 	float sample_step()const;
+	float sample_step_with(const path& extra)const;
 
 	// One pair that hit each other.
 	struct collision{

@@ -183,8 +183,9 @@ layout::method still_step(const std::string& step){
 
 motion_plan::method motion_step(const std::string& step){
 	if(step == "naive")  return motion_plan::method::naive;
-	if(step == "orbits") return motion_plan::method::orbits;
-	throw std::invalid_argument("unknown motion step \"" + step + "\" (try: naive, orbits)");
+	if(step == "orbits")  return motion_plan::method::orbits;
+	if(step == "flights") return motion_plan::method::flights;
+	throw std::invalid_argument("unknown motion step \"" + step + "\" (try: naive, orbits, flights)");
 }
 
 int main(int argc,char** argv){
@@ -197,7 +198,7 @@ int main(int argc,char** argv){
 			             argc > 3 ? argv[3] : "", 0.0f);
 		}
 		else if(which == "4"){
-			solved_scene(lazy_motion_scene(), layout::method::framed, motion_step(argc > 2 ? argv[2] : "orbits"),
+			solved_scene(lazy_motion_scene(), layout::method::framed, motion_step(argc > 2 ? argv[2] : "flights"),
 			             argc > 3 ? argv[3] : "", argc > 4 ? std::stof(argv[4]) : 0.0f);
 		}
 		else if(which == "stress" && argc > 2){

@@ -114,6 +114,8 @@ void motion_plan::solve(method how){
 	switch(how){
 		case method::naive:  place_naive(); method_name = "naive"; break;
 		case method::orbits: place_naive(); plan_orbits(); method_name = "orbits"; break;
+		case method::flights:
+			place_naive(); plan_orbits(); plan_flights(); method_name = "flights"; break;
 	}
 }
 
@@ -197,6 +199,98 @@ void motion_plan::plan_orbits(){
 			}
 		}
 		done.push_back(int(k));
+	}
+}
+
+// ---------------------------------------------------------------------------
+//  Step E3: fly-by paths (docs/16).
+//
+//  A fly-by is a straight segment from `from` to `to`. Candidates: lines
+//  along x that pass the object at distance D = r + r_other + gap (times
+//  1, 1.5, 2, 3, 4) in front of it, then above, below and behind it.
+//
+//  Against still objects the check is exact. The closest point of a
+//  segment A→B to a point q is at
+//      s = clamp( dot(q − A, B − A) / |B − A|² , 0, 1 )
+//      closest = A + s·(B − A)
+//  and it has to be at least r + r_q + gap away.
+//
+//  Against moving objects there's no simple formula (both move), so the
+//  candidate is checked by time sampling, the same way as find_collisions.
+//  The first candidate that's clear of both is used.
+// ---------------------------------------------------------------------------
+bool motion_plan::clear_of_still(const path& p)const{
+	vec3 ab = p.to - p.from;
+	float length2 = dot(ab, ab);
+	for(const obstacle& o : still){
+		float s = length2 > 0.0f ? std::clamp(dot(o.position - p.from, ab) / length2, 0.0f, 1.0f) : 0.0f;
+		vec3 closest = p.from + ab * s;
+		if(distance(closest, o.position) < p.radius + o.radius + layout::gap - 1e-4f) return false;
+	}
+	return true;
+}
+
+// the sample step if `extra` were added to the moving objects
+float motion_plan::sample_step_with(const path& extra)const{
+	float fastest = extra.speed();
+	float last = extra.end;
+	for(const path& p : moving){
+		fastest = std::max(fastest, p.speed());
+		last = std::max(last, p.end);
+	}
+	return std::max(layout::gap / (4.0f * fastest), last / 20000.0f);
+}
+
+// Does moving object k ever come too close to another moving object?
+bool motion_plan::clear_of_moving(size_t k)const{
+	const path& p = moving[k];
+	float dt = sample_step_with(p);
+	float last = duration();
+	for(int step = 0;;step++){
+		float t = std::min(step * dt, last);
+		vec3 here = p.at(t);
+		for(size_t j = 0;j<moving.size();j++){
+			if(j == k) continue;
+			float surface_gap = distance(here, moving[j].at(t)) - p.radius - moving[j].radius;
+			if(surface_gap < layout::gap / 4.0f) return false;
+		}
+		if(t >= last) break;
+	}
+	return true;
+}
+
+void motion_plan::plan_flights(){
+	const vec3 sides[4] = {
+		vec3(0.0f, 0.0f, 1.0f),    // in front (towards the usual camera)
+		vec3(0.0f, 1.0f, 0.0f),    // above
+		vec3(0.0f, -1.0f, 0.0f),   // below
+		vec3(0.0f, 0.0f, -1.0f),   // behind
+	};
+	for(size_t k = 0;k<moving.size();k++){
+		path& p = moving[k];
+		if(p.kind != motion_kind::flies_past) continue;
+		const obstacle& other = still[p.around];
+		float D = p.radius + other.radius + layout::gap;
+		float half = 2.0f * (p.radius + other.radius) + 3.0f;
+		vec3 along(half, 0.0f, 0.0f);
+
+		bool found = false;
+		for(float scale : {1.0f, 1.5f, 2.0f, 3.0f, 4.0f}){
+			for(const vec3& side : sides){
+				vec3 middle = other.position + side * (D * scale);
+				p.from = middle - along;
+				p.to   = middle + along;
+				if(clear_of_still(p) && clear_of_moving(k)){
+					found = true;
+					break;
+				}
+			}
+			if(found) break;
+		}
+		if(!found){
+			warnings.push_back("no clear line for " + p.name + " flying past " + other.name
+			                   + " (using the last one tried)");
+		}
 	}
 }
 
@@ -301,6 +395,10 @@ std::string motion_plan::report()const{
 			    << p.to[0] << ", " << p.to[1] << ", " << p.to[2] << ")";
 		}
 		out << "\n";
+	}
+	if(!warnings.empty()){
+		out << "  problems while planning:\n";
+		for(const std::string& w : warnings) out << "    " << w << "\n";
 	}
 	if(!hits.empty()){
 		out << "  collisions:\n";
