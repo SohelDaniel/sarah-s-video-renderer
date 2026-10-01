@@ -400,3 +400,23 @@ struct math_node{
 ```
 Each node owns its children. When the root is deleted, the whole tree goes
 with it, with no `delete` anywhere (30).
+
+### A `static` table built by a lambda
+```cpp
+static const std::array<float, 256> table = []{
+	std::array<float, 256> t{};
+	for(int b = 0;b<256;b++) t[b] = ...;
+	return t;
+}();
+```
+The lambda is called once (the `()` at the end), the first time the
+function runs, and its result is kept. A neat way to fill a constant table
+that needs a loop (35).
+
+### `std::chrono` for timing
+```cpp
+auto started = std::chrono::steady_clock::now();
+...
+float took = std::chrono::duration<float>(std::chrono::steady_clock::now() - started).count();
+```
+`duration<float>` turns the difference into seconds as a float (34).

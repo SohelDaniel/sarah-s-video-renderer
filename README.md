@@ -13,7 +13,7 @@ to), and where the camera should stand. A CPU software rasterizer then draws
 it, live in a window you can walk around in, with the things an explainer
 needs (like [Manim](https://www.manim.community/)): titles, labels that
 place themselves, math formulas typeset by its own small TeX, smooth
-outline text, arrows, easing, fades, and mp4 export.
+outline text, arrows, easing, fades, and mp4 export up to 1080p.
 
 The AI writes a `.dan` file; the engine reloads it every time it's saved and
 writes `<file>.dan.report` with every error and every problem the solver
@@ -61,12 +61,18 @@ The circles are each object's bounding sphere: red = overlapping something.
 - `.obj` mesh loading with validation
 - model, view and perspective projection matrices, written out by hand
 - back-face culling, bounding-box triangle setup, barycentric rasterization
-- z-buffer, flat Lambert shading
+- z-buffer; **smooth shading**: per-corner normals with a 40° crease angle
+  (spheres look round, cubes stay sharp), Phong-blended per pixel, Lambert
+  plus a Blinn-Phong highlight ([docs/36](docs/36-smooth-shading.md))
 - ~1 ms per frame for ~2000 triangles at 640×480
 
 - **near-plane clipping** (Sutherland–Hodgman in clip space), so you can
   stand inside a scene
-- **anti-aliasing** (`--aa`, 2×2 supersampling), **see-through** objects
+- **anti-aliasing** (`--aa`, 2×2 supersampling; 3×3 for HD video), every
+  color mixed in **linear light** rather than sRGB bytes ([docs/35](docs/35-linear-light.md))
+- **any picture size**: `--hd` renders 1920×1080 at 16:9 with the same layout,
+  everything on screen scaled with the height ([docs/34](docs/34-hd.md))
+- **see-through** objects
   (sorted far to near, blended, no depth writes)
 - **smooth lines and arrows** (distance-to-segment coverage, depth-tested)
 - **outline text**: TrueType glyph outlines (read with `stb_truetype`), flattened
@@ -133,8 +139,9 @@ The circles are each object's bounding sphere: red = overlapping something.
   keeps the last good scene and says why in the `.report` file ([docs/22](docs/22-live-reload.md))
 
 `make test` runs both test programs: the solver's 181 checks and the
-engine's 85 (clipping, the fly camera, fonts, math, labels, text, lines,
-fades, easing, looping, the parser, live reload).
+engine's 99 (clipping, the fly camera, fonts, math, labels, text, lines,
+fades, easing, looping, the parser, live reload, picture sizes, linear
+light, smooth shading).
 
 ## Build and run
 
@@ -155,6 +162,7 @@ make run SCENE=2      scene 2: a small solar system, 20 s
 ./main scenes/showcase.dan --aa               everything at once
 ./main stress flyby_mover                     a probe flying past a planet that is itself orbiting
 ./main scenes/labels.dan --aa --video out.mp4 the same, as an mp4 (needs ffmpeg)
+./main scenes/showcase.dan --hd --video hd.mp4 1080p, 3x3 anti-aliased, no debugging circles
 ./main clip on|off    standing inside a scene, with or without near-plane clipping
 ./main stress crowd   any of the stress test scenes (crowd, chain, cycle, typos, ...)
 make test             all the tests
@@ -198,6 +206,7 @@ small numbers you can check on paper. One point is followed from the cube's
 | `test_scenes`, `solver_test.cpp`, `engine_test.cpp` | the tests |
 | `world` | turns a description + solved layout into objects and a camera |
 | `pixel.h` | a small single-header image library (PNG/PPM output) |
+| `srgb.h` | turning sRGB bytes into amounts of light and back, and mixing colors as light |
 | `shapes/` | test meshes |
 
 ## Next

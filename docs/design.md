@@ -87,6 +87,15 @@ scene_spec (what the AI wrote) ──► layout (pure math: spheres in, position
 - **Solve twice when things move.** Placing the still objects needs room for
   the paths, and the paths need the still objects' places. Going round once
   more (still, paths, still again, paths again) settles it (32).
+- **Write sizes for one picture, scale for the rest.** Every on-screen size
+  (text, gaps, line widths) is written for a picture 480 pixels tall, and
+  multiplied by height / 480. The solver measures in tan units (angles), so
+  it gives the same answer at any resolution (34).
+- **Mix light, not bytes.** Colors are stored as sRGB bytes but mixed as
+  linear light, in one place (`srgb.h`), so every blend in the renderer is
+  right the same way (35).
+- **Work out what's fixed once.** A mesh's corner normals don't change, so
+  they're computed when it's loaded, not per frame (36).
 - **Every step is measured.** The report counts overlaps in 3D, overlaps
   on screen and satisfied relations, so each step can be compared with the
   one before (the table at the end of 14). An improvement you can't
