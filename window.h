@@ -49,4 +49,5 @@ private:
 	bool tab_pressed = false;
 	bool escape_pressed = false;
 	float mouse_x = 0.0f, mouse_y = 0.0f;   // mouse movement collected since last read
+	int ignore_mouse = 0;                   // frames of mouse movement to throw away (see capture_mouse)
 };

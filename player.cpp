@@ -25,6 +25,7 @@ void player::play(camera& cam,const std::vector<object*>& scene){
 
 	fly_camera fly;          // the free camera (docs/20)
 	bool free = false;
+	std::cout << "click the window, then press Tab to walk around (WASD + mouse, Esc to stop)\n";
 	float last = 0.0f;       // `real` of the previous frame, for real dt
 
 	while(screen.is_open()){
@@ -45,7 +46,10 @@ void player::play(camera& cam,const std::vector<object*>& scene){
 		if(screen.toggled() || (free && screen.escaped())){
 			free = !free;
 			if(free) fly.look_from(cam.eye(), cam.target());
+			else std::cout << "you walked to (" << fly.eye[0] << ", " << fly.eye[1] << ", " << fly.eye[2] << ")\n";
 			screen.capture_mouse(free);
+			std::cout << (free ? "free camera: on (WASD to move, mouse to look, Esc to stop)"
+			                   : "free camera: off (back to the scripted camera)") << std::endl;
 		}
 
 		// 2. everything goes to where it is at time t

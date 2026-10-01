@@ -31,6 +31,10 @@ window::window(const std::string& title,int width,int height){
 	}
 	// on a bigger (e.g. Retina) screen, blow pixels up as sharp squares, not blurry
 	SDL_SetTextureScaleMode(screen, SDL_SCALEMODE_NEAREST);
+
+	// A program started from the terminal doesn't always come to the front
+	// on macOS, and then the keys keep going to the terminal. Ask for it.
+	SDL_RaiseWindow(handle);
 }
 
 window::~window(){
@@ -52,11 +56,12 @@ bool window::is_open(){
 		}
 		// in relative mode these are pure movements, not positions: the
 		// mouse can move forever without hitting the edge of the screen
-		if(event.type == SDL_EVENT_MOUSE_MOTION){
+		if(event.type == SDL_EVENT_MOUSE_MOTION && ignore_mouse == 0){
 			mouse_x += event.motion.xrel;
 			mouse_y += event.motion.yrel;
 		}
 	}
+	if(ignore_mouse > 0) ignore_mouse--;
 	return open;
 }
 
@@ -92,6 +97,10 @@ bool window::escaped(){
 void window::capture_mouse(bool on){
 	SDL_SetWindowRelativeMouseMode(handle, on);
 	mouse_x = mouse_y = 0.0f;
+	// capturing moves the pointer to the middle of the window, and that jump
+	// arrives as a mouse movement: without this, the view would jerk sideways
+	// the moment you press Tab
+	ignore_mouse = 6;   // about 50 ms at 120 frames per second: too short to notice
 	escape_pressed = false;
 }
 
