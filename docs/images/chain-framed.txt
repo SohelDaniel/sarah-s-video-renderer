@@ -1,0 +1,53 @@
+chain: 15 objects in a row, each relative to the last
+layout (framed): 15 objects, 0 overlapping pairs, 0 pairs overlapping on screen
+  objects not fully in the picture: 0
+  objects (in placement order):
+    link1       normal  r= 1.39  at (  0.00,   0.00,   0.00)
+    link2       normal  r= 1.13  at (  3.13,  -0.01,   0.00)
+    link3       normal  r= 0.80  at (  5.70,  -0.17,   0.06)
+    link4       normal  r= 0.80  at (  5.01,   2.15,  -0.06)
+    link5       normal  r= 1.39  at (  7.86,   2.04,  -0.02)
+    link6       normal  r= 0.80  at ( 10.70,   1.83,   0.06)
+    link7       normal  r= 0.80  at ( 10.16,   4.17,  -0.06)
+    link8       normal  r= 0.80  at ( 12.41,   4.00,   0.00)
+    link9       normal  r= 1.13  at ( 15.00,   3.82,   0.07)
+    link10      normal  r= 1.13  at ( 14.51,   6.84,  -0.07)
+    link11      normal  r= 0.80  at ( 17.08,   6.66,   0.00)
+    link12      normal  r= 0.80  at ( 19.31,   6.51,   0.06)
+    link13      normal  r= 1.39  at ( 18.86,   9.40,  -0.06)
+    link14      normal  r= 0.80  at ( 21.66,   9.23,   0.01)
+    link15      normal  r= 0.80  at ( 23.89,   9.25,  -0.00)
+  relations:
+    ok      link2 near link1
+    ok      link3 right_of link2
+    ok      link4 above link3
+    ok      link5 near link4
+    ok      link6 right_of link5
+    ok      link7 above link6
+    ok      link8 near link7
+    ok      link9 right_of link8
+    ok      link10 above link9
+    ok      link11 near link10
+    ok      link12 right_of link11
+    ok      link13 above link12
+    ok      link14 near link13
+    ok      link15 right_of link14
+  14 of 14 relations satisfied
+  camera: from front_above, looking at (11.65, 4.70, -0.03), scene radius 13.95, distance 34.66
+          eye at (11.65, 16.87, 32.42)
+  refinement (energy should go down):
+    step   0   E =  10.6982   (spring 0.0000, push 0.0000, relations 0.0000, screen 10.6982)
+    step   1   E =   7.0874   (spring 0.0406, push 0.0000, relations 0.0000, screen 7.0467)
+    step   2   E =   4.4460   (spring 0.1577, push 0.0000, relations 0.0000, screen 4.2882)
+    step  50   E =   1.1499   (spring 0.9691, push 0.0000, relations 0.0000, screen 0.1808)
+    step 100   E =   1.1499   (spring 0.9691, push 0.0000, relations 0.0000, screen 0.1808)
+    step 150   E =   1.1499   (spring 0.9691, push 0.0000, relations 0.0000, screen 0.1808)
+    step 200   E =   1.1499   (spring 0.9691, push 0.0000, relations 0.0000, screen 0.1808)
+    step 250   E =   1.1499   (spring 0.9691, push 0.0000, relations 0.0000, screen 0.1808)
+    step 300   E =   1.1499   (spring 0.9691, push 0.0000, relations 0.0000, screen 0.1808)
+    step 350   E =   1.1499   (spring 0.9691, push 0.0000, relations 0.0000, screen 0.1808)
+    step 400   E =   1.1499   (spring 0.9691, push 0.0000, relations 0.0000, screen 0.1808)
+    step 450   E =   1.1499   (spring 0.9691, push 0.0000, relations 0.0000, screen 0.1808)
+    step 500   E =   1.1499   (spring 0.9691, push 0.0000, relations 0.0000, screen 0.1808)
+    steps halved because they went uphill: 166
+wrote docs/images/chain-framed.png

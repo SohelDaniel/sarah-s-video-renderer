@@ -17,8 +17,9 @@
 //   ./main 3 framed           a "lazy AI" scene, placed by the layout solver
 //                             (steps: naive, greedy, refined, framed)
 //   ./main 3 framed out.png   same, but save one picture instead of playing
-//   ./main stress crowd       one of the stress test scenes (docs/15), solved
-//   ./main stress crowd x.png   (names: see test_scenes.cpp or `make test`)
+//   ./main stress crowd                 one of the stress test scenes (docs/15)
+//   ./main stress crowd greedy x.png    ... after one solver step, saved as a picture
+//                                       (names: see test_scenes.cpp or `make test`)
 
 // Scene 1: the same scene as the old 3 pictures, but now as a video: first we say how
 // everything starts, then what changes and WHEN (from second a to second b).
@@ -189,12 +190,12 @@ int main(int argc,char** argv){
 				if(t.name != argv[2]) continue;
 				found = true;
 				std::cout << t.name << ": " << t.attacks << "\n";
-				solved_scene(t.spec, "framed", argc > 3 ? argv[3] : "");
+				solved_scene(t.spec, argc > 3 ? argv[3] : "framed", argc > 4 ? argv[4] : "");
 			}
 			if(!found) throw std::invalid_argument(std::string("no test scene called \"") + argv[2] + "\"");
 		}
 		else {
-			std::cerr << "usage: ./main [1|2|3] [solver step] [picture.png]   or   ./main stress <scene> [picture.png]\n";
+			std::cerr << "usage: ./main [1|2|3] [solver step] [picture.png]   or   ./main stress <scene> [solver step] [picture.png]\n";
 			return 1;
 		}
 	} catch (const std::exception& e) {

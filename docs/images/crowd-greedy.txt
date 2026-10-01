@@ -1,0 +1,48 @@
+crowd: 20 objects all near one cube
+layout (greedy): 21 objects, 0 overlapping pairs, 26 pairs overlapping on screen
+  objects not fully in the picture: 0
+  objects (in placement order):
+    cube        big     r= 2.42  at (  0.00,   0.00,   0.00)
+    thing1      small   r= 0.50  at (  3.32,   0.00,   0.00)
+    thing2      normal  r= 1.13  at ( -3.96,   0.00,   0.00)
+    thing3      normal  r= 1.13  at (  2.80,   0.00,   2.80)
+    thing4      small   r= 0.50  at ( -2.35,   0.00,   2.35)
+    thing5      normal  r= 0.80  at (  2.56,   0.00,  -2.56)
+    thing6      normal  r= 1.39  at ( -2.98,   0.00,  -2.98)
+    thing7      small   r= 0.50  at (  0.00,   0.00,   3.32)
+    thing8      normal  r= 0.80  at (  0.00,   0.00,  -3.62)
+    thing9      normal  r= 0.80  at (  3.11,   1.86,   0.00)
+    thing10     small   r= 0.71  at (  0.00,   1.82,   3.03)
+    thing11     normal  r= 1.13  at (  5.93,   0.00,   0.00)
+    thing12     normal  r= 0.80  at ( -3.84,   0.00,   3.84)
+    thing13     small   r= 0.50  at ( -2.85,   1.71,   0.00)
+    thing14     normal  r= 1.39  at (  4.47,   0.00,  -4.47)
+    thing15     normal  r= 0.80  at (  0.00,   0.00,   5.44)
+    thing16     small   r= 0.50  at (  0.00,   1.71,  -2.85)
+    thing17     normal  r= 0.80  at ( -4.66,   2.80,   0.00)
+    thing18     normal  r= 1.13  at (  3.86,   2.32,   3.86)
+    thing19     small   r= 0.71  at ( -3.45,   2.07,   3.45)
+    thing20     normal  r= 0.80  at (  0.00,   2.80,  -4.66)
+  relations:
+    ok      thing1 near cube
+    ok      thing2 near cube
+    ok      thing3 near cube
+    ok      thing4 near cube
+    ok      thing5 near cube
+    ok      thing6 near cube
+    ok      thing7 near cube
+    ok      thing8 near cube
+    ok      thing9 near cube
+    ok      thing10 near cube
+    weak    thing11 near cube
+    weak    thing12 near cube
+    ok      thing13 near cube
+    weak    thing14 near cube
+    weak    thing15 near cube
+    ok      thing16 near cube
+    weak    thing17 near cube
+    weak    thing18 near cube
+    weak    thing19 near cube
+    weak    thing20 near cube
+  12 of 20 relations satisfied
+wrote docs/images/crowd-greedy.png

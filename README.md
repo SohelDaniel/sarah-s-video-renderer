@@ -51,6 +51,9 @@ The circles are each object's bounding sphere: red = overlapping something.
 - automatic camera framing from a view word
 - a plain-text report of every overlap, hidden pair and relation verdict:
   the feedback the AI will read
+- stress tests (`make test`): 12 adversarial scenes (crowded, cyclic,
+  contradictory, typo-ridden, empty) and 60 automatic checks. They found 4
+  bugs, each fixed in its own commit ([docs/15](docs/15-stress-tests.md))
 
 ## Build and run
 
@@ -61,6 +64,8 @@ make run              scene 1: three objects animated over 12 s
 make run SCENE=2      scene 2: a small solar system, 20 s
 ./main 3 framed       scene 3: the "lazy AI" scene above, fully solved
 ./main 3 greedy       ... or stopped after one step (naive, greedy, refined, framed)
+./main stress crowd   any of the stress test scenes (crowd, chain, cycle, typos, ...)
+make test             solve every stress scene with every step and check the rules
 make stills           regenerate the pictures and reports in docs/images/
 ```
 

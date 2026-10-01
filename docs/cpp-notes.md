@@ -248,6 +248,9 @@ it and exits with code 1 instead of crashing.
 | `std::chrono::steady_clock` | `player.cpp` | measure real time |
 | `std::filesystem::create_directories` | `camera.cpp` | make the output folder |
 | `std::numeric_limits<float>::infinity()` | `render.cpp` | an "empty" depth value |
+| `std::isfinite(x)` | `solver_test.cpp` | false for NaN and ±infinity: catches broken math |
+| `std::printf("%-14s %4d", ...)` | `solver_test.cpp` | formatted columns: `-` = left-aligned, the number = width |
+| exit code (`return 1` from `main`) | `solver_test.cpp` | non-zero tells `make` (and any script) that the tests failed |
 
 ### `<chrono>`, step by step
 ```cpp

@@ -43,6 +43,13 @@ scene_spec (what the AI wrote) ──► layout (pure math: spheres in, position
   or from a parser.
 - **`world` owns everything it builds.** The meshes live in a map inside it,
   and the objects point at them, so they can't outlive their meshes.
+- **Tests use the solver alone.** `solver_test` links only the layout,
+  mesh loading and math: no window, no SDL, no drawing. Because the layout
+  is pure math (spheres in, positions out), it can be tested in
+  milliseconds.
+- **Soft wishes, hard rules.** The energy balances wishes (relations, being
+  visible); a direct correction afterwards enforces the one rule that can't
+  be broken (no overlaps). See 15.
 - **Every step is measured.** The report counts overlaps in 3D, overlaps
   on screen and satisfied relations, so each step can be compared with the
   one before (the table at the end of 14). An improvement you can't

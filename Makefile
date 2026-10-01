@@ -28,9 +28,13 @@ run: $(TARGET)
 
 # The pictures in docs/images: scene 3 after each step of the layout solver.
 STEPS = naive greedy refined framed
-stills: $(TARGET)
+stills: $(TARGET) $(TEST_TARGET)
 	@mkdir -p docs/images
 	@for s in $(STEPS); do ./$(TARGET) 3 $$s docs/images/scene3-$$s.png > docs/images/scene3-$$s.txt; done
+	@for s in greedy framed; do ./$(TARGET) stress crowd $$s docs/images/crowd-$$s.png > docs/images/crowd-$$s.txt; done
+	@for s in refined framed; do ./$(TARGET) stress chain $$s docs/images/chain-$$s.png > docs/images/chain-$$s.txt; done
+	@./$(TARGET) stress cycle framed docs/images/cycle-framed.png > docs/images/cycle-framed.txt
+	@./solver_test > docs/images/stress-results.txt || true
 
 $(TEST_TARGET): $(TEST_SOURCES) $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(TEST_SOURCES) -o $(TEST_TARGET)

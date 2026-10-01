@@ -1,0 +1,51 @@
+chain: 15 objects in a row, each relative to the last
+layout (refined): 15 objects, 0 overlapping pairs, 0 pairs overlapping on screen
+  objects not fully in the picture: 10
+  objects (in placement order):
+    link1       normal  r= 1.39  at (  0.00,   0.00,   0.00)
+    link2       normal  r= 1.13  at (  2.92,   0.00,  -0.00)
+    link3       normal  r= 0.80  at (  5.25,  -0.00,   0.00)
+    link4       normal  r= 0.80  at (  5.25,   2.00,  -0.00)
+    link5       normal  r= 1.39  at (  7.83,   2.00,   0.00)
+    link6       normal  r= 0.80  at ( 10.42,   2.00,  -0.00)
+    link7       normal  r= 0.80  at ( 10.42,   4.00,   0.00)
+    link8       normal  r= 0.80  at ( 12.42,   4.00,   0.00)
+    link9       normal  r= 1.13  at ( 14.75,   4.00,   0.00)
+    link10      normal  r= 1.13  at ( 14.75,   6.66,   0.00)
+    link11      normal  r= 0.80  at ( 17.08,   6.66,   0.00)
+    link12      normal  r= 0.80  at ( 19.08,   6.66,   0.00)
+    link13      normal  r= 1.39  at ( 19.08,   9.25,   0.00)
+    link14      normal  r= 0.80  at ( 21.67,   9.25,   0.00)
+    link15      normal  r= 0.80  at ( 23.67,   9.25,   0.00)
+  relations:
+    ok      link2 near link1
+    ok      link3 right_of link2
+    ok      link4 above link3
+    ok      link5 near link4
+    ok      link6 right_of link5
+    ok      link7 above link6
+    ok      link8 near link7
+    ok      link9 right_of link8
+    ok      link10 above link9
+    ok      link11 near link10
+    ok      link12 right_of link11
+    ok      link13 above link12
+    ok      link14 near link13
+    ok      link15 right_of link14
+  14 of 14 relations satisfied
+  refinement (energy should go down):
+    step   0   E =   0.0029   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0029)
+    step   1   E =   0.0001   (spring 0.0001, push 0.0000, relations 0.0000, screen 0.0000)
+    step   2   E =   0.0001   (spring 0.0001, push 0.0000, relations 0.0000, screen 0.0000)
+    step  50   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 100   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 150   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 200   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 250   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 300   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 350   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 400   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 450   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 500   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    steps halved because they went uphill: 169
+wrote docs/images/chain-refined.png

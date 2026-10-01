@@ -1,0 +1,34 @@
+cycle: a needs b needs c needs a
+layout (framed): 3 objects, 0 overlapping pairs, 0 pairs overlapping on screen
+  objects not fully in the picture: 0
+  objects (in placement order):
+    a           normal  r= 1.39  at (  0.00,   0.00,   0.00)
+    c           normal  r= 1.13  at ( -2.92,   0.00,   0.00)
+    b           normal  r= 0.80  at ( -5.25,   0.00,   0.00)
+  relations:
+    FAILED  a left_of b
+    ok      c left_of a
+    ok      b left_of c
+  2 of 3 relations satisfied
+  camera: from front_above, looking at (-2.33, 0.00, 0.00), scene radius 3.72, distance 9.23
+          eye at (-2.33, 3.24, 8.65)
+  refinement (energy should go down):
+    step   0   E = 552.6473   (spring 0.0000, push 0.0000, relations 552.6473, screen 0.0000)
+    step   1   E = 541.4766   (spring 2.2106, push 22.1059, relations 365.5057, screen 151.6545)
+    step   2   E = 478.6353   (spring 1.7105, push 8.2272, relations 423.9085, screen 44.7892)
+    step  50   E = 422.0742   (spring 2.6080, push 10.4508, relations 360.6825, screen 48.3330)
+    step 100   E = 422.0742   (spring 2.6080, push 10.4508, relations 360.6825, screen 48.3330)
+    step 150   E = 422.0742   (spring 2.6080, push 10.4508, relations 360.6825, screen 48.3330)
+    step 200   E = 422.0742   (spring 2.6080, push 10.4508, relations 360.6825, screen 48.3330)
+    step 250   E = 422.0742   (spring 2.6080, push 10.4508, relations 360.6825, screen 48.3330)
+    step 300   E = 422.0742   (spring 2.6080, push 10.4508, relations 360.6825, screen 48.3330)
+    step 350   E = 422.0742   (spring 2.6080, push 10.4508, relations 360.6825, screen 48.3330)
+    step 400   E = 422.0742   (spring 2.6080, push 10.4508, relations 360.6825, screen 48.3330)
+    step 450   E = 422.0742   (spring 2.6080, push 10.4508, relations 360.6825, screen 48.3330)
+    step 500   E = 422.0742   (spring 2.6080, push 10.4508, relations 360.6825, screen 48.3330)
+    steps halved because they went uphill: 173
+  problems while solving:
+    objects were still overlapping after refining; 28 pushes to separate them (the relations couldn't all be true)
+  problems in the description:
+    a is part of a cycle of relations (placed before the objects it refers to)
+wrote docs/images/cycle-framed.png
