@@ -29,11 +29,23 @@ layout::layout(const scene_spec& spec,const std::vector<float>& mesh_radii)
 // reported and the relation is dropped: the rest of the scene still works.
 void layout::resolve_names(){
 	links.assign(spec.objects.size(), {});
+
+	// Two objects with the same name: "near cube" would be ambiguous.
+	for(size_t i = 0;i<spec.objects.size();i++){
+		for(size_t j = 0;j<i;j++){
+			if(spec.objects[i].name == spec.objects[j].name){
+				errors.push_back("two objects are called \"" + spec.objects[i].name
+				                 + "\" (relations to it use the first one)");
+				break;
+			}
+		}
+	}
+
 	for(size_t i = 0;i<spec.objects.size();i++){
 		for(const relation& r : spec.objects[i].relations){
 			int found = -1;
-			for(size_t j = 0;j<spec.objects.size();j++){
-				if(spec.objects[j].name == r.other) found = int(j);
+			for(size_t j = 0;j<spec.objects.size() && found < 0;j++){
+				if(spec.objects[j].name == r.other) found = int(j);   // the first match
 			}
 			if(found < 0){
 				errors.push_back(spec.objects[i].name + " " + relation_name(r.kind) + " " + r.other
