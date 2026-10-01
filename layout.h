@@ -41,8 +41,18 @@ public:
 	vec3 camera_eye()const;
 	vec3 camera_target()const;
 	// Is a sphere at p with radius r completely inside the picture (docs/15)?
-	// edge_scale < 1 shrinks the picture's edges, to leave a margin.
-	bool in_picture(const vec3& p,float r,float edge_scale = 1.0f)const;
+	// edge_scale < 1 shrinks the picture's edges, to leave a margin;
+	// extra_px is room it needs around it on screen (its label, docs/31).
+	// Nothing may be in the band kept for titles at the top.
+	bool in_picture(const vec3& p,float r,float edge_scale = 1.0f,float extra_px = 0.0f)const;
+
+	// Room for words (docs/31): a band at the top for titles and formulas,
+	// and how wide each object's label is (0 = none), all in pixels of a
+	// picture `picture_height` tall. Call before solve().
+	void set_words(float top_band_px,const std::vector<float>& label_widths_px,int picture_height);
+	// How many labels wouldn't find a free spot next to their object, with
+	// the camera where it is now (it runs the label layout, docs/28)
+	int labels_without_room()const;
 	// Make the automatic camera also fit this sphere (a motion path, docs/16),
 	// then place the camera again. Only does anything after method::framed.
 	void include_in_frame(const vec3& center,float radius);
@@ -72,6 +82,7 @@ public:
 		int errors          = 0;   // mistakes in the description
 		int warnings        = 0;   // problems while solving
 		int steps_halved    = 0;   // refinement steps that overshot (docs/13)
+		int labels_without_room = 0;   // labels that couldn't be placed (docs/31)
 	};
 	metrics measure()const;
 
@@ -122,19 +133,30 @@ private:
 		float radius;   // circle radius, same units
 		float depth;    // distance in front of the camera (<= 0: behind it)
 	};
-	seen look(int i)const;
+	// with_label: add half the label's width to the radius (the room the
+	// refinement makes for words, docs/31); without: just the object
+	seen look(int i,bool with_label = false)const;
 
 	void frame();
 	float fov_y  = 50.0f * 3.14159265f / 180.0f;
 	float aspect = 640.0f / 480.0f;
 	std::vector<std::pair<vec3, float>> extra_bounds;   // more spheres the camera has to fit
+	struct sphere{
+		vec3 center;
+		float radius;
+		float extra_px;                     // room on screen for its label (docs/31)
+	};
 	vec3 scene_center{0.0f, 0.0f, 0.0f};   // found by frame()
 	float scene_radius = 0.0f;
 	float camera_distance = 0.0f;
 	float sphere_distance = 0.0f;           // the safe (loose) distance from the sphere fit
-	bool fits_at(float distance,const std::vector<std::pair<vec3, float>>& spheres);
+	bool fits_at(float distance,const std::vector<sphere>& spheres);
 	int count_hidden()const;
 	int count_off_screen()const;
+	float px_to_tan()const;                     // one pixel, in look()'s units
+	float top_band_px = 0.0f;
+	int picture_height = 480;
+	std::vector<float> label_px;                // per object: its label's width in pixels
 
 	enum class verdict{ ok, weak, failed };
 	verdict check(int i,const link& l)const;

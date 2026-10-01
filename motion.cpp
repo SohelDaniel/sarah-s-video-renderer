@@ -25,6 +25,8 @@ static int find_name(const scene_spec& spec,const std::string& name){
 split_scene split_motion(const scene_spec& spec){
 	split_scene parts;
 	parts.still.view = spec.view;
+	parts.still.titles = spec.titles;    // the words matter for the framing (docs/31)
+	parts.still.maths = spec.maths;
 	int n = int(spec.objects.size());
 
 	// 1. every motion that could work on its own

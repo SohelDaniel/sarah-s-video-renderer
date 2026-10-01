@@ -68,6 +68,22 @@ static scene_spec eased_scene(){
 	return spec;
 }
 
+// Many labelled objects crowded round one, under a title and a formula
+// (docs/31): the solver has to leave room for every label, and keep
+// everything out from under the words at the top.
+static scene_spec labelled_scene(){
+	scene_spec spec;
+	spec.titles.push_back({"Labels need room", 0.0f, -1.0f});
+	spec.maths.push_back({"E = mc^2", 0.0f, -1.0f});
+	spec.add("cube", "shapes/cube.obj", orange, size_word::big, 10).label = "the cube";
+	const char* names[] = {"ball", "cone", "tube", "gem", "kite", "tent", "dart", "ring"};
+	for(int k = 0;k<8;k++){
+		object_spec& o = spec.add(names[k], shape_files[k], colors[k], k % 2 ? size_word::small : size_word::normal).near("cube");
+		o.label = std::string("the ") + names[k];
+	}
+	return spec;
+}
+
 // Every way a motion can't work.
 static scene_spec motion_mistakes(){
 	scene_spec spec;
@@ -180,6 +196,7 @@ std::vector<test_scene> all_test_scenes(){
 		{"motion",        "orbits, a moon, and a fly-by crossing a crowded spot", lazy_motion_scene(),             0},
 		{"motion_typos",  "every way a motion can't work",                    motion_mistakes(),                   5},
 		{"impact",        "collisions that are meant to happen, on time",     impact_scene(),                      0},
+		{"labelled",      "9 labelled objects under a title and a formula",   labelled_scene(),                    0},
 		{"eased",         "eased hits and fly-bys: faster at their fastest",  eased_scene(),                       0},
 	};
 }

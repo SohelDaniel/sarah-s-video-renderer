@@ -75,6 +75,8 @@ public:
 	// keep last frame's side when it still works (step 8); off only for the
 	// test that shows why it's there
 	bool hysteresis = true;
+	// places no label may go, like the band where the titles are (docs/31)
+	std::vector<box2> keep_out;
 
 	static constexpr float gap = 3.0f;           // between an object's circle and its label
 	static constexpr int gradient_steps = 2;     // per frame (step 9: it's already close)

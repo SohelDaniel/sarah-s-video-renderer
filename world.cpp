@@ -182,6 +182,9 @@ void world::draw_overlays(render& renderer,float t){
 		seen_amount.push_back(seen);
 	}
 	if(requests.empty()) return;
+	// no label may sit on the titles and formulas (docs/31)
+	placer.keep_out.clear();
+	if(top > 12.0f) placer.keep_out.push_back({0.0f, float(cam.width), 0.0f, top});
 	const std::vector<placed_label>& placed = placer.place(requests);
 	for(size_t k = 0;k<placed.size();k++){
 		if(!placed[k].shown) continue;

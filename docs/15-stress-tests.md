@@ -62,6 +62,7 @@ After the full solve (`framed`), every scene must pass:
 7. **moving objects stay in the picture** at every moment (added with step E4, 16)
 8. **nothing is hidden behind something else on screen** (added with tight framing, 14)
 9. **planned hits touch exactly on time** (added with intended collisions, 18)
+10. **every label has room next to its object** (added with room for words, 31)
 
 If any check fails, `make test` fails.
 

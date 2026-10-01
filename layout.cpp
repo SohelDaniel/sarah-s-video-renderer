@@ -1,4 +1,5 @@
 #include "layout.h"
+#include "label_layout.h"
 
 #include <algorithm>
 #include <cmath>
@@ -344,23 +345,27 @@ static vec3 view_direction(view_word v){
 void layout::frame(){
 	// every sphere the camera has to fit: the objects, plus any extras
 	// (motion paths, docs/16)
-	std::vector<std::pair<vec3, float>> spheres = extra_bounds;
-	for(const placement& p : placed) spheres.push_back({p.position, p.radius});
+	std::vector<sphere> spheres;
+	for(const auto& e : extra_bounds) spheres.push_back({e.first, e.second, 0.0f});
+	// (labels aren't added here: a label needs room on ONE side, and the label
+	// layout picks a side that has it. Asking for room on every side made
+	// the camera back off without end, docs/31.)
+	for(const placement& p : placed) spheres.push_back({p.position, p.radius, 0.0f});
 	if(spheres.empty()) return;
 
-	vec3 low  = spheres[0].first;
-	vec3 high = spheres[0].first;
-	for(const auto& s : spheres){
+	vec3 low  = spheres[0].center;
+	vec3 high = spheres[0].center;
+	for(const sphere& s : spheres){
 		for(int k = 0;k<3;k++){
-			low[k]  = std::min(low[k],  s.first[k] - s.second);
-			high[k] = std::max(high[k], s.first[k] + s.second);
+			low[k]  = std::min(low[k],  s.center[k] - s.radius);
+			high[k] = std::max(high[k], s.center[k] + s.radius);
 		}
 	}
 	scene_center = (low + high) * 0.5f;
 
 	scene_radius = 0.0f;
-	for(const auto& s : spheres){
-		scene_radius = std::max(scene_radius, distance(s.first, scene_center) + s.second);
+	for(const sphere& s : spheres){
+		scene_radius = std::max(scene_radius, distance(s.center, scene_center) + s.radius);
 	}
 
 	float fov_x = 2.0f * std::atan(std::tan(fov_y / 2.0f) * aspect);
@@ -389,11 +394,11 @@ void layout::frame(){
 
 // Does every sphere fit in the picture, with a 5% margin, when the camera
 // stands `distance` from the scene's center? (Moves the camera to check.)
-bool layout::fits_at(float distance,const std::vector<std::pair<vec3, float>>& spheres){
+bool layout::fits_at(float distance,const std::vector<sphere>& spheres){
 	eye    = scene_center + view_direction(spec.view) * distance;
 	target = scene_center;
-	for(const auto& s : spheres){
-		if(!in_picture(s.first, s.second, 0.95f)) return false;
+	for(const sphere& s : spheres){
+		if(!in_picture(s.center, s.radius, 0.95f, s.extra_px)) return false;
 	}
 	return true;
 }
@@ -420,7 +425,7 @@ static camera_axes axes_of(const vec3& eye,const vec3& target){
 	return a;
 }
 
-layout::seen layout::look(int i)const{
+layout::seen layout::look(int i,bool with_label)const{
 	camera_axes a = axes_of(eye, target);
 	vec3 v = placed[i].position - eye;
 	seen s;
@@ -428,8 +433,53 @@ layout::seen layout::look(int i)const{
 	float z  = std::max(s.depth, 0.001f);
 	s.x      = dot(v, a.right) / z;
 	s.y      = dot(v, a.up) / z;
-	s.radius = placed[i].radius / z;
+	// its footprint on screen: its circle, plus half its label's width, so
+	// two labelled objects keep room between them for their words (docs/31)
+	float label = with_label && i < int(label_px.size()) ? label_px[i] : 0.0f;
+	s.radius = placed[i].radius / z + 0.5f * label * px_to_tan();
 	return s;
+}
+
+// look() measures in "tan units" (docs/13): the picture's top edge is at
+// tan(fov_y / 2), and the picture is picture_height pixels tall, so one
+// pixel is 2 · tan(fov_y / 2) / picture_height of them.
+float layout::px_to_tan()const{
+	return 2.0f * std::tan(fov_y / 2.0f) / float(picture_height);
+}
+
+void layout::set_words(float band,const std::vector<float>& widths,int height){
+	top_band_px = band;
+	label_px = widths;
+	label_px.resize(placed.size(), 0.0f);
+	picture_height = height;
+}
+
+// Project every labelled object the way the renderer will, and let the real
+// label layout (docs/28) try to place their words, with the title band kept
+// out. Count the labels it can't place.
+int layout::labels_without_room()const{
+	int width = int(std::lround(picture_height * aspect));
+	float px = px_to_tan();
+	std::vector<label_request> requests;
+	for(size_t i = 0;i<placed.size() && i<label_px.size();i++){
+		if(label_px[i] <= 0.0f) continue;
+		camera_axes a = axes_of(eye, target);
+		vec3 v = placed[i].position - eye;
+		float depth = dot(v, a.forward);
+		label_request r{label_px[i], 20.0f, {0, 0}, 0, false};
+		if(depth > 0.0f){
+			r.anchor = {width / 2.0f + dot(v, a.right) / depth / px, picture_height / 2.0f - dot(v, a.up) / depth / px};
+			r.radius = placed[i].radius / depth / px;
+			r.visible = true;
+		}
+		requests.push_back(r);
+	}
+	if(requests.empty()) return 0;
+	label_layout labels(width, picture_height);
+	if(top_band_px > 0.0f) labels.keep_out.push_back({0.0f, float(width), 0.0f, top_band_px});
+	int missing = 0;
+	for(const placed_label& p : labels.place(requests)) if(!p.shown) missing++;
+	return missing;
 }
 
 // How many pairs of objects overlap on screen (one partly hides the other).
@@ -450,7 +500,7 @@ int layout::count_hidden()const{
 // The screen edges are at x = ±tan(fov_x / 2) and y = ±tan(fov_y / 2) in
 // look()'s units, so an object's circle is inside when its center plus its
 // radius stays within them, on both axes (docs/15).
-bool layout::in_picture(const vec3& p,float r,float edge_scale)const{
+bool layout::in_picture(const vec3& p,float r,float edge_scale,float extra_px)const{
 	camera_axes a = axes_of(eye, target);
 	vec3 v = p - eye;
 	float depth = dot(v, a.forward);
@@ -459,7 +509,9 @@ bool layout::in_picture(const vec3& p,float r,float edge_scale)const{
 	float y = dot(v, a.up) / depth;
 	float edge_y = std::tan(fov_y / 2.0f) * edge_scale;
 	float edge_x = std::tan(fov_y / 2.0f) * aspect * edge_scale;
-	return std::fabs(x) + r / depth <= edge_x && std::fabs(y) + r / depth <= edge_y;
+	float rr = r / depth + extra_px * px_to_tan();
+	float top = edge_y - top_band_px * px_to_tan();         // nothing under the titles (docs/31)
+	return std::fabs(x) + rr <= edge_x && y + rr <= top && -y + rr <= edge_y;
 }
 
 int layout::count_off_screen()const{
@@ -508,7 +560,7 @@ layout::energy_parts layout::energy(const std::vector<vec3>& home)const{
 			float p = std::max(0.0f, need - distance(placed[i].position, placed[j].position));
 			e.push += push_weight * p * p;
 
-			seen a = look(i), b = look(j);
+			seen a = look(i, true), b = look(j, true);
 			if(a.depth > 0.0f && b.depth > 0.0f){
 				float dx = a.x - b.x, dy = a.y - b.y;
 				float s = std::sqrt(dx * dx + dy * dy);
@@ -564,7 +616,7 @@ std::vector<vec3> layout::gradient(const std::vector<vec3>& home)const{
 			// so a screen direction (qx, qy) is the world direction
 			// (right·qx + up·qy), scaled by 1/depth. (Depth is treated as
 			// fixed here: objects mostly slide sideways.)
-			seen a = look(i), b = look(j);
+			seen a = look(i, true), b = look(j, true);
 			if(a.depth > 0.0f && b.depth > 0.0f){
 				float qx = a.x - b.x, qy = a.y - b.y;
 				float s = std::sqrt(qx * qx + qy * qy);
@@ -769,6 +821,7 @@ layout::metrics layout::measure()const{
 	m.overlaps   = count_overlaps();
 	m.hidden     = count_hidden();
 	m.off_screen = count_off_screen();
+	m.labels_without_room = labels_without_room();
 	for(size_t i = 0;i<links.size();i++){
 		for(const link& l : links[i]){
 			m.relations_total++;
@@ -789,6 +842,9 @@ std::string layout::report()const{
 	    << count_overlaps() << " overlapping pairs, "
 	    << count_hidden() << " pairs overlapping on screen\n";
 	out << "  objects not fully in the picture: " << count_off_screen() << "\n";
+	if(std::any_of(label_px.begin(), label_px.end(), [](float w){ return w > 0.0f; })){
+		out << "  labels without room next to their object: " << labels_without_room() << "\n";
+	}
 
 	out << "  objects (in placement order):\n";
 	for(int i : order){

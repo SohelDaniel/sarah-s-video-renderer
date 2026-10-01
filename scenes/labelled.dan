@@ -1,0 +1,17 @@
+# Labels need room (docs/31): nine labelled things crowded round a cube,
+# under a title and a formula. The solver spreads them out enough for every
+# label to fit, and keeps them all out from under the words at the top.
+
+scene "labelled"
+title "Labels need room"
+math "E = mc^2"
+
+cube = cube big orange important label "the cube"
+ball = sphere blue near cube label "the ball"
+cone = cone green small near cube label "the cone"
+tube = cylinder purple near cube label "the tube"
+gem  = icosahedron yellow small near cube label "the gem"
+kite = octahedron grey near cube label "the kite"
+tent = pyramid white small near cube label "the tent"
+dart = tetrahedron red near cube label "the dart"
+ring = torus teal small near cube label "the ring"

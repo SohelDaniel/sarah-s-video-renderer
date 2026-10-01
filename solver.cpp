@@ -1,6 +1,7 @@
 #include "solver.h"
 
 #include <algorithm>
+#include <cctype>
 #include <sstream>
 
 
@@ -41,8 +42,32 @@ int scene_solver::moving_off_screen()const{
 	return count;
 }
 
+// Roughly how wide a label is, without needing the font (docs/31): about
+// 0.6 of its size per letter, plus a little. For a formula, only count what
+// gets drawn (not the \commands, braces, ^ and _).
+static float estimate_label_width(const object_spec& o){
+	if(o.label.empty()) return 0.0f;
+	const float size = 17.0f;
+	if(!o.label_math) return 0.6f * size * float(o.label.size()) + 6.0f;
+	int shown = 0;
+	for(size_t i = 0;i<o.label.size();i++){
+		char c = o.label[i];
+		if(c == '\\'){ shown++; while(i + 1 < o.label.size() && std::isalpha((unsigned char)o.label[i + 1])) i++; continue; }
+		if(c == '{' || c == '}' || c == '^' || c == '_' || c == ' ') continue;
+		shown++;
+	}
+	return 0.6f * 20.0f * float(shown) + 6.0f;
+}
+
 // Solve the still objects, and hand them to the motion planner as obstacles.
 std::vector<obstacle> scene_solver::solve_still(layout::method how){
+	// room for words (docs/31): a band at the top for each title (~40 px) and
+	// formula (~60 px), and every label's width
+	const scene_spec& s = split.still;
+	float band = (s.titles.empty() && s.maths.empty()) ? 0.0f : 12.0f + 40.0f * s.titles.size() + 60.0f * s.maths.size();
+	std::vector<float> widths;
+	for(const object_spec& o : s.objects) widths.push_back(estimate_label_width(o));
+	still_layout.set_words(band, widths, 480);
 	still_layout.solve(how);
 	std::vector<obstacle> obstacles;
 	for(const placement& p : still_layout.result()){

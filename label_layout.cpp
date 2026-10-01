@@ -52,6 +52,7 @@ point2 label_layout::gradient_step(point2 p,point2 home,point2 obstacle,float R,
 bool label_layout::free_at(const box2& b,size_t self,const std::vector<label_request>& requests,
                            const std::vector<placed_label>& placed)const{
 	if(b.x0 < 0 || b.y0 < 0 || b.x1 > width || b.y1 > height) return false;
+	for(const box2& k : keep_out) if(overlap(b, k)) return false;
 	for(size_t j = 0;j<placed.size();j++){
 		if(j != self && placed[j].shown && overlap(b, placed[j].where)) return false;
 	}
@@ -70,6 +71,7 @@ int label_layout::crowding(const box2& b,size_t self,const std::vector<label_req
                            const std::vector<placed_label>& placed)const{
 	int count = 0;
 	if(b.x0 < 0 || b.y0 < 0 || b.x1 > width || b.y1 > height) count += 2;
+	for(const box2& k : keep_out) if(overlap(b, k)) count += 2;
 	for(size_t j = 0;j<placed.size();j++){
 		if(j != self && placed[j].shown && overlap(b, placed[j].where)) count++;
 	}
