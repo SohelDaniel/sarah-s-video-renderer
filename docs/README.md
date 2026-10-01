@@ -59,6 +59,7 @@ All the math is built on **vectors and matrices** (01).
 | 26 | [Lines and arrows](26-lines-and-arrows.md) | How is a smooth arrow drawn, and hidden behind things? | `render.cpp`, `world.cpp` |
 | 27 | [Text](27-text.md) | How are letters stored and drawn? | `font8x8.h`, `render.cpp` |
 | 28 | [Labels](28-labels.md) | How do words sit next to objects without overlapping or flickering? | `label_layout.cpp`, `world.cpp` |
+| 29 | [Outline fonts](29-outline-fonts.md) | How does a font file become smooth letters? | `font.cpp` |
 | | [Ranges and settings](ranges.md) | What values make sense? | `camera.h`, `object.h` |
 | | [C++ notes](cpp-notes.md) | What does this syntax mean? | everywhere |
 | | [Design](design.md) | Why is the code split up like this? | everywhere |

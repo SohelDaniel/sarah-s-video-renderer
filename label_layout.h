@@ -1,4 +1,5 @@
 #pragma once
+#include "point2.h"
 #include <string>
 #include <vector>
 
@@ -21,10 +22,6 @@
 //
 //  Pure 2D math, no drawing, so it can be tested on its own.
 // ============================================================================
-
-struct point2{
-	float x = 0.0f, y = 0.0f;
-};
 
 // a box on the screen: [x0, x1] x [y0, y1], in pixels (y goes down)
 struct box2{

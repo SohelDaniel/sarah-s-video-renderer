@@ -34,6 +34,7 @@ static std::string video_path;
 //   ./main walk prefix        pictures of walking around scene 3 with pretend keys (docs/20)
 //   ./main ease x.png         every easing curve as a row of snapshots (docs/23)
 //   ./main aa prefix          scene 3 without and with anti-aliasing, plus close-ups (docs/25)
+//   ./main fonts prefix       bitmap letters next to outline letters, plus a close-up (docs/29)
 //   --aa                      add to any of these: smooth edges (anti-aliasing, docs/25)
 //   --video out.mp4           add to any scene: record an mp4 instead of opening a window
 //   ./main scenes/x.dan       a scene written in the dan language (docs/21); edit and
@@ -332,6 +333,27 @@ static std::vector<char*> take_options(int argc,char** argv){
 	return rest;
 }
 
+// Bitmap letters vs outline letters (docs/29): the same words in both,
+// and both enlarged 4x so you can see the pixels.
+void font_demo(const std::string& prefix){
+	camera cam;
+	cam.width = 320;
+	cam.height = 96;
+	cam.update(0.0f);
+	render r(cam.width, cam.height);
+	r.begin(cam);
+	r.draw_bitmap_text(12, 12, "Agy 8x8", 3, px::Pixel(240, 240, 245));
+	r.draw_text(12, 50, "Agy outline \xCF\x80", 30.0f, px::Pixel(240, 240, 245));
+	r.finish();
+	r.save(prefix + "both.png");
+	const px::Image& full = r.picture();
+	const int zoom = 4, w = 110, h = 80;
+	px::Image close(w * zoom, h * zoom);
+	for(int y = 0;y<h * zoom;y++) for(int x = 0;x<w * zoom;x++) close.Draw(x, y, full.Get(8 + x / zoom, 8 + y / zoom));
+	close.Save(prefix + "zoom.png");
+	std::cout << "wrote " << prefix << "both.png and " << prefix << "zoom.png\n";
+}
+
 // The anti-aliasing comparison (docs/25): scene 3, drawn without and with
 // it, plus both enlarged 4x around one edge so the difference is visible.
 void antialiasing_demo(const std::string& prefix){
@@ -391,6 +413,9 @@ int main(int raw_argc,char** raw_argv){
 		else if(which == "3"){
 			solved_scene(lazy_ai_scene(), still_step(argc > 2 ? argv[2] : "framed"), motion_plan::method::naive,
 			             argc > 3 ? argv[3] : "", 0.0f);
+		}
+		else if(which == "fonts"){
+			font_demo(argc > 2 ? argv[2] : "font-");
 		}
 		else if(which == "aa"){
 			antialiasing_demo(argc > 2 ? argv[2] : "aa-");

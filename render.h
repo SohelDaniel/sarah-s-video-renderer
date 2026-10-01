@@ -48,13 +48,19 @@ public:
 	// leader lines (docs/28). Drawn by finish(), just before the text.
 	void draw_screen_line(float x0,float y0,float x1,float y1,float width,px::Pixel color);
 
-	// Text (docs/27), with its top-left corner at pixel (x, y) of the finished
-	// picture. Each font pixel becomes a scale x scale square. A dark shadow
-	// one step down and right keeps it readable over anything. Drawn last.
-	void draw_text(int x,int y,const std::string& text,int scale,px::Pixel color);
-	// How wide and tall text will be, in pixels
-	static int text_width(const std::string& text,int scale);
-	static int text_height(int scale);
+	// Text with smooth outline letters (docs/29), `size` pixels tall (the em),
+	// with its top-left corner at pixel (x, y) of the finished picture, and a
+	// soft shadow so it reads over anything. Drawn last, on top of everything.
+	// Falls back to the bitmap font if fonts/ is missing.
+	void draw_text(float x,float y,const std::string& text,float size,px::Pixel color);
+	// How wide and tall that text will be, in pixels
+	static float text_width(const std::string& text,float size);
+	static float text_height(float size);
+
+	// The 8x8 bitmap font (docs/27): each font pixel a scale x scale square.
+	void draw_bitmap_text(int x,int y,const std::string& text,int scale,px::Pixel color);
+	static int bitmap_text_width(const std::string& text,int scale);
+	static int bitmap_text_height(int scale);
 
 	// How much of the pixel at (px, py) a line from (x0,y0) to (x1,y1),
 	// `width` wide, covers: 0..1 (docs/26). Public so the tests can check it.
@@ -118,10 +124,11 @@ private:
 	std::vector<line> lines;           // waiting for finish()
 
 	struct text_item{
-		int x, y;
+		float x, y;
 		std::string text;
-		int scale;
+		float size;            // pixels for outline text; the scale for bitmap text
 		px::Pixel color;
+		bool bitmap;
 	};
 	std::vector<text_item> texts;      // waiting for finish()
 
@@ -131,6 +138,7 @@ private:
 	};
 	std::vector<screen_line> screen_lines;   // waiting for finish()
 	void paint_text(const text_item& t,int dx,int dy,px::Pixel color);
+	void paint_outline_text(const text_item& t,float dx,float dy,px::Pixel color);
 	void rasterize_line(const line& l);
 	bool clip_segment(vec3& a,vec3& b,vec3& sa,vec3& sb)const;
 	float opacity = 1.0f;              // of what's being drawn right now

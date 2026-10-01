@@ -1,5 +1,10 @@
 # 27 · Text
 
+> Since 29, titles and labels use smooth **outline** letters; this page is
+> about the 8×8 bitmap font that came first, which is still there as
+> `draw_bitmap_text` (and as the fallback if `fonts/` is missing). The
+> picture below now shows the outline font.
+
 An explanation needs words. The renderer can now draw **text**, and scenes can
 have **titles** across the top:
 

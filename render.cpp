@@ -1,4 +1,5 @@
 #include "render.h"
+#include "font.h"
 #include "font8x8.h"
 #include "timeline.h"
 #include "transform.h"
@@ -410,8 +411,15 @@ void render::finish(){
 
 	// text last, on top of everything (docs/27)
 	for(const text_item& t : texts){
-		paint_text(t, t.scale, t.scale, px::Pixel(0, 0, 0, 170));   // the shadow
-		paint_text(t, 0, 0, t.color);
+		if(t.bitmap){
+			int scale = int(t.size);
+			paint_text(t, scale, scale, px::Pixel(0, 0, 0, 170));   // the shadow
+			paint_text(t, 0, 0, t.color);
+		}else{
+			float offset = std::max(1.0f, t.size / 16.0f);
+			paint_outline_text(t, offset, offset, px::Pixel(0, 0, 0, 170));
+			paint_outline_text(t, 0, 0, t.color);
+		}
 	}
 	texts.clear();
 }
@@ -435,16 +443,62 @@ void render::draw_screen_line(float x0,float y0,float x1,float y1,float width,px
 	screen_lines.push_back({x0, y0, x1, y1, width, color});
 }
 
-void render::draw_text(int x,int y,const std::string& text,int scale,px::Pixel color){
-	texts.push_back({x, y, text, scale, color});
+void render::draw_bitmap_text(int x,int y,const std::string& text,int scale,px::Pixel color){
+	texts.push_back({float(x), float(y), text, float(scale), color, true});
 }
 
-int render::text_width(const std::string& text,int scale){
+int render::bitmap_text_width(const std::string& text,int scale){
 	return int(text.size()) * 8 * scale;
 }
 
-int render::text_height(int scale){
+int render::bitmap_text_height(int scale){
 	return 8 * scale;
+}
+
+void render::draw_text(float x,float y,const std::string& text,float size,px::Pixel color){
+	if(!fonts::sans()){
+		// no font files: the bitmap font, as close in size as it gets
+		int scale = std::max(1, int(std::lround(size / 8.0f)));
+		draw_bitmap_text(int(x), int(y), text, scale, color);
+		return;
+	}
+	texts.push_back({x, y, text, size, color, false});
+}
+
+float render::text_width(const std::string& text,float size){
+	const font* f = fonts::sans();
+	return f ? f->width(text, size) : float(bitmap_text_width(text, std::max(1, int(std::lround(size / 8.0f)))));
+}
+
+float render::text_height(float size){
+	const font* f = fonts::sans();
+	return f ? f->ascent(size) + f->descent(size) : float(bitmap_text_height(std::max(1, int(std::lround(size / 8.0f)))));
+}
+
+// Each letter's coverage (docs/29) blended at the pen position; the pen
+// moves right by the letter's advance plus the kerning to the next one.
+void render::paint_outline_text(const text_item& t,float dx,float dy,px::Pixel color){
+	const font* f = fonts::sans();
+	px::Image& picture = out();
+	std::vector<int> codes = utf8_decode(t.text);
+	float pen = t.x + dx;
+	float baseline = t.y + dy + f->ascent(t.size);
+	for(size_t i = 0;i<codes.size();i++){
+		const font::glyph& g = f->get(codes[i], t.size);
+		int left = int(std::lround(pen)) + g.left;
+		int top = int(std::lround(baseline)) + g.top;
+		for(int y = 0;y<g.height;y++){
+			for(int x = 0;x<g.width;x++){
+				float c = g.coverage[size_t(y) * g.width + x];
+				if(c <= 0.0f) continue;
+				px::Pixel p = color;
+				p.a = uint8_t(std::lround(color.a * c));
+				picture.Draw(left + x, top + y, p);
+			}
+		}
+		pen += f->advance(codes[i], t.size);
+		if(i + 1 < codes.size()) pen += f->kerning(codes[i], codes[i + 1], t.size);
+	}
 }
 
 void render::paint_text(const text_item& t,int dx,int dy,px::Pixel color){
@@ -452,14 +506,15 @@ void render::paint_text(const text_item& t,int dx,int dy,px::Pixel color){
 	for(size_t i = 0;i<t.text.size();i++){
 		unsigned char c = (unsigned char)t.text[i];
 		if(c >= 128) c = '?';                                   // only plain ASCII in this font
-		int left = t.x + int(i) * 8 * t.scale + dx;
+		int scale = int(t.size);
+		int left = int(t.x) + int(i) * 8 * scale + dx;
 		for(int row = 0;row<8;row++){
 			unsigned char bits = font8x8_basic[c][row];
 			for(int col = 0;col<8;col++){
 				if(((bits >> col) & 1) == 0) continue;
-				for(int sy = 0;sy<t.scale;sy++){
-					for(int sx = 0;sx<t.scale;sx++){
-						picture.Draw(left + col * t.scale + sx, t.y + dy + row * t.scale + sy, color);
+				for(int sy = 0;sy<scale;sy++){
+					for(int sx = 0;sx<scale;sx++){
+						picture.Draw(left + col * scale + sx, int(t.y) + dy + row * scale + sy, color);
 					}
 				}
 			}

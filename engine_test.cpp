@@ -6,6 +6,7 @@
 // ============================================================================
 #include "camera.h"
 #include "fly_camera.h"
+#include "font.h"
 #include "label_layout.h"
 #include "live_scene.h"
 #include "render.h"
@@ -140,6 +141,42 @@ static void test_fly_camera(){
 	check(close(a.eye, b.eye, 0.0f) && a.yaw == b.yaw && a.pitch == b.pitch, "the same inputs always give the same camera");
 }
 
+// ---- outline fonts (docs/29) ----
+static void test_fonts(){
+	std::printf("outline fonts:\n");
+	std::vector<int> codes = utf8_decode("a\xCF\x80");   // "aπ": π is the two bytes CF 80
+	check(codes.size() == 2 && codes[0] == 97 && codes[1] == 960, "UTF-8: \"a\\xCF\\x80\" decodes to 97 (a) and 960 (pi)");
+
+	point2 m = bezier_point({0, 0}, {2, 4}, {4, 0}, 0.5f);
+	check(std::fabs(m.x - 2) < 1e-6f && std::fabs(m.y - 2) < 1e-6f, "de Casteljau at t = 1/2 of (0,0) (2,4) (4,0) is (2, 2)");
+	std::vector<point2> flat;
+	flatten_quadratic({0, 0}, {2, 4}, {4, 0}, 0.25f, flat);
+	check(flat.size() == 4, "flattened to within 0.25 px: 4 straight pieces (bulge 2 -> 0.5 -> 0.125)");
+
+	// a 4 x 4 square from (2, 2) to (6, 6) on an 8 x 8 grid
+	std::vector<float> square = fill_loops({{{2, 2}, {6, 2}, {6, 6}, {2, 6}}}, 8, 8);
+	check(square[3 * 8 + 3] == 1.0f && square[0] == 0.0f, "a filled square: inside 1, outside 0");
+	// a half-covered pixel: the edge at x = 2.5 cuts pixel 2 in half
+	std::vector<float> half = fill_loops({{{2.5f, 0}, {6, 0}, {6, 8}, {2.5f, 8}}}, 8, 8);
+	check(std::fabs(half[3 * 8 + 2] - 0.5f) < 1e-6f, "an edge through the middle of a pixel: coverage 0.5");
+	// a square with a square hole, the inner loop going the other way: the
+	// winding number inside the hole is +1 - 1 = 0, so it stays empty
+	std::vector<float> ring = fill_loops({{{0, 0}, {8, 0}, {8, 8}, {0, 8}}, {{2, 2}, {2, 6}, {6, 6}, {6, 2}}}, 8, 8);
+	check(ring[4 * 8 + 4] == 0.0f && ring[1 * 8 + 1] == 1.0f, "a loop inside a loop, going the other way, leaves a hole");
+
+	const font* sans = fonts::sans();
+	check(sans != nullptr, "fonts/DejaVuSans.ttf loads");
+	if(sans){
+		float by_hand = sans->advance('A', 20) + sans->kerning('A', 'V', 20) + sans->advance('V', 20);
+		check(std::fabs(sans->width("AV", 20) - by_hand) < 1e-4f, "width(\"AV\") = advance(A) + kerning(A, V) + advance(V)");
+		check(sans->kerning('A', 'V', 20) < 0.0f, "A and V tuck together: their kerning is negative (" + std::to_string(sans->kerning('A', 'V', 20)) + ")");
+		const font::glyph& o = sans->get('o', 40);
+		float middle = o.coverage[size_t(o.height / 2) * o.width + o.width / 2];
+		check(middle == 0.0f, "the middle of an 'o' is empty: its inner loop makes the hole");
+		check(!sans->get(960, 30).coverage.empty(), "pi has an outline (the font has Greek)");
+	}
+}
+
 // ---- labels (docs/28): the original notes, replayed ----
 static void test_labels(){
 	std::printf("labels:\n");
@@ -211,7 +248,7 @@ static void test_text(){
 	cam.update(0.0f);
 	render r(cam.width, cam.height);
 	r.begin(cam);
-	r.draw_text(0, 0, "A", 1, px::Pixel(255, 255, 255));
+	r.draw_bitmap_text(0, 0, "A", 1, px::Pixel(255, 255, 255));
 	r.finish();
 	const px::Image& img = r.picture();
 	auto lit = [&](int x,int y){ px::Pixel p = img.Get(x, y); return p.r == 255 && p.g == 255 && p.b == 255; };
@@ -224,7 +261,7 @@ static void test_text(){
 	std::string row4;
 	for(int x = 0;x<8;x++) row4 += lit(x, 4) ? 'X' : '.';
 	check(row4 == "XXXXXX..", "row 4 of 'A' (0x3F) lights pixels 0 to 5: " + row4);
-	check(render::text_width("hello", 3) == 120, "'hello' at scale 3 is 5 x 8 x 3 = 120 pixels wide");
+	check(render::bitmap_text_width("hello", 3) == 120, "'hello' at scale 3 is 5 x 8 x 3 = 120 pixels wide");
 
 	parse_result p = parse_scene("title \"Orbits\" 0s-5s\nsun = sphere\n");
 	check(p.ok() && p.spec.titles.size() == 1 && p.spec.titles[0].text == "Orbits" && p.spec.titles[0].end == 5.0f,
@@ -429,6 +466,7 @@ static void test_live_reload(){
 int main(){
 	test_clipping();
 	test_fly_camera();
+	test_fonts();
 	test_labels();
 	test_text();
 	test_lines();

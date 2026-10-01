@@ -105,16 +105,18 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 // other: from center to center, shortened at each end by that object's
 // bounding radius (plus a little gap), so it touches neither.
 void world::draw_overlays(render& renderer,float t){
-	// titles, across the top, centered (docs/27); several stack downwards
-	int row = 0;
+	// titles, across the top, centered (docs/27, 29); several stack downwards
+	float top = 12.0f;
 	for(const title_spec& s : titles){
 		if(t < s.start || (s.end >= 0.0f && t > s.end)) continue;
-		// as big as fits: scale 3, or smaller if it would run off the sides
-		int scale = 3;
-		while(scale > 1 && render::text_width(s.text, scale) > cam.width - 32) scale--;
-		int x = (cam.width - render::text_width(s.text, scale)) / 2;
-		renderer.draw_text(x, 16 + row * (render::text_height(scale) + 8), s.text, scale, px::Pixel(240, 240, 245));
-		row++;
+		// as big as fits: 30 pixels, or smaller if it would run off the sides
+		float size = 30.0f;
+		float room = float(cam.width - 32);
+		float w = render::text_width(s.text, size);
+		if(w > room) size *= room / w;               // text width grows in step with size
+		float x = (cam.width - render::text_width(s.text, size)) / 2.0f;
+		renderer.draw_text(x, top, s.text, size, px::Pixel(240, 240, 245));
+		top += render::text_height(size) + 6.0f;
 	}
 
 	for(const world_arrow& a : arrows){
@@ -133,11 +135,12 @@ void world::draw_overlays(render& renderer,float t){
 
 	// labels (docs/28): where each labelled object is on screen, then the
 	// label layout decides where its words go
+	const float label_size = 17.0f;
 	std::vector<label_request> requests;
 	std::vector<size_t> owner;
 	for(size_t i = 0;i<objects.size();i++){
 		if(labels[i].empty()) continue;
-		label_request r{float(render::text_width(labels[i], 2)), float(render::text_height(2)), {0, 0}, 0, false};
+		label_request r{render::text_width(labels[i], label_size), render::text_height(label_size), {0, 0}, 0, false};
 		float x, y, radius;
 		if(objects[i].opacity() > 0.05f && renderer.where_on_screen(objects[i].get_position(), objects[i].bounding_radius(), x, y, radius)){
 			r.anchor = {x, y};
@@ -163,7 +166,7 @@ void world::draw_overlays(render& renderer,float t){
 				renderer.draw_screen_line(sx, sy, c.x, c.y, 1.0f, px::Pixel(200, 200, 210, 200));
 			}
 		}
-		renderer.draw_text(int(std::lround(b.x0)), int(std::lround(b.y0)), labels[owner[k]], 2, px::Pixel(240, 240, 245));
+		renderer.draw_text(b.x0, b.y0, labels[owner[k]], label_size, px::Pixel(240, 240, 245));
 	}
 }
 
