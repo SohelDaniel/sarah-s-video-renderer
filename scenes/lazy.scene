@@ -1,0 +1,15 @@
+# Scene 3 from docs/11-14, written in the scene language (docs/21).
+# Sloppy on purpose, the way a lazy AI might write it: lots of things all
+# "near cube", and one name that doesn't exist.
+
+scene "lazy" view front_above
+
+cube        = cube big orange important
+sphere      = sphere blue near cube
+cone        = cone green near cube
+cylinder    = cylinder purple near cube
+icosahedron = icosahedron small yellow near cube
+pyramid     = pyramid white above cube
+torus       = torus teal left_of sphere
+tetrahedron = tetrahedron small red behind cube
+octahedron  = octahedron small grey near moon     # there's no moon: the solver says so

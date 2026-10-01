@@ -1,0 +1,12 @@
+# Scene 5 from docs/18: things that collide on purpose.
+
+scene "impact"
+
+sun    = sphere big gold important
+rock   = icosahedron grey near sun
+planet = octahedron red orbits sun 1 turn 0s-20s
+comet  = pyramid small white
+meteor = tetrahedron small yellow hits rock at 6s from 3s
+
+# a fact on its own line: it can come before or after the objects it names
+comet hits planet at 12s from 8s sticks

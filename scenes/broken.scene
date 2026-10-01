@@ -1,0 +1,10 @@
+# A scene full of mistakes, to show the error messages (docs/21).
+# ./main scenes/broken.scene
+
+scene "broken" view front_abuve
+cube = cueb big orange
+sphere = sphere blu near cube
+comet = pyramid hits cube at 12
+planet = octahedron orbits cube 1 turn 0s 20s
+sphre near cube
+ring = torus near planit

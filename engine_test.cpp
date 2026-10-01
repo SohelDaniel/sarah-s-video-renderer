@@ -7,6 +7,8 @@
 #include "camera.h"
 #include "fly_camera.h"
 #include "render.h"
+#include "scene_parser.h"
+#include "test_scenes.h"
 #include "timeline.h"
 
 #include <cmath>
@@ -143,10 +145,87 @@ static void test_looping(){
 	check(loop_time(5.0f, 0.0f) == 0.0f, "a video with no length doesn't divide by zero");
 }
 
+// ---- the scene language (docs/21) ----
+
+// Are two descriptions exactly the same? If not, say where they differ.
+static bool same_spec(const scene_spec& a,const scene_spec& b,std::string& why){
+	if(a.objects.size() != b.objects.size()){ why = "different number of objects"; return false; }
+	if(a.view != b.view){ why = "different view"; return false; }
+	for(size_t i = 0;i<a.objects.size();i++){
+		const object_spec& x = a.objects[i];
+		const object_spec& y = b.objects[i];
+		std::string who = "object " + std::to_string(i + 1) + " (" + x.name + ")";
+		if(x.name != y.name || x.mesh_file != y.mesh_file){ why = who + ": name or shape"; return false; }
+		if(x.color.r != y.color.r || x.color.g != y.color.g || x.color.b != y.color.b){ why = who + ": color"; return false; }
+		if(x.size != y.size || x.importance != y.importance){ why = who + ": size or importance"; return false; }
+		if(x.relations.size() != y.relations.size()){ why = who + ": number of relations"; return false; }
+		for(size_t k = 0;k<x.relations.size();k++){
+			if(x.relations[k].kind != y.relations[k].kind || x.relations[k].other != y.relations[k].other){
+				why = who + ": relation " + std::to_string(k + 1); return false;
+			}
+		}
+		if(x.motions.size() != y.motions.size()){ why = who + ": number of motions"; return false; }
+		for(size_t k = 0;k<x.motions.size();k++){
+			const motion& m = x.motions[k];
+			const motion& n = y.motions[k];
+			if(m.kind != n.kind || m.other != n.other || m.turns != n.turns || m.start != n.start || m.end != n.end){
+				why = who + ": motion " + std::to_string(k + 1); return false;
+			}
+		}
+	}
+	return true;
+}
+
+static bool has_message(const std::vector<parse_message>& list,int line,const std::string& part){
+	for(const parse_message& m : list){
+		if(m.line == line && m.text.find(part) != std::string::npos) return true;
+	}
+	return false;
+}
+
+static void test_scene_language(){
+	std::printf("scene language:\n");
+
+	// the Levenshtein examples from docs/21
+	check(edit_distance("spher", "sphere") == 1, "edit_distance(spher, sphere) = 1");
+	check(edit_distance("cueb", "cube") == 1, "edit_distance(cueb, cube) = 1 (two neighbours swapped)");
+	check(edit_distance("kitten", "sitting") == 3, "edit_distance(kitten, sitting) = 3");
+
+	// every .scene file gives exactly the same scene as its C++ version
+	struct pair{ const char* file; scene_spec spec; };
+	for(const pair& p : {pair{"scenes/lazy.scene", lazy_ai_scene()}, pair{"scenes/motion.scene", lazy_motion_scene()},
+	                     pair{"scenes/impact.scene", impact_scene()}}){
+		parse_result r = parse_scene_file(p.file);
+		std::string why;
+		bool same = r.ok() && same_spec(r.spec, p.spec, why);
+		check(same, std::string(p.file) + " parses to exactly the C++ scene" + (same ? "" : " (" + why + ")"));
+	}
+
+	// a broken scene: every mistake found, on the right line, with a suggestion
+	const char* broken =
+		"scene \"broken\" view front_abuve\n"          // 1: unknown view
+		"cube = cueb big orange\n"                       // 2: unknown shape
+		"sphere = sphere blu near cube\n"                // 3: unknown word, did you mean blue
+		"comet = pyramid hits cube at 12\n"              // 4: a time without 's'
+		"planet = octahedron orbits cube 1 turn 0s 20s\n" // 5: no '-' between the times
+		"sphre near cube\n"                              // 6: a fact about an object that doesn't exist
+		"ring = torus near planit\n";                    // 7: fine, but 'planit' is probably 'planet'
+	parse_result r = parse_scene(broken);
+	check(has_message(r.errors, 1, "unknown view") && has_message(r.errors, 1, "front_above"), "line 1: unknown view, did you mean front_above");
+	check(has_message(r.errors, 2, "expected a shape") && has_message(r.errors, 2, "did you mean cube"), "line 2: unknown shape 'cueb', did you mean cube");
+	check(has_message(r.errors, 3, "did you mean blue"), "line 3: unknown word 'blu', did you mean blue");
+	check(has_message(r.errors, 4, "times need an 's'"), "line 4: a time written without 's'");
+	check(has_message(r.errors, 5, "expected '-'"), "line 5: no '-' between the two times");
+	check(has_message(r.errors, 6, "did you mean sphere"), "line 6: a fact about 'sphre', did you mean sphere");
+	check(has_message(r.notes, 7, "did you mean planet"), "line 7: a note that 'planit' is probably 'planet'");
+	check(r.errors.size() == 6, "every broken line is reported, not just the first (" + std::to_string(r.errors.size()) + " errors)");
+}
+
 int main(){
 	test_clipping();
 	test_fly_camera();
 	test_looping();
+	test_scene_language();
 	std::printf("\n%s: %d check%s failed\n", failures == 0 ? "ALL PASSED" : "FAILED", failures, failures == 1 ? "" : "s");
 	return failures == 0 ? 0 : 1;
 }

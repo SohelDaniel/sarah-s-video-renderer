@@ -1,0 +1,10 @@
+# Scene 4 from docs/16: orbits, a moon on a moving planet, and a fly-by.
+
+scene "motion"
+
+sun     = sphere big gold important
+rock    = icosahedron grey near sun
+planet1 = octahedron red orbits sun 1 turn 0s-20s
+planet2 = cube small blue orbits sun 2 turns 0s-20s
+comet   = pyramid small white flies_past sun 4s-10s
+moon    = tetrahedron tiny white orbits planet1 3 turns 0s-20s
