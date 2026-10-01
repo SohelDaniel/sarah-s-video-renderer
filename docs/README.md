@@ -65,6 +65,7 @@ All the math is built on **vectors and matrices** (01).
 | 32 | [Flying past movers](32-flyby-movers.md) | How does something fly past a thing that is itself moving? | `motion.cpp`, `solver.cpp` |
 | 33 | [Framing by sampling](33-framing-by-sampling.md) | How does the camera fit where moving things really are? | `motion.cpp` |
 | 34 | [Any size, and HD](34-hd.md) | How does a scene become a 1080p picture without changing its layout? | `world.cpp`, `render.cpp` |
+| 35 | [Mixing as light](35-linear-light.md) | Why does mixing bytes make edges too dark, and how is it fixed? | `srgb.h`, `render.cpp` |
 | | [Ranges and settings](ranges.md) | What values make sense? | `camera.h`, `object.h` |
 | | [C++ notes](cpp-notes.md) | What does this syntax mean? | everywhere |
 | | [Design](design.md) | Why is the code split up like this? | everywhere |

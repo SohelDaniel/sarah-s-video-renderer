@@ -12,6 +12,7 @@
 #include "math_layout.h"
 #include "render.h"
 #include "scene_parser.h"
+#include "srgb.h"
 #include "test_scenes.h"
 #include "timeline.h"
 
@@ -356,8 +357,10 @@ static void test_fades(){
 	px::Pixel s = solid.picture().Get(80, 62);   // inside the triangle
 	px::Pixel h = half.picture().Get(80, 62);
 	px::Pixel bg = solid.picture().Get(2, 2);     // the background
-	int expected = int(std::lround(0.5f * s.r + 0.5f * bg.r));
-	check(std::abs(h.r - expected) <= 1, "half see-through = halfway between it and the background (" + std::to_string(h.r)
+	// halfway in LIGHT, not in bytes (docs/35): 101, where the bytes' halfway is 79
+	float alpha = 128.0f / 255.0f;
+	int expected = srgb::to_byte(alpha * srgb::to_linear(s.r) + (1.0f - alpha) * srgb::to_linear(bg.r));
+	check(std::abs(h.r - expected) <= 1, "half see-through = halfway in light between it and the background (" + std::to_string(h.r)
 	      + ", expected " + std::to_string(expected) + ")");
 
 	// see-through must not hide what's behind it, even if drawn first
@@ -554,6 +557,24 @@ static void test_hd(){
 	      "label gaps scale too: 3 px becomes 6.75 px at 1080");
 }
 
+// Mixing colors as light, not as bytes (docs/35).
+static void test_linear_light(){
+	std::printf("\nlinear light:\n");
+	bool round_trip = true;
+	for(int b = 0;b<256;b++) if(srgb::to_byte(srgb::to_linear(uint8_t(b))) != b) round_trip = false;
+	check(round_trip, "every byte turned into light and back gives the same byte (all 256)");
+	check(srgb::to_linear(0) == 0.0f && srgb::to_linear(255) == 1.0f, "the ends are exact: 0 is no light, 255 is all of it");
+	check(std::fabs(srgb::to_linear(128) - 0.2158f) < 1e-4f, "byte 128 is only 21.6% of the light, not half");
+
+	px::Image black(1, 1, px::Pixel(0, 0, 0));
+	srgb::blend(black, 0, 0, px::Pixel(255, 255, 255, 128));
+	int light = black.Get(0, 0).r;
+	px::Image bytes(1, 1, px::Pixel(0, 0, 0));
+	bytes.Draw(0, 0, px::Pixel(255, 255, 255, 128));
+	check(light == 188 && bytes.Get(0, 0).r == 128,
+	      "white covering half a black pixel: 188 mixed as light, 128 mixed as bytes (" + std::to_string(light) + ")");
+}
+
 int main(){
 	test_clipping();
 	test_fly_camera();
@@ -568,6 +589,7 @@ int main(){
 	test_scene_language();
 	test_live_reload();
 	test_hd();
+	test_linear_light();
 	std::printf("\n%s: %d check%s failed\n", failures == 0 ? "ALL PASSED" : "FAILED", failures, failures == 1 ? "" : "s");
 	return failures == 0 ? 0 : 1;
 }

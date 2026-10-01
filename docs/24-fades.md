@@ -52,8 +52,13 @@ red:  0.5 · 137 + 0.5 · 20 = 78.5  → 79
 blue: 0.5 · 137 + 0.5 · 28 = 82.5  → 83
 ```
 
-The engine gives (79, 79, 83). ✓ (The opacity is stored as a byte, so 0.5
+The engine gave (79, 79, 83). ✓ (The opacity is stored as a byte, so 0.5
 becomes 128/255 = 0.502, but that doesn't change the rounded result.)
+
+> **Since 35** the mixing is done in **light**, not in bytes, because bytes
+> aren't amounts of light. The same example now gives (101, 101, 101): see
+> 35 for the numbers. The idea above (new · a + old · (1 − a)) is the same;
+> only what's being mixed changed.
 
 The blending itself was already in `pixel.h`: `Image::Draw` mixes any color
 whose alpha is below 255 into what's there. The renderer just has to give
@@ -117,7 +122,7 @@ fading away again and the planet is half gone.
 
 ```
 fades:
-  PASS  half see-through = halfway between it and the background (79, expected 79)
+  PASS  half see-through = halfway in light between it and the background (101, expected 101)
   PASS  something solid behind a see-through one still shows through
 ```
 

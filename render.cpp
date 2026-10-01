@@ -1,4 +1,5 @@
 #include "render.h"
+#include "srgb.h"
 #include "font.h"
 #include "font8x8.h"
 #include "timeline.h"
@@ -255,7 +256,7 @@ void render::rasterize_line(const line& l){
 
 			px::Pixel c = l.color;
 			c.a = uint8_t(std::lround(255.0f * coverage));
-			image.Draw(x, y, c);
+			srgb::blend(image, x, y, c);
 		}
 	}
 }
@@ -320,7 +321,7 @@ void render::fill(const vec3& v1,const vec3& v2,const vec3& v3,
 			// behind it has to stay visible through it (docs/24).
 			if(opacity >= 1.0f) closest = z;
 
-			image.Draw(p.x, p.y, shaded);
+			srgb::blend(image, p.x, p.y, shaded);   // mixed as light when see-through (docs/35)
      		}
 	}
 
@@ -353,19 +354,21 @@ void render::finish(){
 
 	// Anti-aliasing (docs/25): everything was drawn samples x samples times
 	// bigger. Each final pixel is the average of its block of small ones, so
-	// a pixel that an edge cuts through gets a color in between.
+	// a pixel that an edge cuts through gets a color in between. The average
+	// is of the LIGHT, not the bytes (docs/35): half a white sample block
+	// gives half the light.
 	if(samples > 1){
-		int n = samples * samples;
+		float n = float(samples * samples);
 		for(int y = 0;y<result.Height();y++){
 			for(int x = 0;x<result.Width();x++){
-				int r = 0, g = 0, b = 0;
+				float r = 0.0f, g = 0.0f, b = 0.0f;
 				for(int sy = 0;sy<samples;sy++){
 					for(int sx = 0;sx<samples;sx++){
 						px::Pixel p = image.Get(x * samples + sx, y * samples + sy);
-						r += p.r; g += p.g; b += p.b;
+						r += srgb::to_linear(p.r); g += srgb::to_linear(p.g); b += srgb::to_linear(p.b);
 					}
 				}
-				result.Draw(x, y, px::Pixel(uint8_t((r + n / 2) / n), uint8_t((g + n / 2) / n), uint8_t((b + n / 2) / n)));
+				result.Draw(x, y, px::Pixel(srgb::to_byte(r / n), srgb::to_byte(g / n), srgb::to_byte(b / n)));
 			}
 		}
 	}
@@ -412,7 +415,7 @@ void render::finish(){
 				if(c <= 0.0f) continue;
 				px::Pixel p = l.color;
 				p.a = uint8_t(std::lround(p.a * c));
-				picture.Draw(x, y, p);
+				srgb::blend(picture, x, y, p);
 			}
 		}
 	}
@@ -456,7 +459,7 @@ void render::paint_math(const math_item& m,float dx,float dy,px::Pixel color){
 		if(c <= 0.0f) return;
 		px::Pixel p = color;
 		p.a = uint8_t(std::lround(color.a * std::min(1.0f, c)));
-		picture.Draw(x, y, p);
+		srgb::blend(picture, x, y, p);
 	};
 	for(const math_glyph& g : m.formula.glyphs){
 		const font::glyph& shape = g.face->get(g.codepoint, g.size);
@@ -549,7 +552,7 @@ void render::paint_outline_text(const text_item& t,float dx,float dy,px::Pixel c
 				if(c <= 0.0f) continue;
 				px::Pixel p = color;
 				p.a = uint8_t(std::lround(color.a * c));
-				picture.Draw(left + x, top + y, p);
+				srgb::blend(picture, left + x, top + y, p);
 			}
 		}
 		pen += f->advance(codes[i], t.size);
@@ -570,7 +573,7 @@ void render::paint_text(const text_item& t,int dx,int dy,px::Pixel color){
 				if(((bits >> col) & 1) == 0) continue;
 				for(int sy = 0;sy<scale;sy++){
 					for(int sx = 0;sx<scale;sx++){
-						picture.Draw(left + col * scale + sx, int(t.y) + dy + row * scale + sy, color);
+						srgb::blend(picture, left + col * scale + sx, int(t.y) + dy + row * scale + sy, color);
 					}
 				}
 			}

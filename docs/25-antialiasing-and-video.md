@@ -51,6 +51,13 @@ A color halfway between the cube and the background, exactly as much as the
 edge covers it. Without supersampling that pixel would be fully orange or
 fully dark.
 
+> **Since 35** the samples' **light** is averaged, not their bytes, because a
+> byte isn't an amount of light. The same pixel is then
+> red: (0.6445 + 0.6445 + 0.0070 + 0.0070) / 4 = 0.3257 → **155**, green → **88**,
+> blue → **44**. Brighter than (115, 70, 42), and it's the right answer:
+> half the light of the cube. The answers below are the byte version; in
+> light they're 225 and 178.
+
 | without | with `--aa` |
 |---|---|
 | ![](images/aa-off.png) | ![](images/aa-on.png) |
