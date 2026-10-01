@@ -54,6 +54,63 @@ mesh::mesh(const std::string& file_name)
 	for(const vec3& v : vertices){
 		radius = std::max(radius, std::sqrt(dot(v, v)));
 	}
+	smooth_normals();
+}
+
+// ---------------------------------------------------------------------------
+//  Corner normals (docs/36).
+//
+//  A face's own normal is cross(b - a, c - a), made 1 long: it points out of
+//  the shape (faces go counter-clockwise seen from outside). A flat-shaded
+//  face uses it everywhere, so every face of a sphere shows as a facet.
+//
+//  For smooth shading, each CORNER gets a normal: the average of the face
+//  normals of every face that shares that vertex, each weighted by its
+//  angle at that corner... but only the faces that bend away from this one
+//  by less than the crease angle:
+//        dot(n_this, n_other) >= cos(40°) = 0.766
+//  A sphere's neighbouring faces differ by ~11°, so all count: smooth. A
+//  cube's three faces at a corner differ by 90°, so each corner only counts
+//  its own face: the cube stays sharp.
+// ---------------------------------------------------------------------------
+// The angle of face i's corner at vertex v (radians): how much of the view
+// round that vertex this face takes up, so a thin sliver counts for less
+// than a wide face (docs/36).
+float mesh::corner_angle(size_t i,int v)const{
+	const triangle& t = faces[i];
+	int k = t[0] == v ? 0 : t[1] == v ? 1 : 2;
+	vec3 here = vertices[size_t(t[k] - 1)];
+	vec3 to_a = normalize(vertices[size_t(t[(k + 1) % 3] - 1)] - here);
+	vec3 to_b = normalize(vertices[size_t(t[(k + 2) % 3] - 1)] - here);
+	return std::acos(std::clamp(dot(to_a, to_b), -1.0f, 1.0f));
+}
+
+void mesh::smooth_normals(){
+	std::vector<vec3> face_normal(faces.size());
+	std::vector<std::vector<int>> faces_at(vertices.size());   // vertex -> faces using it
+	for(size_t i = 0;i<faces.size();i++){
+		const triangle& t = faces[i];
+		vec3 a = vertices[t[0] - 1], b = vertices[t[1] - 1], c = vertices[t[2] - 1];
+		face_normal[i] = normalize(cross(b - a, c - a));
+		for(int k = 0;k<3;k++) faces_at[size_t(t[k] - 1)].push_back(int(i));
+	}
+	const float least = std::cos(crease_degrees * 3.14159265f / 180.0f);
+	normals.assign(faces.size() * 3, vec3(0.0f, 0.0f, 0.0f));
+	for(size_t i = 0;i<faces.size();i++){
+		for(int k = 0;k<3;k++){
+			int v = faces[i][k];
+			vec3 sum(0.0f, 0.0f, 0.0f);
+			for(int j : faces_at[size_t(v - 1)]){
+				if(dot(face_normal[i], face_normal[size_t(j)]) < least) continue;
+				sum = sum + face_normal[size_t(j)] * corner_angle(size_t(j), v);
+			}
+			normals[3 * i + size_t(k)] = normalize(sum);   // never 0: face i always counts itself
+		}
+	}
+}
+
+vec3 mesh::corner_normal(int i,int k)const{
+	return normals[3 * size_t(i) + size_t(k)];
 }
 int mesh::get_vertices_count()const{
 	return vertices.size();

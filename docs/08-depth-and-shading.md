@@ -55,6 +55,11 @@ be closer. `render::begin` resets both the image and the depth buffer.
 
 ## 2. Flat shading (Lambert)
 
+> **Since 36** the normal is blended across each triangle (smooth shading)
+> and a small highlight is added on top, so curved shapes look round. The
+> Lambert brightness below is still the base of it, and flat faces still
+> get exactly these numbers plus a highlight of about 1.
+
 Light hitting a surface head-on is brightest. At a slant it spreads over
 more area, so it's dimmer. The brightness is the cosine of the angle
 between the face's normal and the direction to the light, which is a dot

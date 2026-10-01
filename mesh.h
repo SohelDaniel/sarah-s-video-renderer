@@ -28,12 +28,21 @@ public:
 	// Distance from (0,0,0) to the farthest vertex: a sphere this big holds
 	// the whole shape, however it's turned. Used by the layout solver.
 	float bounding_radius()const;
+	// The surface's direction at corner k (0, 1, 2) of face i, for smooth
+	// shading (docs/36): the average of the faces around that vertex that
+	// bend away from this face by less than the crease angle. Curved shapes
+	// come out smooth; real corners (a cube's) stay sharp.
+	vec3 corner_normal(int i,int k)const;
+	static constexpr float crease_degrees = 40.0f;
 
 private:
 	std::string name;
 	std::vector<vec3> vertices;
 	std::vector<triangle> faces;
 	float radius = 0.0f;
+	std::vector<vec3> normals;   // 3 per face: normals[3 * i + k]
+	void smooth_normals();
+	float corner_angle(size_t i,int v)const;
 
 
 };

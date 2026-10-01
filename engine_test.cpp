@@ -10,6 +10,7 @@
 #include "label_layout.h"
 #include "live_scene.h"
 #include "math_layout.h"
+#include "mesh.h"
 #include "render.h"
 #include "scene_parser.h"
 #include "srgb.h"
@@ -575,6 +576,54 @@ static void test_linear_light(){
 	      "white covering half a black pixel: 188 mixed as light, 128 mixed as bytes (" + std::to_string(light) + ")");
 }
 
+// Smooth shading (docs/36): corner normals with a crease angle.
+static void test_smooth_shading(){
+	std::printf("\nsmooth shading:\n");
+	mesh ball("shapes/sphere.obj");
+	float worst = 0.0f;   // the biggest angle between a corner's normal and "straight out from the center"
+	for(int i = 0;i<ball.get_faces_count();i++){
+		for(int k = 0;k<3;k++){
+			vec3 out = normalize(ball.vertex(ball.face(i)[k] - 1));
+			float c = std::clamp(dot(ball.corner_normal(i, k), out), -1.0f, 1.0f);
+			worst = std::max(worst, std::acos(c) * 180.0f / 3.14159265f);
+		}
+	}
+	check(worst < 1.0f, "every corner of the sphere points straight out from its center (worst " + std::to_string(worst) + " degrees)");
+
+	mesh box("shapes/cube.obj");
+	bool sharp = true;
+	for(int i = 0;i<box.get_faces_count();i++){
+		triangle t = box.face(i);
+		vec3 a = box.vertex(t[0] - 1), b = box.vertex(t[1] - 1), c = box.vertex(t[2] - 1);
+		vec3 face = normalize(cross(b - a, c - a));
+		for(int k = 0;k<3;k++) if(dot(box.corner_normal(i, k), face) < 0.9999f) sharp = false;
+	}
+	check(sharp, "a cube's corners keep their own face's normal (its faces meet at 90 degrees, past the 40 degree crease)");
+
+	mesh ico("shapes/icosahedron.obj");
+	triangle t = ico.face(0);
+	vec3 a = ico.vertex(t[0] - 1), b = ico.vertex(t[1] - 1), c = ico.vertex(t[2] - 1);
+	check(dot(ico.corner_normal(0, 0), normalize(cross(b - a, c - a))) > 0.9999f,
+	      "an icosahedron stays faceted too: its faces meet at 41.8 degrees, just past the crease");
+
+	// page 08's lit triangle, facing the camera: Lambert gives 220 · 0.6235 =
+	// 137.2, and the highlight adds 0.25 · 0.8823^32 · 255 = 1.16
+	camera cam;
+	cam.width = 160;
+	cam.height = 120;
+	cam.move(vec3(0.0f, 0.0f, 4.0f));
+	cam.point_at(vec3(0.0f, 0.0f, 0.0f));
+	render lit(cam.width, cam.height);
+	lit.begin(cam);
+	lit.draw(vec3(-1, -1, 0), vec3(1, -1, 0), vec3(0, 1, 0), px::Pixel(220, 220, 220));
+	int grey = lit.picture().Get(80, 62).r;
+	check(grey == 138, "a grey (220) face towards the camera: 137.2 from the light + 1.16 highlight = 138 (" + std::to_string(grey) + ")");
+
+	vec3 n = normalize(vec3(1, 0, 0) * 0.5f + vec3(0, 1, 0) * 0.5f);
+	check(std::fabs(std::sqrt(dot(n, n)) - 1.0f) < 1e-6f && std::fabs(n[0] - 0.7071f) < 1e-4f,
+	      "halfway between two normals, made 1 long again: (0.7071, 0.7071, 0)");
+}
+
 int main(){
 	test_clipping();
 	test_fly_camera();
@@ -590,6 +639,7 @@ int main(){
 	test_live_reload();
 	test_hd();
 	test_linear_light();
+	test_smooth_shading();
 	std::printf("\n%s: %d check%s failed\n", failures == 0 ? "ALL PASSED" : "FAILED", failures, failures == 1 ? "" : "s");
 	return failures == 0 ? 0 : 1;
 }

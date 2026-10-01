@@ -96,10 +96,13 @@ private:
 	vec3 to_pixels(const vec4<float>& clip)const;
 	// One triangle, given in world space and in clip space: cut it at the
 	// near plane if it crosses it (docs/19), then fill what's left.
-	void clip_and_fill(const vec3 world[3],const vec4<float> clip[3],px::Pixel color);
-	// Fill one triangle. v = world space (for lighting), s = screen space.
+	// normal = each corner's surface direction in world space (docs/36).
+	void clip_and_fill(const vec3 world[3],const vec4<float> clip[3],const vec3 normal[3],px::Pixel color);
+	// Fill one triangle. v = world space (for lighting), s = screen space,
+	// n = the corners' normals, blended across the triangle (docs/36).
 	void fill(const vec3& v1,const vec3& v2,const vec3& v3,
-	          const vec3& s1,const vec3& s2,const vec3& s3,px::Pixel color);
+	          const vec3& s1,const vec3& s2,const vec3& s3,
+	          const vec3& n1,const vec3& n2,const vec3& n3,px::Pixel color);
 
 	px::Image image;                   // what's drawn into (samples times bigger)
 	px::Image result;                  // the finished picture, when samples > 1

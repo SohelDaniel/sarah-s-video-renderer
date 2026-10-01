@@ -62,7 +62,16 @@ void render::draw_mesh(const mesh& model,const mat4<float>& model_matrix,px::Pix
 		int k[3] = {t[0] - 1, t[1] - 1, t[2] - 1};
 		const vec3 world[3] = {world_verts[k[0]], world_verts[k[1]], world_verts[k[2]]};
 		const vec4<float> clip[3] = {clip_verts[k[0]], clip_verts[k[1]], clip_verts[k[2]]};
-		clip_and_fill(world, clip, color);
+		// a direction turns with the object but doesn't move: w = 0, so the
+		// matrix's translation column doesn't apply. (Scaling is the same in
+		// every direction here, so normalizing afterwards is enough.)
+		vec3 normal[3];
+		for(int c = 0;c<3;c++){
+			vec3 n = model.corner_normal(i, c);
+			vec4<float> turned = model_matrix * vec4<float>{n[0], n[1], n[2], 0.0f};
+			normal[c] = normalize(vec3(turned.x, turned.y, turned.z));
+		}
+		clip_and_fill(world, clip, normal, color);
 	}
 }
 
@@ -79,13 +88,14 @@ void render::draw_mesh(const mesh& model,const mat4<float>& model_matrix,px::Pix
 //  plane. A triangle with 1 corner behind becomes 4 corners (2 triangles),
 //  with 2 corners behind it becomes a smaller triangle.
 // ---------------------------------------------------------------------------
-void render::clip_and_fill(const vec3 world[3],const vec4<float> clip[3],px::Pixel color){
+void render::clip_and_fill(const vec3 world[3],const vec4<float> clip[3],const vec3 normal[3],px::Pixel color){
 	if(!clipping){
 		// the old way: drop the whole triangle if any corner is behind the camera
 		for(int k = 0;k<3;k++){
 			if(clip[k].w <= 0.0f) return;
 		}
-		fill(world[0], world[1], world[2], to_pixels(clip[0]), to_pixels(clip[1]), to_pixels(clip[2]), color);
+		fill(world[0], world[1], world[2], to_pixels(clip[0]), to_pixels(clip[1]), to_pixels(clip[2]),
+		     normal[0], normal[1], normal[2], color);
 		return;
 	}
 
@@ -97,11 +107,12 @@ void render::clip_and_fill(const vec3 world[3],const vec4<float> clip[3],px::Pix
 	}
 	if(in_front == 0) return;                // all behind the near plane
 	if(in_front == 3){                       // nothing to cut
-		fill(world[0], world[1], world[2], to_pixels(clip[0]), to_pixels(clip[1]), to_pixels(clip[2]), color);
+		fill(world[0], world[1], world[2], to_pixels(clip[0]), to_pixels(clip[1]), to_pixels(clip[2]),
+		     normal[0], normal[1], normal[2], color);
 		return;
 	}
 
-	vec3 out_world[4];
+	vec3 out_world[4], out_normal[4];
 	vec4<float> out_clip[4];
 	int n = 0;
 	for(int a = 0;a<3;a++){
@@ -109,11 +120,13 @@ void render::clip_and_fill(const vec3 world[3],const vec4<float> clip[3],px::Pix
 		if(d[a] >= 0.0f){
 			out_world[n] = world[a];
 			out_clip[n] = clip[a];
+			out_normal[n] = normal[a];
 			n++;
 		}
 		if((d[a] >= 0.0f) != (d[b] >= 0.0f)){
 			float t = d[a] / (d[a] - d[b]);
 			out_world[n] = lerp(world[a], world[b], t);
+			out_normal[n] = normalize(lerp(normal[a], normal[b], t));   // the cut corner's normal, in between
 			out_clip[n] = vec4<float>{clip[a].x + (clip[b].x - clip[a].x) * t,
 			                          clip[a].y + (clip[b].y - clip[a].y) * t,
 			                          clip[a].z + (clip[b].z - clip[a].z) * t,
@@ -124,7 +137,8 @@ void render::clip_and_fill(const vec3 world[3],const vec4<float> clip[3],px::Pix
 	// a fan from the first corner keeps the winding (front/back) the same
 	vec3 s0 = to_pixels(out_clip[0]);
 	for(int k = 1;k + 1<n;k++){
-		fill(out_world[0], out_world[k], out_world[k + 1], s0, to_pixels(out_clip[k]), to_pixels(out_clip[k + 1]), color);
+		fill(out_world[0], out_world[k], out_world[k + 1], s0, to_pixels(out_clip[k]), to_pixels(out_clip[k + 1]),
+		     out_normal[0], out_normal[k], out_normal[k + 1], color);
 	}
 }
 
@@ -149,7 +163,10 @@ void render::draw(vec3 v1,vec3 v2,vec3 v3,px::Pixel color,float see_through_by){
 	for(int k = 0;k<3;k++){
 		clip[k] = view_projection * vec4<float>{world[k][0], world[k][1], world[k][2], 1.0f};
 	}
-	clip_and_fill(world, clip, color);
+	// a lone triangle is flat: every corner gets the face's own normal
+	vec3 flat = normalize(cross(v2 - v1, v3 - v1));
+	const vec3 normal[3] = {flat, flat, flat};
+	clip_and_fill(world, clip, normal, color);
 	opacity = 1.0f;
 }
 
@@ -269,7 +286,8 @@ void render::draw_see_through(const mesh& model,const mat4<float>& model_matrix,
 }
 
 void render::fill(const vec3& v1,const vec3& v2,const vec3& v3,
-                  const vec3& s1,const vec3& s2,const vec3& s3,px::Pixel color){
+                  const vec3& s1,const vec3& s2,const vec3& s3,
+                  const vec3& n1,const vec3& n2,const vec3& n3,px::Pixel color){
 	// Signed area (x2) of the triangle on screen. The .obj faces are
 	// counter-clockwise when seen from outside, but screen y points down,
 	// which flips that: a triangle facing us has negative area here.
@@ -277,15 +295,17 @@ void render::fill(const vec3& v1,const vec3& v2,const vec3& v3,
 	float area = vec3::det(s2 - s1, s3 - s1);
 	if(area >= 0.0f) return;
 
-	// Flat shading: the more the face points at the light, the brighter.
-	vec3 normal = normalize(cross(v2 - v1, v3 - v1));
+	// Smooth shading (docs/36), worked out per pixel below:
+	//   n          = the corners' normals blended with the pixel's weights, made 1 long
+	//   brightness = ambient + (1 − ambient) · max(0, n · light)          (Lambert, docs/08)
+	//   highlight  = 0.25 · max(0, n · h)^32,   h = halfway between the light and the eye
+	//                                                                      (Blinn-Phong)
+	// A flat face has the same normal at all three corners, so its Lambert
+	// part is still one even color (only the highlight changes across it,
+	// because the direction to the eye does).
 	const float ambient = 0.15f;
-	float brightness = ambient + (1.0f - ambient) * std::max(0.0f, dot(normal, light_dir));
-	// a < 255 makes Image::Draw blend it over what's there (docs/24)
-	px::Pixel shaded(uint8_t(color.r * brightness),
-	                 uint8_t(color.g * brightness),
-	                 uint8_t(color.b * brightness),
-	                 uint8_t(std::lround(255.0f * std::clamp(opacity, 0.0f, 1.0f))));
+	// a < 255 makes it blend over what's there (docs/24)
+	uint8_t alpha = uint8_t(std::lround(255.0f * std::clamp(opacity, 0.0f, 1.0f)));
 
 	// Only look at pixels inside the triangle's bounding box.
 	int minX = std::max(0,                  int(std::floor(std::min({s1[0], s2[0], s3[0]}))));
@@ -321,6 +341,15 @@ void render::fill(const vec3& v1,const vec3& v2,const vec3& v3,
 			// behind it has to stay visible through it (docs/24).
 			if(opacity >= 1.0f) closest = z;
 
+			vec3 n = normalize(n1 * w1 + n2 * w2 + n3 * w3);
+			float brightness = ambient + (1.0f - ambient) * std::max(0.0f, dot(n, light_dir));
+			vec3 here = v1 * w1 + v2 * w2 + v3 * w3;              // the point, in the world
+			vec3 h = normalize(light_dir + normalize(camera_eye - here));
+			float shine = std::max(0.0f, dot(n, h));
+			for(int k = 0;k<5;k++) shine *= shine;                // ^32: squared 5 times
+			float highlight = 0.25f * shine * 255.0f;
+			auto channel = [&](uint8_t c){ return uint8_t(std::min(255.0f, c * brightness + highlight)); };
+			px::Pixel shaded(channel(color.r), channel(color.g), channel(color.b), alpha);
 			srgb::blend(image, p.x, p.y, shaded);   // mixed as light when see-through (docs/35)
      		}
 	}

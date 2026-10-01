@@ -92,8 +92,10 @@ to_linear(137) = 0.2502,   to_linear(20) = 0.0070,   a = 128/255 = 0.502
 0.502 · 0.2502 + 0.498 · 0.0070 = 0.1291   →   to_byte = 100.6 → 101
 ```
 
-The engine gives 101. ✓ It's brighter than 79 because half the light of
-137 is a lot more than "the byte halfway to 20".
+The engine gave 101. ✓ It's brighter than 79 because half the light of
+137 is a lot more than "the byte halfway to 20". (Since 36 the solid
+triangle has a small highlight and is 138; the mix is then 101.3, still
+101.)
 
 ## 5. What it costs
 
