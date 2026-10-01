@@ -10,9 +10,24 @@ AI never writes numbers. It writes **dan**, a small scene language (`.dan` files
 relations and motions, and a **solver** works out where everything goes,
 which paths moving things take so they never collide (unless they're meant
 to), and where the camera should stand. A CPU software rasterizer then draws
-it, live in a window you can walk around in.
+it, live in a window you can walk around in, with the things an explainer
+needs (like [Manim](https://www.manim.community/)): titles, labels that
+place themselves, arrows, easing, fades, and mp4 export.
+
+The AI writes a `.dan` file; the engine reloads it every time it's saved and
+writes `<file>.dan.report` with every error and every problem the solver
+found, so the AI can fix its own scene.
+
+![labels, titles and arrows](docs/images/labels-8.png)
 
 ```
+# scenes/labels.dan
+title "A tiny solar system"
+sun    = sphere big gold important label "the sun"
+planet = octahedron red orbits sun 1 turn 0s-20s label "planet"
+moon   = tetrahedron small white orbits planet 3 turns 0s-20s label "moon"
+comet  = pyramid small teal flies_past sun 4s-12s smooth label "comet"
+
 # scenes/lazy.dan
 cube        = cube big orange important
 sphere      = sphere blue near cube
@@ -44,6 +59,10 @@ The circles are each object's bounding sphere: red = overlapping something.
 
 - **near-plane clipping** (Sutherland–Hodgman in clip space), so you can
   stand inside a scene
+- **anti-aliasing** (`--aa`, 2×2 supersampling), **see-through** objects
+  (sorted far to near, blended, no depth writes)
+- **smooth lines and arrows** (distance-to-segment coverage, depth-tested)
+- **text** (a public-domain 8×8 bitmap font) for titles and labels
 
 **Live player**
 - a frame loop driven by a real-time clock (frame-rate independent)
@@ -72,10 +91,15 @@ The circles are each object's bounding sphere: red = overlapping something.
 - **intended collisions** (`hits ... at 12s`): intercepts a moving target
   exactly on time, only that pair may touch, then it sticks
   ([docs/18](docs/18-intended-collisions.md))
+- **easing** (Manim's rate functions: smooth, sine, rush_into, ...), with the
+  collision checks speeded up by each curve's steepest slope ([docs/23](docs/23-easing.md))
+- **labels** placed every frame by the label-placement algorithm the project
+  started from: priority, candidate boxes, greedy, a gradient nudge, a hard
+  check, and hysteresis against flicker ([docs/28](docs/28-labels.md))
 - a plain-text report of every overlap, hidden pair and relation verdict:
   the feedback the AI will read
-- stress tests: 15 adversarial scenes (crowded, cyclic, contradictory,
-  typo-ridden, empty, moving, colliding on purpose) and 135 automatic checks.
+- stress tests: 16 adversarial scenes (crowded, cyclic, contradictory,
+  typo-ridden, empty, moving, colliding on purpose, eased) and 144 automatic checks.
   They found 4 bugs, each fixed in its own commit ([docs/15](docs/15-stress-tests.md))
 
 **The dan language** ([docs/21](docs/21-scene-language.md))
@@ -85,8 +109,12 @@ The circles are each object's bounding sphere: red = overlapping something.
   distance (Damerau–Levenshtein, optimal string alignment): the feedback the
   AI will get
 
-`make test` runs both test programs: the solver's 135 checks and the
-engine's 28 (clipping, the fly camera, looping, the parser).
+- **live reload**: save the `.dan` file and the window updates; a broken save
+  keeps the last good scene and says why in the `.report` file ([docs/22](docs/22-live-reload.md))
+
+`make test` runs both test programs: the solver's 144 checks and the
+engine's 60 (clipping, the fly camera, looping, the parser, live reload,
+easing, fades, lines, text, labels).
 
 ## Build and run
 
@@ -102,6 +130,8 @@ make run SCENE=2      scene 2: a small solar system, 20 s
 ./main 5              scene 5: collisions that are meant to happen
 ./main scenes/impact.dan    any .dan file: edit and save it while it plays, it reloads live
 ./main scenes/broken.dan    ... or one full of mistakes, to see the error messages
+./main scenes/labels.dan --aa                 labels, titles, a moon and a comet, with smooth edges
+./main scenes/labels.dan --aa --video out.mp4 the same, as an mp4 (needs ffmpeg)
 ./main clip on|off    standing inside a scene, with or without near-plane clipping
 ./main stress crowd   any of the stress test scenes (crowd, chain, cycle, typos, ...)
 make test             all the tests
@@ -131,7 +161,10 @@ small numbers you can check on paper. One point is followed from the cube's
 | `render` | the rasterizer |
 | `object`, `camera`, `timeline.h` | things in the scene, how they change over time, parent/child links |
 | `player`, `window`, `fly_camera` | the frame loop, the SDL window and input, the walking camera |
-| `scene_parser`, `scenes/` | the scene language and example scene files |
+| `scene_parser`, `scenes/` | the dan language and example `.dan` files |
+| `live_scene`, `frame_source.h` | reloading a `.dan` file while it plays, and writing its report |
+| `label_layout` | placing labels on the screen, every frame |
+| `font8x8.h` | the public-domain bitmap font |
 | `scene_spec.h` | how a scene is described (what the AI will produce) |
 | `layout` | the layout solver for still objects |
 | `motion` | paths for moving objects, and collision checks over time |
@@ -143,8 +176,11 @@ small numbers you can check on paper. One point is followed from the cube's
 
 ## Next
 
-- hooking up an AI to write `.dan` files, with the parser's errors and the
-  solver's report sent back so it can fix its own scenes
+- hooking up an AI to write `.dan` files, reading `.dan.report` to fix them
+- math formulas like Manim's (LaTeX → outlines with `dvisvgm`, filled with
+  the same coverage idea as the lines), and smooth outline fonts
+  (`stb_truetype`)
+- making the 3D solver leave room for labels and titles
 - flying past (not just orbiting) things that move
 - full parent/child transforms (spin and scale too) for things like wheels on
   a moving car

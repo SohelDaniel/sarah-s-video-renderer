@@ -57,6 +57,16 @@ scene_spec (what the AI wrote) ──► layout (pure math: spheres in, position
 - **Errors are written for the AI.** All of them at once, with a line, a
   column, and a guess at what was meant. The parser also avoids follow-on
   noise: one failed definition doesn't cause a pile of "unknown name" notes.
+- **An interface for "where frames come from".** The player draws from a
+  `frame_source`: a fixed C++ scene, a world, or a live `.dan` file that
+  replaces its whole scene when the file changes. One loop, three kinds of
+  source, chosen at run time (virtual functions, 22).
+- **Layers drawn in a fixed order**, because each needs the one before:
+  solid objects (they fill the depth buffer), see-through objects far to near
+  (24), lines (they test against the depth, 26), the anti-aliasing average
+  (25), then circles, leader lines and text on the final picture (27, 28).
+- **The label layout is pure 2D math** with no drawing, so the original
+  notes' worked examples run as tests against the real code (28).
 - **Two clocks.** Scene time (what's where) loops; real time (how far you
   walked) doesn't. Mixing them up would make walking jump at the loop point.
 - **Only `window.cpp` knows about keys.** It turns them into a plain

@@ -254,6 +254,9 @@ it and exits with code 1 instead of crashing.
 | `std::stoul(text, nullptr, 16)` | `scene_parser.cpp` | read `ff8800` as a hex number for `#rrggbb` colors |
 | `std::isdigit`, `std::isalpha`, `std::isxdigit` | `scene_parser.cpp` | what kind of character is this (the lexer, 21) |
 | `std::min({a, b, c})` | `scene_parser.cpp` | the smallest of a list (an `initializer_list`) |
+| `std::filesystem::last_write_time` | `live_scene.cpp` | when a file was last changed (22) |
+| `std::exp` | `timeline.h` | e to the power x, for the sigmoid in `smooth` (23) |
+| `std::iota` | `label_layout.cpp` | fill 0, 1, 2, ... (the labels' order before sorting, 28) |
 | `std::printf("%-14s %4d", ...)` | `solver_test.cpp` | formatted columns: `-` = left-aligned, the number = width |
 | exit code (`return 1` from `main`) | `solver_test.cpp` | non-zero tells `make` (and any script) that the tests failed |
 
@@ -294,6 +297,54 @@ static std::vector<std::string> keys_of(const std::map<std::string, T>& m);
 ```
 One function for the size, color, relation and view word lists, whatever
 their value type.
+
+### Virtual functions and interfaces
+```cpp
+class frame_source{
+public:
+	virtual ~frame_source() = default;
+	virtual camera& cam() = 0;               // = 0: every kind of source must have its own
+	virtual void poll(){}                    // a default that a source may replace
+};
+class live_scene : public frame_source{ ... camera& cam() override; ... };
+```
+A call through a `frame_source&` runs the version of whatever object it
+really is (22). `override` makes the compiler check that a function really
+replaces one from the base class, so a typo doesn't silently make a new
+function. The `virtual` destructor makes `delete` through a base pointer
+clean up the right kind of object.
+
+### `std::unique_ptr` and `std::move`
+```cpp
+std::unique_ptr<world> current;
+auto next = std::make_unique<world>(...);
+current = std::move(next);                   // the old world is deleted right here
+```
+One owner, deleted automatically. A `unique_ptr` can't be copied, only
+**moved** (handed over), so there's never any doubt who owns it (22).
+
+### `popen` and `pclose`
+```cpp
+FILE* pipe = popen("ffmpeg ... -i - out.mp4", "w");
+fwrite(pixels, 4, width * height, pipe);
+pclose(pipe);
+```
+Runs another program with its input connected to `pipe`: whatever is
+written goes straight into it (25).
+
+### Bit tricks
+```cpp
+if((bits >> x) & 1)
+```
+`>>` shifts the bits right, `& 1` keeps the last one: "is bit x set?" (27).
+
+### `inline constexpr` variables
+```cpp
+inline constexpr unsigned char font8x8_basic[128][8] = { ... };
+```
+A constant table defined in a header. `constexpr` makes it a compile-time
+constant; `inline` (C++17) lets every file that includes the header share
+one copy instead of each getting its own (27).
 
 ### The ternary operator
 ```cpp
