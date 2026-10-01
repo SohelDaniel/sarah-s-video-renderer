@@ -13,6 +13,7 @@ player::player(float seconds)
 void player::play(camera& cam,const std::vector<object*>& scene){
 	window screen("sarah's video player", cam.width, cam.height);
 	render renderer(cam.width, cam.height);  // made once, reused every frame
+	renderer.clipping = clipping;
 
 	// steady_clock only ever goes forward (unlike the wall clock, which can
 	// jump if the computer changes its time), so it's the one for timing
@@ -52,6 +53,7 @@ void player::play(camera& cam,const std::vector<object*>& scene){
 
 void player::save_still(camera& cam,const std::vector<object*>& scene,float t,const std::string& filename){
 	render renderer(cam.width, cam.height);
+	renderer.clipping = clipping;
 	cam.update(t);
 	for(object* o : scene){
 		o->update(t);

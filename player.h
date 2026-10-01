@@ -18,6 +18,9 @@ public:
 	// how long the video lasts, in seconds
 	explicit player(float seconds);
 
+	// cut triangles at the near plane (docs/19); off only to show why it matters
+	bool clipping = true;
+
 	void play(camera& cam,const std::vector<object*>& scene);
 
 	// Instead of playing: draw the single frame at time t and save it as a

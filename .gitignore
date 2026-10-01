@@ -1,6 +1,7 @@
 # build output
 main
 solver_test
+engine_test
 
 # rendered images
 out/

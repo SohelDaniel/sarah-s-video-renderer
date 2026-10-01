@@ -20,6 +20,7 @@
 //   ./main 4 naive            a "lazy AI" animation: orbits and a fly-by (docs/16)
 //   ./main 4 naive x.png 7.5  same, but save the picture at 7.5 seconds
 //   ./main 5 framed           things that collide on purpose (docs/18)
+//   ./main clip on|off        standing in a scene, with/without near-plane clipping (docs/19)
 //   ./main stress crowd                 one of the stress test scenes (docs/15)
 //   ./main stress crowd greedy x.png    ... after one solver step, saved as a picture
 //                                       (names: see test_scenes.cpp or `make test`)
@@ -155,6 +156,38 @@ void solar_system(){
 	video.play(cam, scene);
 }
 
+// Near-plane clipping (docs/19): standing on a big floor, right next to a
+// column. Half the floor and the near side of the column are behind the
+// camera, so their triangles cross the near plane.
+void clipping_demo(bool clip,const std::string& picture){
+	mesh plane("shapes/plane.obj");
+	mesh cube("shapes/cube.obj");
+	mesh sphere("shapes/sphere.obj");
+
+	object floor(plane, px::Pixel(90, 110, 140));
+	floor.scale(30.0f);
+	floor.move(vec3(0.0f, -1.0f, 0.0f));
+
+	object column(cube, px::Pixel(230, 130, 60));   // right beside the camera
+	column.move(vec3(1.0f, -0.2f, 3.2f));
+	column.scale(0.8f);
+
+	object ball(sphere, px::Pixel(80, 160, 230));
+	ball.move(vec3(-2.0f, 0.0f, -6.0f));
+	object block(cube, px::Pixel(120, 200, 90));
+	block.move(vec3(3.0f, 0.0f, -10.0f));
+
+	std::vector<object*> scene = {&floor, &column, &ball, &block};
+	camera cam;
+	cam.move(vec3(0.0f, 0.3f, 4.0f));
+	cam.point_at(vec3(0.0f, 0.0f, -6.0f));
+
+	player video(10.0f);
+	video.clipping = clip;
+	if(picture.empty()) video.play(cam, scene);
+	else                video.save_still(cam, scene, 0.0f, picture);
+}
+
 // Solve a described scene, print the report, then play it (still objects
 // slowly spin in place, moving ones follow their paths) or save the one
 // picture at time `t`. Scene 3 and 4 live in test_scenes.cpp.
@@ -196,6 +229,9 @@ int main(int argc,char** argv){
 		else if(which == "3"){
 			solved_scene(lazy_ai_scene(), still_step(argc > 2 ? argv[2] : "framed"), motion_plan::method::naive,
 			             argc > 3 ? argv[3] : "", 0.0f);
+		}
+		else if(which == "clip"){
+			clipping_demo(argc > 2 ? std::string(argv[2]) != "off" : true, argc > 3 ? argv[3] : "");
 		}
 		else if(which == "5"){
 			solved_scene(impact_scene(), layout::method::framed, motion_step(argc > 2 ? argv[2] : "framed"),

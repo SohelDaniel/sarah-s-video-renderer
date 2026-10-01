@@ -12,6 +12,9 @@ SOURCES = main.cpp camera.cpp layout.cpp mesh.cpp motion.cpp object.cpp player.c
 # The solver's stress tests: no window, so no SDL (docs/15).
 TEST_TARGET  = solver_test
 TEST_SOURCES = solver_test.cpp layout.cpp mesh.cpp motion.cpp solver.cpp test_scenes.cpp vec3.cpp
+# The engine's own tests (docs/19-21): also no SDL
+ENGINE_TEST         = engine_test
+ENGINE_TEST_SOURCES = engine_test.cpp camera.cpp mesh.cpp object.cpp render.cpp vec3.cpp
 HEADERS = $(wildcard *.h)
 
 .PHONY: all run stills test clean
@@ -43,6 +46,7 @@ stills: $(TARGET) $(TEST_TARGET)
 	  for t in $(IMPACT_TIMES); do ./$(TARGET) 5 $$s docs/images/scene5-$$s-$$t.png $$t > /dev/null; done; done
 	@for s in $(MOTION_STEPS); do ./$(TARGET) 4 $$s docs/images/scene4-$$s.png > docs/images/scene4-$$s.txt; \
 	  for t in $(MOTION_TIMES); do ./$(TARGET) 4 $$s docs/images/scene4-$$s-$$t.png $$t > /dev/null; done; done
+	@for c in on off; do ./$(TARGET) clip $$c docs/images/clip-$$c.png > /dev/null; done
 	@./solver_test > docs/images/stress-results.txt || true
 	@# our PNG writer doesn't compress (docs/pixel.h); macOS's sips can, ~50x smaller
 	@if command -v sips > /dev/null; then for f in docs/images/*.png; do sips -s format png $$f --out $$f > /dev/null; done; fi
@@ -50,10 +54,15 @@ stills: $(TARGET) $(TEST_TARGET)
 $(TEST_TARGET): $(TEST_SOURCES) $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(TEST_SOURCES) -o $(TEST_TARGET)
 
-# Solve every test scene with every step, print the numbers, check the rules.
-test: $(TEST_TARGET)
+$(ENGINE_TEST): $(ENGINE_TEST_SOURCES) $(HEADERS)
+	$(CXX) $(CXXFLAGS) $(ENGINE_TEST_SOURCES) -o $(ENGINE_TEST)
+
+# Solve every test scene with every step, print the numbers, check the rules;
+# then test the engine (clipping, controls, the scene language).
+test: $(TEST_TARGET) $(ENGINE_TEST)
 	./$(TEST_TARGET)
+	./$(ENGINE_TEST)
 
 clean:
-	rm -f $(TARGET) $(TEST_TARGET)
+	rm -f $(TARGET) $(TEST_TARGET) $(ENGINE_TEST)
 	rm -rf renders out

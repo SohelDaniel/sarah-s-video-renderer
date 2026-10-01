@@ -31,6 +31,10 @@ public:
 	// Draw what has to go on top (the circles). Call after all objects.
 	void finish();
 	bool save(const std::string& filename)const;
+
+	// Cut triangles at the near plane instead of dropping them (docs/19).
+	// Only switched off to show what goes wrong without it.
+	bool clipping = true;
 	// The finished picture, e.g. to show it in a window.
 	const px::Image& picture()const;
 
@@ -38,6 +42,11 @@ private:
 	// World space -> screen. Result: x,y in pixels, z = depth (-1 near .. 1 far).
 	// Returns false if the point is behind the camera.
 	bool project(const vec3& world,vec3& screen)const;
+	// Clip space (after the projection matrix, before dividing by w) -> screen.
+	vec3 to_pixels(const vec4<float>& clip)const;
+	// One triangle, given in world space and in clip space: cut it at the
+	// near plane if it crosses it (docs/19), then fill what's left.
+	void clip_and_fill(const vec3 world[3],const vec4<float> clip[3],px::Pixel color);
 	// Fill one triangle. v = world space (for lighting), s = screen space.
 	void fill(const vec3& v1,const vec3& v2,const vec3& v3,
 	          const vec3& s1,const vec3& s2,const vec3& s3,px::Pixel color);
@@ -58,6 +67,5 @@ private:
 	// scratch space for draw_mesh, kept between calls so drawing many
 	// objects doesn't allocate new memory every time
 	std::vector<vec3> world_verts;
-	std::vector<vec3> screen_verts;
-	std::vector<char> visible;
+	std::vector<vec4<float>> clip_verts;
 };
