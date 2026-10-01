@@ -26,6 +26,21 @@ scene_spec lazy_ai_scene(){
 	return spec;
 }
 
+// Scene 4, written the way a lazy AI would write an animation: two planets
+// told to orbit the sun without saying how far out, a rock sitting right
+// where they'd go, a comet that "flies past" the sun, and a moon orbiting a
+// planet (which isn't supported yet).
+scene_spec lazy_motion_scene(){
+	scene_spec spec;
+	spec.add("sun",     "shapes/sphere.obj",      px::Pixel(250, 200,  60), size_word::big, 10);
+	spec.add("rock",    "shapes/icosahedron.obj", colors[4]).near("sun");
+	spec.add("planet1", "shapes/octahedron.obj",  colors[6]).orbits("sun", 1.0f, 0.0f, 20.0f);
+	spec.add("planet2", "shapes/cube.obj",        colors[0], size_word::small).orbits("sun", 2.0f, 0.0f, 20.0f);
+	spec.add("comet",   "shapes/pyramid.obj",     colors[5], size_word::small).flies_past("sun", 4.0f, 10.0f);
+	spec.add("moon",    "shapes/tetrahedron.obj", colors[5], size_word::tiny).orbits("planet1", 3.0f, 0.0f, 20.0f);
+	return spec;
+}
+
 // 20 things all "near" one cube: far more than fit around it.
 static scene_spec crowd(){
 	scene_spec spec;
@@ -121,5 +136,6 @@ std::vector<test_scene> all_test_scenes(){
 		{"view_front",    "the lazy scene seen from the front",               seen_from(view_word::front),         1},
 		{"view_left",     "the lazy scene seen from the left, above",         seen_from(view_word::left_above),    1},
 		{"view_right",    "the lazy scene seen from the right, above",        seen_from(view_word::right_above),   1},
+		{"motion",        "orbits and a fly-by crossing a crowded spot",      lazy_motion_scene(),                 1},
 	};
 }

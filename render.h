@@ -25,8 +25,9 @@ public:
 	// Draw one triangle given in world space.
 	void draw(vec3 v1,vec3 v2,vec3 v3,px::Pixel color);
 	// Outline of a sphere (a bounding sphere), as a circle on screen. It's
-	// only remembered here and drawn by finish(), on top of everything.
-	void draw_bounds(vec3 center,float radius,px::Pixel color);
+	// only remembered here and drawn by finish(), on top of everything:
+	// red if it overlaps another one in this frame, grey if not.
+	void draw_bounds(vec3 center,float radius);
 	// Draw what has to go on top (the circles). Call after all objects.
 	void finish();
 	bool save(const std::string& filename)const;
@@ -51,7 +52,6 @@ private:
 	struct circle{
 		vec3 center;
 		float radius;
-		px::Pixel color;
 	};
 	std::vector<circle> overlay;       // waiting for finish()
 

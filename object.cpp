@@ -93,11 +93,10 @@ mat4<float> object::model_matrix()const{
 void object::draw(render& renderer)const{
 	renderer.draw_mesh(*shape, model_matrix(), color);
 	if(bounds_on){
-		renderer.draw_bounds(now.position, shape->bounding_radius() * now.size, bounds_color);
+		renderer.draw_bounds(now.position, shape->bounding_radius() * now.size);
 	}
 }
 
-void object::show_bounds(px::Pixel circle_color){
+void object::show_bounds(){
 	bounds_on = true;
-	bounds_color = circle_color;
 }

@@ -126,8 +126,8 @@ void render::fill(const vec3& v1,const vec3& v2,const vec3& v3,
 
 }
 
-void render::draw_bounds(vec3 center,float radius,px::Pixel color){
-	overlay.push_back({center, radius, color});
+void render::draw_bounds(vec3 center,float radius){
+	overlay.push_back({center, radius});
 }
 
 void render::finish(){
@@ -135,13 +135,22 @@ void render::finish(){
 	// Its screen radius: project the center, and a point on the sphere's
 	// edge straight "up" from the camera's point of view, and measure the
 	// distance between the two on screen.
-	for(const circle& c : overlay){
+	for(size_t i = 0;i<overlay.size();i++){
+		const circle& c = overlay[i];
+		// red if this sphere overlaps any other one right now (docs/11)
+		bool hit = false;
+		for(size_t j = 0;j<overlay.size();j++){
+			if(j == i) continue;
+			vec3 d = c.center - overlay[j].center;
+			if(std::sqrt(dot(d, d)) < c.radius + overlay[j].radius) hit = true;
+		}
+		px::Pixel color = hit ? px::Pixel(255, 70, 70) : px::Pixel(150, 150, 160);
 		vec3 mid, edge;
 		if(!project(c.center, mid) || !project(c.center + camera_up * c.radius, edge)) continue;
 		float dx = edge[0] - mid[0];
 		float dy = edge[1] - mid[1];
 		int r = int(std::lround(std::sqrt(dx * dx + dy * dy)));
-		image.DrawCircle(int(std::lround(mid[0])), int(std::lround(mid[1])), r, c.color);
+		image.DrawCircle(int(std::lround(mid[0])), int(std::lround(mid[1])), r, color);
 	}
 	overlay.clear();
 }

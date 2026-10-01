@@ -19,6 +19,8 @@ struct test_scene{
 
 // The scene from docs/11-14 (scene 3).
 scene_spec lazy_ai_scene();
+// The moving scene from docs/16 (scene 4).
+scene_spec lazy_motion_scene();
 
 // Every test scene, in a fixed order.
 std::vector<test_scene> all_test_scenes();

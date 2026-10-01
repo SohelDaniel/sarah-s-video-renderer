@@ -56,8 +56,8 @@ public:
 	mat4<float> model_matrix()const;
 	void draw(render& renderer)const;
 	// Also draw the object's bounding sphere as a circle (for the layout
-	// solver's pictures). Grey = fine, red = overlapping something.
-	void show_bounds(px::Pixel circle_color);
+	// solver's pictures). Grey = fine, red = overlapping something in that frame.
+	void show_bounds();
 
 private:
 	const mesh* shape;
@@ -65,5 +65,4 @@ private:
 	timeline<pose> motion;  // how it starts + every change scheduled on it
 	pose now;               // where it is at the current time
 	bool bounds_on = false;
-	px::Pixel bounds_color;
 };

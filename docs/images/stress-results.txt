@@ -1,52 +1,56 @@
-scene          step     objs overlaps  hidden   off  relations errors warnings halved
-lazy           naive       9       36      36     0     0 of 7       1        0      0
-               greedy      9        0       6     0     7 of 7       1        0      0
-               refined     9        0       0     0     7 of 7       1        0    172
-               framed      9        0       0     0     7 of 7       1        0    161
-crowd          naive      21      210     210     0     0 of 20      0        0      0
-               greedy     21        0      26     0    12 of 20      0        0      0
-               refined    21        0       0     0    12 of 20      0        1    177
-               framed     21        0       0     0    12 of 20      0        1    173
-chain          naive      15      105     105     0     0 of 14      0        0      0
-               greedy     15        0       0    10    14 of 14      0        0      0
-               refined    15        0       0    10    14 of 14      0        0    169
-               framed     15        0       0     0    14 of 14      0        0    166
-cycle          naive       3        3       3     0     0 of 3       1        0      0
-               greedy      3        0       0     0     2 of 3       1        0      0
-               refined     3        0       0     0     2 of 3       1        1    175
-               framed      3        0       0     0     2 of 3       1        1    173
-contradiction  naive       4        6       6     0     0 of 2       2        0      0
-               greedy      4        0       0     0     2 of 2       2        0      0
-               refined     4        0       0     0     2 of 2       2        0    175
-               framed      4        0       0     0     2 of 2       2        0      0
-sizes          naive       5       10      10     0     0 of 4       0        0      0
-               greedy      5        0       0     0     4 of 4       0        0      0
-               refined     5        0       0     0     4 of 4       0        0    174
-               framed      5        0       0     0     4 of 4       0        0    175
-typos          naive       5       10      10     0     0 of 1       4        0      0
-               greedy      5        0       2     0     1 of 1       4        0      0
-               refined     5        0       0     0     1 of 1       4        1    173
-               framed      5        0       0     0     1 of 1       4        1    176
-empty          naive       0        0       0     0     0 of 0       0        0      0
-               greedy      0        0       0     0     0 of 0       0        0      0
-               refined     0        0       0     0     0 of 0       0        0      0
-               framed      0        0       0     0     0 of 0       0        0      0
-single         naive       1        0       0     0     0 of 0       0        0      0
-               greedy      1        0       0     0     0 of 0       0        0      0
-               refined     1        0       0     0     0 of 0       0        0      0
-               framed      1        0       0     0     0 of 0       0        0      0
-view_front     naive       9       36      36     0     0 of 7       1        0      0
-               greedy      9        0       6     0     7 of 7       1        0      0
-               refined     9        0       0     0     7 of 7       1        0    172
-               framed      9        0       0     0     7 of 7       1        0    161
-view_left      naive       9       36      36     0     0 of 7       1        0      0
-               greedy      9        0       6     0     7 of 7       1        0      0
-               refined     9        0       0     0     7 of 7       1        0    172
-               framed      9        0       0     0     7 of 7       1        0    161
-view_right     naive       9       36      36     0     0 of 7       1        0      0
-               greedy      9        0       6     0     7 of 7       1        0      0
-               refined     9        0       0     0     7 of 7       1        0    172
-               framed      9        0       0     0     7 of 7       1        0    174
+scene          step     objs overlaps  hidden   off  relations errors warnings halved moving  collide
+lazy           naive       9       36      36     0     0 of 7       1        0      0      0        0
+               greedy      9        0       6     0     7 of 7       1        0      0      0        0
+               refined     9        0       0     0     7 of 7       1        0    172      0        0
+               framed      9        0       0     0     7 of 7       1        0    161      0        0
+crowd          naive      21      210     210     0     0 of 20      0        0      0      0        0
+               greedy     21        0      26     0    12 of 20      0        0      0      0        0
+               refined    21        0       0     0    12 of 20      0        1    177      0        0
+               framed     21        0       0     0    12 of 20      0        1    173      0        0
+chain          naive      15      105     105     0     0 of 14      0        0      0      0        0
+               greedy     15        0       0    10    14 of 14      0        0      0      0        0
+               refined    15        0       0    10    14 of 14      0        0    169      0        0
+               framed     15        0       0     0    14 of 14      0        0    166      0        0
+cycle          naive       3        3       3     0     0 of 3       1        0      0      0        0
+               greedy      3        0       0     0     2 of 3       1        0      0      0        0
+               refined     3        0       0     0     2 of 3       1        1    175      0        0
+               framed      3        0       0     0     2 of 3       1        1    173      0        0
+contradiction  naive       4        6       6     0     0 of 2       2        0      0      0        0
+               greedy      4        0       0     0     2 of 2       2        0      0      0        0
+               refined     4        0       0     0     2 of 2       2        0    175      0        0
+               framed      4        0       0     0     2 of 2       2        0      0      0        0
+sizes          naive       5       10      10     0     0 of 4       0        0      0      0        0
+               greedy      5        0       0     0     4 of 4       0        0      0      0        0
+               refined     5        0       0     0     4 of 4       0        0    174      0        0
+               framed      5        0       0     0     4 of 4       0        0    175      0        0
+typos          naive       5       10      10     0     0 of 1       4        0      0      0        0
+               greedy      5        0       2     0     1 of 1       4        0      0      0        0
+               refined     5        0       0     0     1 of 1       4        1    173      0        0
+               framed      5        0       0     0     1 of 1       4        1    176      0        0
+empty          naive       0        0       0     0     0 of 0       0        0      0      0        0
+               greedy      0        0       0     0     0 of 0       0        0      0      0        0
+               refined     0        0       0     0     0 of 0       0        0      0      0        0
+               framed      0        0       0     0     0 of 0       0        0      0      0        0
+single         naive       1        0       0     0     0 of 0       0        0      0      0        0
+               greedy      1        0       0     0     0 of 0       0        0      0      0        0
+               refined     1        0       0     0     0 of 0       0        0      0      0        0
+               framed      1        0       0     0     0 of 0       0        0      0      0        0
+view_front     naive       9       36      36     0     0 of 7       1        0      0      0        0
+               greedy      9        0       6     0     7 of 7       1        0      0      0        0
+               refined     9        0       0     0     7 of 7       1        0    172      0        0
+               framed      9        0       0     0     7 of 7       1        0    161      0        0
+view_left      naive       9       36      36     0     0 of 7       1        0      0      0        0
+               greedy      9        0       6     0     7 of 7       1        0      0      0        0
+               refined     9        0       0     0     7 of 7       1        0    172      0        0
+               framed      9        0       0     0     7 of 7       1        0    161      0        0
+view_right     naive       9       36      36     0     0 of 7       1        0      0      0        0
+               greedy      9        0       6     0     7 of 7       1        0      0      0        0
+               refined     9        0       0     0     7 of 7       1        0    172      0        0
+               framed      9        0       0     0     7 of 7       1        0    174      0        0
+motion         naive       6        3       3     0     0 of 1       1        0      0      3        5
+               greedy      6        0       0     0     1 of 1       1        0      0      3        9
+               refined     6        0       0     0     1 of 1       1        0      0      3        9
+               framed      6        0       0     0     1 of 1       1        0      0      3        9
 
 checks:
   PASS  lazy           every position is a real number (no NaN / infinity)
@@ -109,5 +113,10 @@ checks:
   PASS  view_right     no overlaps after framing (0)
   PASS  view_right     everything inside the picture (0 outside)
   PASS  view_right     reports its mistakes (1 of at least 1)
+  PASS  motion         every position is a real number (no NaN / infinity)
+  PASS  motion         solving twice gives exactly the same layout
+  PASS  motion         no overlaps after framing (0)
+  PASS  motion         everything inside the picture (0 outside)
+  PASS  motion         reports its mistakes (1 of at least 1)
 
 ALL PASSED: 0 checks failed

@@ -41,6 +41,7 @@ All the math is built on **vectors and matrices** (01).
 | 13 | [Refinement](13-refinement.md) | How is the layout polished? (gradient descent) | `layout.cpp` |
 | 14 | [Auto camera](14-auto-camera.md) | Where should the camera go? | `layout.cpp`, `world.cpp` |
 | 15 | [Stress tests](15-stress-tests.md) | Does the solver survive sloppy input? What broke? | `test_scenes.cpp`, `solver_test.cpp` |
+| 16 | [Motion placement](16-motion-placement.md) | How do moving things avoid each other? | `motion.cpp`, `solver.cpp` |
 | | [Ranges and settings](ranges.md) | What values make sense? | `camera.h`, `object.h` |
 | | [C++ notes](cpp-notes.md) | What does this syntax mean? | everywhere |
 | | [Design](design.md) | Why is the code split up like this? | everywhere |
@@ -68,6 +69,7 @@ computes.
 make run              scene 1: cube, sphere, torus (12 s video)
 make run SCENE=2      scene 2: solar system (20 s)
 ./main 3 <step>       scene 3: a "lazy AI" scene, placed by one step of the solver
+./main 4 <step>       scene 4: a "lazy AI" animation, orbits and a fly-by (16)
 ./main stress <name>  one of the stress test scenes (15)
 make test             solve every stress scene, check the rules
 make stills           writes the solver pictures in docs/images/

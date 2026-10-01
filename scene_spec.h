@@ -88,6 +88,28 @@ struct relation{
 	std::string other;   // the name of the object it's relative to
 };
 
+// Something that moves (docs/16). The AI only says what kind of motion,
+// around or past what, and when; the solver picks the exact path.
+//   orbits     : goes round the other object `turns` times
+//   flies_past : flies by the other object in a straight line
+enum class motion_kind{ orbits, flies_past };
+
+inline const char* motion_name(motion_kind k){
+	switch(k){
+		case motion_kind::orbits:     return "orbits";
+		case motion_kind::flies_past: return "flies_past";
+	}
+	return "?";
+}
+
+struct motion{
+	motion_kind kind;
+	std::string other;    // what it moves around or past
+	float turns = 1.0f;   // orbits only
+	float start = 0.0f;   // seconds
+	float end   = 0.0f;
+};
+
 // One object in the scene, as described.
 struct object_spec{
 	std::string name;       // how other objects refer to it
@@ -96,6 +118,7 @@ struct object_spec{
 	size_word size = size_word::normal;
 	int importance = 1;     // higher = placed first, gets the best spot
 	std::vector<relation> relations;
+	std::vector<motion> motions;   // empty = it stands still
 
 	// Each of these adds a relation and returns the object itself, so they
 	// can be chained:  spec.add(...).near("cube").above("table");
@@ -106,6 +129,15 @@ struct object_spec{
 	object_spec& below(const std::string& other)      { return relate(relation_kind::below, other); }
 	object_spec& in_front_of(const std::string& other){ return relate(relation_kind::in_front_of, other); }
 	object_spec& behind(const std::string& other)     { return relate(relation_kind::behind, other); }
+
+	object_spec& orbits(const std::string& other,float turns,float start,float end){
+		motions.push_back({motion_kind::orbits, other, turns, start, end});
+		return *this;
+	}
+	object_spec& flies_past(const std::string& other,float start,float end){
+		motions.push_back({motion_kind::flies_past, other, 0.0f, start, end});
+		return *this;
+	}
 
 private:
 	object_spec& relate(relation_kind kind,const std::string& other){
@@ -119,7 +151,7 @@ class scene_spec{
 public:
 	object_spec& add(const std::string& name,const std::string& mesh_file,px::Pixel color,
 	                 size_word size = size_word::normal,int importance = 1){
-		objects.push_back(object_spec{name, mesh_file, color, size, importance, {}});
+		objects.push_back(object_spec{name, mesh_file, color, size, importance, {}, {}});
 		return objects.back();
 	}
 

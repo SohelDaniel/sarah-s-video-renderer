@@ -17,6 +17,8 @@
 //   ./main 3 framed           a "lazy AI" scene, placed by the layout solver
 //                             (steps: naive, greedy, refined, framed)
 //   ./main 3 framed out.png   same, but save one picture instead of playing
+//   ./main 4 naive            a "lazy AI" animation: orbits and a fly-by (docs/16)
+//   ./main 4 naive x.png 7.5  same, but save the picture at 7.5 seconds
 //   ./main stress crowd                 one of the stress test scenes (docs/15)
 //   ./main stress crowd greedy x.png    ... after one solver step, saved as a picture
 //                                       (names: see test_scenes.cpp or `make test`)
@@ -154,28 +156,34 @@ void solar_system(){
 	video.play(cam, scene);
 }
 
-// Solve a described scene with one of the solver's steps, print the report,
-// then play it (every object slowly spins in place) or save one picture.
-// Scene 3 is lazy_ai_scene() from test_scenes.cpp.
-void solved_scene(const scene_spec& spec,const std::string& step,const std::string& picture){
-	layout::method how;
-	if(step == "naive")       how = layout::method::naive;
-	else if(step == "greedy") how = layout::method::greedy;
-	else if(step == "refined") how = layout::method::refined;
-	else if(step == "framed")  how = layout::method::framed;
-	else throw std::invalid_argument("unknown solver step \"" + step + "\" (try: naive, greedy, refined, framed)");
+// Solve a described scene, print the report, then play it (still objects
+// slowly spin in place, moving ones follow their paths) or save the one
+// picture at time `t`. Scene 3 and 4 live in test_scenes.cpp.
+void solved_scene(const scene_spec& spec,layout::method still_how,motion_plan::method moving_how,
+                  const std::string& picture,float t){
+	world w(spec, still_how, moving_how);
+	std::cout << w.report();
 
-	world w(spec, how);
-	std::cout << w.plan().report();
-
-	std::vector<object*> scene = w.scene();
-	for(object* o : scene){
+	for(object* o : w.still_objects()){
 		o->rotate(0.6f + 6.283f, 0.3f, 0.0f, 20.0f);   // one full spin over 20 s
 	}
 
-	player video(20.0f);
-	if(picture.empty()) video.play(w.cam, scene);
-	else                video.save_still(w.cam, scene, 0.0f, picture);
+	player video(w.duration());
+	if(picture.empty()) video.play(w.cam, w.scene());
+	else                video.save_still(w.cam, w.scene(), t, picture);
+}
+
+layout::method still_step(const std::string& step){
+	if(step == "naive")   return layout::method::naive;
+	if(step == "greedy")  return layout::method::greedy;
+	if(step == "refined") return layout::method::refined;
+	if(step == "framed")  return layout::method::framed;
+	throw std::invalid_argument("unknown solver step \"" + step + "\" (try: naive, greedy, refined, framed)");
+}
+
+motion_plan::method motion_step(const std::string& step){
+	if(step == "naive") return motion_plan::method::naive;
+	throw std::invalid_argument("unknown motion step \"" + step + "\" (try: naive)");
 }
 
 int main(int argc,char** argv){
@@ -183,19 +191,29 @@ int main(int argc,char** argv){
 	try {
 		if(which == "1")      example_scene();
 		else if(which == "2") solar_system();
-		else if(which == "3") solved_scene(lazy_ai_scene(), argc > 2 ? argv[2] : "framed", argc > 3 ? argv[3] : "");
+		else if(which == "3"){
+			solved_scene(lazy_ai_scene(), still_step(argc > 2 ? argv[2] : "framed"), motion_plan::method::naive,
+			             argc > 3 ? argv[3] : "", 0.0f);
+		}
+		else if(which == "4"){
+			solved_scene(lazy_motion_scene(), layout::method::framed, motion_step(argc > 2 ? argv[2] : "naive"),
+			             argc > 3 ? argv[3] : "", argc > 4 ? std::stof(argv[4]) : 0.0f);
+		}
 		else if(which == "stress" && argc > 2){
 			bool found = false;
 			for(const test_scene& t : all_test_scenes()){
 				if(t.name != argv[2]) continue;
 				found = true;
 				std::cout << t.name << ": " << t.attacks << "\n";
-				solved_scene(t.spec, argc > 3 ? argv[3] : "framed", argc > 4 ? argv[4] : "");
+				solved_scene(t.spec, still_step(argc > 3 ? argv[3] : "framed"), motion_plan::method::naive,
+				             argc > 4 ? argv[4] : "", 0.0f);
 			}
 			if(!found) throw std::invalid_argument(std::string("no test scene called \"") + argv[2] + "\"");
 		}
 		else {
-			std::cerr << "usage: ./main [1|2|3] [solver step] [picture.png]   or   ./main stress <scene> [solver step] [picture.png]\n";
+			std::cerr << "usage: ./main [1|2|3] [solver step] [picture.png]\n"
+			             "       ./main 4 [motion step] [picture.png] [time]\n"
+			             "       ./main stress <scene> [solver step] [picture.png]\n";
 			return 1;
 		}
 	} catch (const std::exception& e) {
