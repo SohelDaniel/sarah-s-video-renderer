@@ -78,7 +78,9 @@ bool live_scene::load(){
 			next->cam.circles = empty_camera.circles;
 			out << next->report();
 			// still objects slowly spin in place, like the other solved scenes
-			for(object* o : next->still_objects()) o->rotate(0.6f + 6.283f, 0.3f, 0.0f, 20.0f);
+			for(object* o : next->still_objects()){
+				if(!o->is_flat()) o->rotate(0.6f + 6.283f, 0.3f, 0.0f, 20.0f);   // flat shapes keep facing the camera (docs/40)
+			}
 			current = std::move(next);
 			pointers = current->scene();
 			swapped = true;

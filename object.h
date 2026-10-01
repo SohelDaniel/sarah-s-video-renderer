@@ -25,6 +25,11 @@ struct pose{
 class object{
 public:
 	object(const mesh& shape,px::Pixel color);
+	// a flat shape (docs/40): unit size, its plane is its own x and y
+	object(const flat_shape& flat,px::Pixel color);
+	bool is_flat()const{ return flat != nullptr; }
+	// Create (docs/41): how much of a flat shape is drawn
+	void set_flat_look(flat_look look);
 
 	// ---- right away: sets how the object starts (at second 0) ----
 
@@ -83,7 +88,9 @@ public:
 	void show_bounds();
 
 private:
-	const mesh* shape;
+	const mesh* shape = nullptr;
+	const flat_shape* flat = nullptr;  // drawn instead of a mesh if set
+	flat_look look;
 	px::Pixel color;
 	timeline<pose> motion;  // how it starts + every change scheduled on it
 	pose now;               // where it is at the current time (its own motion)

@@ -4,6 +4,7 @@
 #include "mesh.h"
 #include "math_layout.h"
 #include "vpath.h"
+#include "shapes2d.h"
 #include "pixel.h"
 #include <string>
 #include <vector>
@@ -41,6 +42,12 @@ public:
 	// picture 480 pixels tall. A taller one scales them all by this, so a
 	// 1080p frame looks like a sharper 480p frame, not a smaller one (docs/34).
 	float ui_scale()const;
+	// A flat shape (docs/40), its plane placed in the world by `model` (its
+	// x and y; z = 0 is the plane). Unlit, like Manim: the outline in `color`,
+	// a filled inside at half strength. Drawn by finish(), after the solid and
+	// see-through objects, hidden behind anything in front of it.
+	void draw_flat(const flat_shape& shape,const mat4<float>& model,px::Pixel color,float opacity,flat_look look = {});
+
 	// A line between two points in the world, `width` pixels wide, with
 	// smooth edges, hidden behind things that are in front of it (docs/26).
 	// Like see-through things, it's drawn by finish(), after the solid ones.
@@ -136,6 +143,17 @@ private:
 		float distance;                // from the camera, for sorting
 	};
 	std::vector<see_through> waiting;  // waiting for finish()
+
+	struct flat_item{
+		const flat_shape* shape;
+		mat4<float> model;
+		px::Pixel color;
+		float opacity;
+		flat_look look;
+		float distance;                // from the camera, for sorting
+	};
+	std::vector<flat_item> flats;      // waiting for finish()
+	void rasterize_flat(const flat_item& f);
 
 	struct line{
 		vec3 a, b;

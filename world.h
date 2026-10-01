@@ -47,6 +47,7 @@ private:
 	// declared in this order on purpose: members are built top to bottom,
 	// and the solver needs the meshes loaded first
 	std::map<std::string, mesh> meshes;   // file name -> mesh
+	std::map<std::string, flat_shape> flat_shapes;   // "circle", "square filled", ... (docs/40)
 	scene_solver solved;
 	std::vector<object> objects;
 	std::vector<bool> moves;              // moves[i]: does object i follow a path?

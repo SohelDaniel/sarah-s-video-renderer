@@ -1,4 +1,5 @@
 #include "scene_parser.h"
+#include "shapes2d.h"
 #include "math_layout.h"
 
 #include <algorithm>
@@ -211,7 +212,8 @@ static std::vector<token> tokenize(const std::string& source){
 //    header     = "scene" [ text ] [ "view" view_word ]
 //    definition = name "=" shape { property }
 //    fact       = name phrase { [","] phrase }
-//    property   = size | color | "important" | label | phrase | ","
+//    property   = size | color | "important" | "filled" | label | phrase | ","
+//    (shape: a mesh word, or a flat one: circle square triangle hexagon star, docs/40)
 //    label      = "label" [ "math" ] text { "math" | time "-" time | "always" }
 //    phrase     = relation_word name
 //               | "orbits" name [ number ("turn" | "turns") ] time "-" time
@@ -380,6 +382,13 @@ void parser::arrow(){
 	}
 }
 
+// {"a", "b", "c"} -> "a, b, c"
+static std::string join(const std::vector<std::string>& words){
+	std::string out;
+	for(size_t i = 0;i<words.size();i++) out += (i ? ", " : "") + words[i];
+	return out;
+}
+
 // 2.5 -> "2.5s", 3 -> "3s"
 static std::string format_seconds(float seconds){
 	std::ostringstream out;
@@ -489,10 +498,16 @@ void parser::definition(){
 	// one mistake doesn't cause a pile of "no object called ..." after it
 	defined.push_back(n.value);
 	const token& s = next();
-	if(s.kind != token_kind::word || std::find(shape_words.begin(), shape_words.end(), s.value) == shape_words.end()){
-		fail(s, "expected a shape after '=', got " + describe(s) + did_you_mean(s.value, shape_words));
+	const std::vector<std::string>& flats = flat_shape_words();
+	bool is_flat = std::find(flats.begin(), flats.end(), s.value) != flats.end();
+	if(s.kind != token_kind::word || (!is_flat && std::find(shape_words.begin(), shape_words.end(), s.value) == shape_words.end())){
+		std::vector<std::string> all = shape_words;
+		all.insert(all.end(), flats.begin(), flats.end());
+		fail(s, "expected a shape after '=', got " + describe(s) + did_you_mean(s.value, all));
 	}
-	object_spec& o = result.spec.add(n.value, "shapes/" + s.value + ".obj", px::Pixel(200, 200, 200));
+	// a flat shape (docs/40) has no mesh file
+	object_spec& o = result.spec.add(n.value, is_flat ? "" : "shapes/" + s.value + ".obj", px::Pixel(200, 200, 200));
+	if(is_flat) o.flat = s.value;
 	while(!at_end_of_line()) property(o);
 }
 
@@ -510,6 +525,11 @@ void parser::property(object_spec& o){
 	if(auto size = size_words.find(t.value); size != size_words.end()){ o.size = size->second; return; }
 	if(auto color = color_words.find(t.value); color != color_words.end()){ o.color = color->second; return; }
 	if(t.value == "important"){ o.importance = 10; return; }
+	if(t.value == "filled"){
+		if(o.flat.empty()) fail(t, "only flat shapes (" + join(flat_shape_words()) + ") can be filled");
+		o.filled = true;
+		return;
+	}
 	phrase(o, t);
 }
 
@@ -599,7 +619,7 @@ void parser::phrase(object_spec& o,const token& first){
 		return;
 	}
 
-	std::vector<std::string> known = {"important", "orbits", "flies_past", "hits", "fades_in", "fades_out", "label"};
+	std::vector<std::string> known = {"important", "orbits", "flies_past", "hits", "fades_in", "fades_out", "label", "filled"};
 	for(const auto& m : {keys_of(size_words), keys_of(color_words), keys_of(relation_words)}){
 		known.insert(known.end(), m.begin(), m.end());
 	}

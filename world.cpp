@@ -9,6 +9,13 @@
 std::vector<float> world::load_meshes(const scene_spec& spec){
 	std::vector<float> radii;
 	for(const object_spec& o : spec.objects){
+		if(!o.flat.empty()){
+			// a flat shape (docs/40): built once per kind, and it fits in radius 1
+			std::string key = o.flat + (o.filled ? " filled" : "");
+			flat_shapes.try_emplace(key, make_flat_shape(o.flat, o.filled));
+			radii.push_back(1.0f);
+			continue;
+		}
 		// try_emplace only loads the file if it isn't in the map yet
 		auto it = meshes.try_emplace(o.mesh_file, o.mesh_file).first;
 		radii.push_back(it->second.bounding_radius());
@@ -41,11 +48,22 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 	objects.reserve(spec.objects.size());
 	for(size_t i = 0;i<spec.objects.size();i++){
 		const object_spec& o = spec.objects[i];
-		object thing(meshes.at(o.mesh_file), o.color);
+		object thing = o.flat.empty() ? object(meshes.at(o.mesh_file), o.color)
+		                              : object(flat_shapes.at(o.flat + (o.filled ? " filled" : "")), o.color);
 		thing.scale(size_value(o.size));
-		// a three-quarter view, so the faces of flat-sided shapes are easy to
-		// tell apart. The bounding sphere doesn't care how it's turned.
-		thing.rotate(0.6f, 0.3f);
+		if(o.flat.empty()){
+			// a three-quarter view, so the faces of flat-sided shapes are easy to
+			// tell apart. The bounding sphere doesn't care how it's turned.
+			thing.rotate(0.6f, 0.3f);
+		}else{
+			// a flat shape faces back along the camera's view (docs/40): its plane
+			// is parallel to the picture, so from there it looks exactly 2D.
+			// The model turns its own +z to (cos rx·sin ry, −sin rx, cos rx·cos ry),
+			// and that has to be d, the direction back towards the camera:
+			//      rx = −asin(d.y),    ry = atan2(d.x, d.z)
+			vec3 d = normalize(solved.still().camera_eye() - solved.still().camera_target());
+			thing.rotate(std::atan2(d[0], d[2]), -std::asin(d[1]));
+		}
 		// the circle turns red in any frame where it overlaps something
 		thing.show_bounds();
 

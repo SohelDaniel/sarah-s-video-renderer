@@ -1,0 +1,14 @@
+# Flat shapes (docs/40): Manim-style 2D drawings standing in the 3D world.
+# From the camera they look exactly flat; walk round them (Tab, then WASD)
+# and they're thin outlines and fills hanging in space.
+
+scene "shapes"
+title "Flat shapes in a 3D world"
+
+sun    = sphere big gold important
+planet = octahedron red orbits sun 1 turn 0s-20s
+ring   = circle teal right_of sun label "circle"
+box    = square blue filled left_of sun label "square"
+spark  = star yellow filled above sun label "star"
+tri    = triangle white below sun
+hex    = hexagon purple filled near tri

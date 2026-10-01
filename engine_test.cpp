@@ -10,9 +10,11 @@
 #include "label_layout.h"
 #include "live_scene.h"
 #include "math_layout.h"
+#include "object.h"
 #include "mesh.h"
 #include "render.h"
 #include "scene_parser.h"
+#include "shapes2d.h"
 #include "srgb.h"
 #include "test_scenes.h"
 #include "timeline.h"
@@ -736,6 +738,70 @@ static void test_transform(){
 	      "changing before the writing is done, or after the formula is gone, is a mistake; a broken new formula points at its '^' (column 20)");
 }
 
+// Flat shapes (docs/40): 2D drawings standing in the 3D world.
+static void test_flat_shapes(){
+	std::printf("\nflat shapes:\n");
+	camera cam;
+	cam.width = 200;
+	cam.height = 200;
+	cam.move(vec3(0.0f, 0.0f, 10.0f));
+	cam.point_at(vec3(0.0f, 0.0f, 0.0f));
+	cam.update(0.0f);
+	flat_shape ring = circle_shape();
+	object o(ring, px::Pixel(255, 255, 255));
+	vec3 d = normalize(vec3(0.0f, 0.0f, 10.0f));                     // back towards the camera
+	o.rotate(std::atan2(d[0], d[2]), -std::asin(d[1]));
+	o.update(0.0f);
+	mat4<float> model = o.model_matrix();
+	// how wide and tall the circle is on screen, from a camera
+	auto extent = [&](const camera& c,float& wide,float& tall){
+		render r(c.width, c.height);
+		r.begin(c);
+		float xs[4], ys[4], rr;
+		point2 rim[4] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+		for(int k = 0;k<4;k++) r.where_on_screen(transform_point(model, vec3(rim[k].x, rim[k].y, 0.0f)), 0.0f, xs[k], ys[k], rr);
+		wide = std::fabs(xs[0] - xs[1]);
+		tall = std::fabs(ys[2] - ys[3]);
+	};
+	float wide, tall;
+	extent(cam, wide, tall);
+	check(std::fabs(wide - tall) < 0.5f, "from the camera it faces, a circle is round on screen (" + std::to_string(wide) + " across, " + std::to_string(tall) + " up)");
+	camera side = cam;
+	side.move(vec3(10.0f * std::sin(1.0472f), 0.0f, 10.0f * std::cos(1.0472f)));   // 60 degrees round to the side
+	side.update(0.0f);
+	float side_wide, side_tall;
+	extent(side, side_wide, side_tall);
+	float squash = side_wide / side_tall;
+	check(std::fabs(squash - 0.5f) < 0.03f, "60 degrees round to the side it's an ellipse, about cos 60 = 0.5 as wide as tall (" + std::to_string(squash) + ")");
+
+	// hidden behind a solid cube, seen in front of it
+	mesh box("shapes/cube.obj");
+	flat_shape square = make_flat_shape("square", true);
+	auto middle = [&](float z){
+		object sq(square, px::Pixel(80, 160, 230));
+		sq.move(vec3(0.0f, 0.0f, z));
+		sq.scale(2.0f);
+		sq.update(0.0f);
+		render r(cam.width, cam.height);
+		r.begin(cam);
+		r.draw_mesh(box, mat4<float>::identity(), px::Pixel(230, 130, 60));
+		sq.draw(r);
+		r.finish();
+		return r.picture().Get(100, 100);
+	};
+	px::Pixel behind = middle(-3.0f), in_front = middle(3.0f);
+	check(behind.b < 100 && in_front.b > behind.b + 40,
+	      "a filled square behind a solid cube is hidden; in front of it, it shows (blue " + std::to_string(behind.b) + " vs " + std::to_string(in_front.b) + ")");
+
+	parse_result ok = parse_scene("sun = sphere\nring = circle teal filled right_of sun\n");
+	parse_result typo = parse_scene("ring = cirlce teal\n");
+	parse_result solid = parse_scene("box = cube filled\n");
+	check(ok.ok() && ok.spec.objects[1].flat == "circle" && ok.spec.objects[1].filled && ok.spec.objects[1].mesh_file.empty(),
+	      "'circle teal filled right_of sun' is a filled flat circle, with no mesh file");
+	check(!typo.ok() && typo.errors[0].text.find("did you mean circle") != std::string::npos && !solid.ok(),
+	      "'cirlce' gets a did-you-mean; 'filled' on a cube is a mistake (only flat shapes can be filled)");
+}
+
 int main(){
 	test_clipping();
 	test_fly_camera();
@@ -755,6 +821,7 @@ int main(){
 	test_vector_paths();
 	test_write();
 	test_transform();
+	test_flat_shapes();
 	std::printf("\n%s: %d check%s failed\n", failures == 0 ? "ALL PASSED" : "FAILED", failures, failures == 1 ? "" : "s");
 	return failures == 0 ? 0 : 1;
 }

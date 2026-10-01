@@ -20,6 +20,8 @@
 // picture 2x2 times bigger and averages it down.
 static int aa_samples = 1;
 static camera picture_look;   // --hd: 1920x1080 and no circles (docs/34)
+static bool moved_eye = false; // --eye x,y,z: look from somewhere else (a still from a walked spot, docs/40)
+static vec3 eye_at;
 // --video out.mp4: write a video instead of opening a window (docs/25)
 static std::string video_path;
 
@@ -296,7 +298,7 @@ void solved_scene(const scene_spec& spec,layout::method still_how,motion_plan::m
 	std::cout << w.report();
 
 	for(object* o : w.still_objects()){
-		o->rotate(0.6f + 6.283f, 0.3f, 0.0f, 20.0f);   // one full spin over 20 s
+		if(!o->is_flat()) o->rotate(0.6f + 6.283f, 0.3f, 0.0f, 20.0f);   // one full spin over 20 s
 	}
 
 	player video(w.duration());
@@ -336,6 +338,15 @@ static std::vector<char*> take_options(int argc,char** argv){
 			picture_look.circles = false;
 		}
 		else if(a == "--video" && k + 1 < argc) video_path = argv[++k];
+		else if(a == "--eye" && k + 1 < argc){
+			float x = 0, y = 0, z = 0;
+			if(std::sscanf(argv[++k], "%f,%f,%f", &x, &y, &z) != 3){
+				std::cerr << "error: --eye needs x,y,z, like --eye 8,3,6\n";   // (before main's try, so no throw)
+				std::exit(1);
+			}
+			moved_eye = true;
+			eye_at = vec3(x, y, z);
+		}
 		else rest.push_back(argv[k]);
 	}
 	return rest;
@@ -444,6 +455,7 @@ int main(int raw_argc,char** raw_argv){
 				if(!live.has_scene()) return 1;
 				player stills(live.seconds());
 				stills.samples = aa_samples;
+				if(moved_eye) live.cam().move(eye_at);   // still looking at the same point
 				stills.save_still(live, argc > 4 ? std::stof(argv[4]) : 0.0f, picture);
 				return 0;
 			}

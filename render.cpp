@@ -36,6 +36,7 @@ void render::begin(const camera& cam){
 	camera_eye = cam.eye();
 	overlay.clear();
 	waiting.clear();
+	flats.clear();
 	lines.clear();
 	texts.clear();
 	screen_lines.clear();
@@ -279,6 +280,138 @@ void render::rasterize_line(const line& l){
 	}
 }
 
+void render::draw_flat(const flat_shape& shape,const mat4<float>& model,px::Pixel color,float opacity,flat_look look){
+	if(opacity <= 0.001f) return;
+	vec3 center(model(0, 3), model(1, 3), model(2, 3));
+	vec3 d = center - camera_eye;
+	flats.push_back({&shape, model, color, opacity, look, std::sqrt(dot(d, d))});
+}
+
+// ---------------------------------------------------------------------------
+//  Drawing a flat shape (docs/40).
+//
+//  Every point of the shape goes onto the screen like any vertex: model,
+//  then view and projection, then the perspective divide. If any point is
+//  behind the camera, the shape isn't drawn this frame (you've walked
+//  through it).
+//
+//  Fill: the projected loops are filled with the winding rule (fill_loops,
+//  29). A pixel's depth comes from the PLANE: on a flat surface the screen
+//  depth is a straight-line function of screen x and y (that's why the
+//  depth can be blended with barycentric weights, 08):
+//        z(x, y) = a·x + b·y + c
+//  a, b, c come from three points of the plane: the shape's own (0, 0),
+//  (1, 0) and (0, 1), projected.
+//
+//  Outline: each path's projected polyline. A pixel gets the MOST any one
+//  side covers it (line_coverage, 26), so where two sides meet it isn't
+//  blended twice. Its depth is the nearest side's, along that side.
+// ---------------------------------------------------------------------------
+void render::rasterize_flat(const flat_item& f){
+	auto onto = [&](point2 p,vec3& screen){
+		vec3 w = transform_point(f.model, vec3(p.x, p.y, 0.0f));
+		vec4<float> c = view_projection * vec4<float>{w[0], w[1], w[2], 1.0f};
+		if(c.w <= 0.0f || c.z + c.w < 0.0f) return false;   // behind the camera, or in front of the near plane
+		screen = to_pixels(c);
+		return true;
+	};
+	vec3 o, ex, ey;
+	if(!onto({0.0f, 0.0f}, o) || !onto({1.0f, 0.0f}, ex) || !onto({0.0f, 1.0f}, ey)) return;
+	float dx1 = ex[0] - o[0], dy1 = ex[1] - o[1], dz1 = ex[2] - o[2];
+	float dx2 = ey[0] - o[0], dy2 = ey[1] - o[1], dz2 = ey[2] - o[2];
+	float det = dx1 * dy2 - dx2 * dy1;                      // 0 when it's seen exactly edge-on
+
+	px::Pixel grey(190, 190, 200);
+	float width = 2.0f * ui_scale() * samples;              // the outline, in image pixels
+
+	for(const flat_path& path : f.shape->paths){
+		px::Pixel color = path.role == flat_path::outline || path.role == flat_path::curve ? f.color : grey;
+		std::vector<point2> drawn = path_prefix(path, f.look.drawn);
+		std::vector<vec3> line;
+		for(const point2& p : drawn){
+			vec3 s;
+			if(!onto(p, s)) return;
+			line.push_back(s);
+		}
+
+		// the inside
+		if(path.filled && f.look.fill > 0.0f && std::fabs(det) > 1e-6f){
+			float a = (dz1 * dy2 - dz2 * dy1) / det;
+			float b = (dx1 * dz2 - dx2 * dz1) / det;
+			float c = o[2] - a * o[0] - b * o[1];
+			std::vector<point2> loop;
+			float x0 = 1e9f, y0 = 1e9f, x1 = -1e9f, y1 = -1e9f;
+			for(const point2& p : path.points){
+				vec3 s;
+				if(!onto(p, s)) return;
+				loop.push_back({s[0], s[1]});
+				x0 = std::min(x0, s[0]); y0 = std::min(y0, s[1]); x1 = std::max(x1, s[0]); y1 = std::max(y1, s[1]);
+			}
+			int left = std::max(0, int(std::floor(x0))), top = std::max(0, int(std::floor(y0)));
+			int right = std::min(image.Width() - 1, int(std::ceil(x1))), bottom = std::min(image.Height() - 1, int(std::ceil(y1)));
+			if(right >= left && bottom >= top){
+				int w = right - left + 1, h = bottom - top + 1;
+				for(point2& q : loop){ q.x -= left; q.y -= top; }
+				std::vector<float> cover = fill_loops({loop}, w, h, samples > 1 ? 2 : 4);
+				px::Pixel inside = color;
+				for(int j = 0;j<h;j++){
+					for(int i = 0;i<w;i++){
+						float k = cover[size_t(j) * w + i];
+						if(k <= 0.0f) continue;
+						int x = left + i, y = top + j;
+						float z = a * (x + 0.5f) + b * (y + 0.5f) + c;
+						if(z > depth[size_t(y) * image.Width() + x] + 1e-4f) continue;
+						inside.a = uint8_t(std::lround(255.0f * f.opacity * 0.5f * f.look.fill * k));
+						srgb::blend(image, x, y, inside);
+					}
+				}
+			}
+		}
+
+		// the outline
+		if(line.size() < 2) continue;
+		float x0 = 1e9f, y0 = 1e9f, x1 = -1e9f, y1 = -1e9f;
+		for(const vec3& s : line){
+			x0 = std::min(x0, s[0]); y0 = std::min(y0, s[1]); x1 = std::max(x1, s[0]); y1 = std::max(y1, s[1]);
+		}
+		int left = std::max(0, int(std::floor(x0 - width)) - 1), top = std::max(0, int(std::floor(y0 - width)) - 1);
+		int right = std::min(image.Width() - 1, int(std::ceil(x1 + width)) + 1);
+		int bottom = std::min(image.Height() - 1, int(std::ceil(y1 + width)) + 1);
+		if(right < left || bottom < top) continue;
+		int w = right - left + 1, h = bottom - top + 1;
+		std::vector<float> cover(size_t(w) * size_t(h), 0.0f), zs(size_t(w) * size_t(h), 0.0f);
+		for(size_t k = 0;k + 1<line.size();k++){
+			const vec3& p = line[k];
+			const vec3& q = line[k + 1];
+			int i0 = std::max(left, int(std::floor(std::min(p[0], q[0]) - width)) - 1);
+			int i1 = std::min(right, int(std::ceil(std::max(p[0], q[0]) + width)) + 1);
+			int j0 = std::max(top, int(std::floor(std::min(p[1], q[1]) - width)) - 1);
+			int j1 = std::min(bottom, int(std::ceil(std::max(p[1], q[1]) + width)) + 1);
+			float lx = q[0] - p[0], ly = q[1] - p[1], l2 = lx * lx + ly * ly;
+			for(int y = j0;y<=j1;y++){
+				for(int x = i0;x<=i1;x++){
+					float k2 = line_coverage(x + 0.5f, y + 0.5f, p[0], p[1], q[0], q[1], width);
+					size_t at = size_t(y - top) * w + size_t(x - left);
+					if(k2 <= cover[at]) continue;
+					float s = l2 > 0.0f ? std::clamp(((x + 0.5f - p[0]) * lx + (y + 0.5f - p[1]) * ly) / l2, 0.0f, 1.0f) : 0.0f;
+					cover[at] = k2;
+					zs[at] = p[2] + (q[2] - p[2]) * s;
+				}
+			}
+		}
+		px::Pixel edge = color;
+		for(int y = top;y<=bottom;y++){
+			for(int x = left;x<=right;x++){
+				size_t at = size_t(y - top) * w + size_t(x - left);
+				if(cover[at] <= 0.0f) continue;
+				if(zs[at] > depth[size_t(y) * image.Width() + x] + 1e-4f) continue;
+				edge.a = uint8_t(std::lround(255.0f * f.opacity * cover[at]));
+				srgb::blend(image, x, y, edge);
+			}
+		}
+	}
+}
+
 void render::draw_see_through(const mesh& model,const mat4<float>& model_matrix,px::Pixel color,float how_solid){
 	// the object's center is where the model matrix moves (0,0,0) to: its last column
 	vec3 center(model_matrix(0, 3), model_matrix(1, 3), model_matrix(2, 3));
@@ -376,6 +509,13 @@ void render::finish(){
 	}
 	opacity = 1.0f;
 	waiting.clear();
+
+	// flat shapes (docs/40): also see-through (their fills are), so after
+	// the solid things, farthest first
+	std::stable_sort(flats.begin(), flats.end(),
+		[](const flat_item& a,const flat_item& b){ return a.distance > b.distance; });
+	for(const flat_item& f : flats) rasterize_flat(f);
+	flats.clear();
 
 	// lines and arrows, now that everything they could be hidden behind is
 	// drawn (docs/26)

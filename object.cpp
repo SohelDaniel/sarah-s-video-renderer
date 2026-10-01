@@ -25,6 +25,13 @@ static void orbit(pose& p,vec3 around,float rot_y,float rot_x,float amount){
 object::object(const mesh& shape,px::Pixel color)
 	: shape(&shape),color(color){}
 
+object::object(const flat_shape& flat,px::Pixel color)
+	: flat(&flat), color(color){}
+
+void object::set_flat_look(flat_look l){
+	look = l;
+}
+
 // ---- right away: change the starting pose ----
 
 void object::move(vec3 to){
@@ -126,7 +133,7 @@ float object::opacity()const{
 }
 
 float object::bounding_radius()const{
-	return shape->bounding_radius() * now.size;
+	return (flat ? 1.0f : shape->bounding_radius()) * now.size;   // flat shapes fit in radius 1
 }
 
 vec3 object::get_position()const{
@@ -143,13 +150,15 @@ mat4<float> object::model_matrix()const{
 
 void object::draw(render& renderer)const{
 	if(now.opacity <= 0.001f) return;                      // invisible: nothing to draw
-	if(now.opacity < 0.999f){
+	if(flat){
+		renderer.draw_flat(*flat, model_matrix(), color, now.opacity, look);
+	}else if(now.opacity < 0.999f){
 		renderer.draw_see_through(*shape, model_matrix(), color, now.opacity);
 	}else{
 		renderer.draw_mesh(*shape, model_matrix(), color);
 	}
 	if(bounds_on){
-		renderer.draw_bounds(get_position(), shape->bounding_radius() * now.size);
+		renderer.draw_bounds(get_position(), bounding_radius());
 	}
 }
 
