@@ -50,6 +50,19 @@ scene_spec (what the AI wrote) ──► layout (pure math: spheres in, position
 - **Soft wishes, hard rules.** The energy balances wishes (relations, being
   visible); a direct correction afterwards enforces the one rule that can't
   be broken (no overlaps). See 15.
+- **The language is just another way to fill the same structs.** The parser
+  produces a `scene_spec`, exactly like the C++ builders do, and a test
+  proves the two are identical for every scene. Nothing after it knows or
+  cares where a scene came from.
+- **Errors are written for the AI.** All of them at once, with a line, a
+  column, and a guess at what was meant. The parser also avoids follow-on
+  noise: one failed definition doesn't cause a pile of "unknown name" notes.
+- **Two clocks.** Scene time (what's where) loops; real time (how far you
+  walked) doesn't. Mixing them up would make walking jump at the loop point.
+- **Only `window.cpp` knows about keys.** It turns them into a plain
+  `controls` struct, so the walking math (`fly_camera`) is tested without a
+  keyboard, and the scripted camera's path is never touched by walking
+  (`set_view`).
 - **Every step is measured.** The report counts overlaps in 3D, overlaps
   on screen and satisfied relations, so each step can be compared with the
   one before (the table at the end of 14). An improvement you can't

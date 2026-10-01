@@ -249,6 +249,11 @@ it and exits with code 1 instead of crashing.
 | `std::filesystem::create_directories` | `camera.cpp` | make the output folder |
 | `std::numeric_limits<float>::infinity()` | `render.cpp` | an "empty" depth value |
 | `std::isfinite(x)` | `solver_test.cpp` | false for NaN and ±infinity: catches broken math |
+| `std::fmod(a, b)` | `timeline.h` | the remainder of a / b for floats: looping (20) |
+| `std::atan2(y, x)`, `std::asin(x)` | `fly_camera.cpp` | angles back from a direction; atan2 gets the quarter right from both signs (20) |
+| `std::stoul(text, nullptr, 16)` | `scene_parser.cpp` | read `ff8800` as a hex number for `#rrggbb` colors |
+| `std::isdigit`, `std::isalpha`, `std::isxdigit` | `scene_parser.cpp` | what kind of character is this (the lexer, 21) |
+| `std::min({a, b, c})` | `scene_parser.cpp` | the smallest of a list (an `initializer_list`) |
 | `std::printf("%-14s %4d", ...)` | `solver_test.cpp` | formatted columns: `-` = left-aligned, the number = width |
 | exit code (`return 1` from `main`) | `solver_test.cpp` | non-zero tells `make` (and any script) that the tests failed |
 
@@ -261,6 +266,34 @@ float t = std::chrono::duration<float>(clock::now() - started).count();
 `now()` gives a moment; subtracting two moments gives a duration;
 `duration<float>` converts it to seconds; `.count()` takes the plain number
 out.
+
+### `if` with an initializer
+```cpp
+if(auto size = size_words.find(t.value); size != size_words.end()){ o.size = size->second; return; }
+```
+`if(declaration; condition)`: the variable only exists inside the `if`
+(C++17). Good for "look it up, use it if found" (`scene_parser.cpp`).
+
+### Exceptions for control flow: `[[noreturn]]`
+```cpp
+struct line_error{};
+[[noreturn]] void fail(const token& where,const std::string& message);   // records, then throws line_error
+...
+try{ line(); }catch(const line_error&){ /* skip to the end of the line */ }
+```
+The parser's functions call each other several levels deep. When one finds
+a mistake, `fail` records it and throws, which unwinds straight back to the
+loop over lines (error recovery, 21). `[[noreturn]]` tells the compiler
+`fail` never returns, so it doesn't warn about "missing return value" after
+it. An empty struct is enough as the thing thrown: it's only a signal.
+
+### A function template over a map
+```cpp
+template<typename T>
+static std::vector<std::string> keys_of(const std::map<std::string, T>& m);
+```
+One function for the size, color, relation and view word lists, whatever
+their value type.
 
 ### The ternary operator
 ```cpp
