@@ -99,6 +99,7 @@ private:
 	int satisfied(int i)const;
 
 	void refine();
+	void separate();
 	// the energy of a layout, split into its four parts (docs/13)
 	struct energy_parts{
 		float spring = 0.0f, push = 0.0f, relations = 0.0f, screen = 0.0f;

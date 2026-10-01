@@ -615,6 +615,47 @@ void layout::refine(){
 	}
 	halved += shortened;
 	energy_log.push_back("steps halved because they went uphill: " + std::to_string(shortened));
+	separate();
+}
+
+// The energy's terms are all soft: they trade off against each other. When
+// relations can't all be true (a cycle like "a left_of b left_of c left_of
+// a"), their pull can win against the overlap push and leave objects inside
+// each other. Overlapping is never acceptable, though, so after refining,
+// every pair that's still too close is pushed straight apart, along the
+// line between their centers, until it has `gap` between them. The main
+// object stays put; anything else moves. Relations may get weaker, and the
+// report says so.
+void layout::separate(){
+	int anchor = order.empty() ? -1 : order[0];
+	int moved = 0;
+	for(int round = 0;round<100;round++){
+		bool clear = true;
+		for(size_t i = 0;i<placed.size();i++){
+			for(size_t j = i + 1;j<placed.size();j++){
+				vec3 diff = placed[j].position - placed[i].position;
+				float d = std::sqrt(dot(diff, diff));
+				float need = placed[i].radius + placed[j].radius + gap;
+				if(d >= need - 1e-4f) continue;
+				clear = false;
+				moved++;
+				// exactly on top of each other: pick a direction, the same every time
+				vec3 away = d > 1e-6f ? diff * (1.0f / d) : vec3(1.0f, 0.0f, 0.0f);
+				float short_by = need - d;
+				if(int(i) == anchor)      placed[j].position = placed[j].position + away * short_by;
+				else if(int(j) == anchor) placed[i].position = placed[i].position - away * short_by;
+				else{
+					placed[i].position = placed[i].position - away * (short_by / 2.0f);
+					placed[j].position = placed[j].position + away * (short_by / 2.0f);
+				}
+			}
+		}
+		if(clear) break;
+	}
+	if(moved > 0){
+		warnings.push_back("objects were still overlapping after refining; " + std::to_string(moved)
+		                   + " pushes to separate them (the relations couldn't all be true)");
+	}
 }
 
 const std::vector<placement>& layout::result()const{
