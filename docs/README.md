@@ -69,6 +69,7 @@ All the math is built on **vectors and matrices** (01).
 | 36 | [Smooth shading](36-smooth-shading.md) | How do curved shapes look round while cubes stay sharp? | `mesh.cpp`, `render.cpp` |
 | 37 | [Vector paths](37-vector-paths.md) | How do letters become outlines that can be animated? | `vpath.cpp`, `render.cpp` |
 | 38 | [Write](38-write.md) | How does a formula draw itself in, letter by letter? | `vpath.cpp`, `world.cpp` |
+| 39 | [Transform](39-transform.md) | How does one formula turn into another, with matching letters gliding? | `vpath.cpp`, `world.cpp` |
 | | [Ranges and settings](ranges.md) | What values make sense? | `camera.h`, `object.h` |
 | | [C++ notes](cpp-notes.md) | What does this syntax mean? | everywhere |
 | | [Design](design.md) | Why is the code split up like this? | everywhere |

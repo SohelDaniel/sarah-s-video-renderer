@@ -114,11 +114,17 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 	}
 	// formulas are laid out once (docs/30); the parser already checked them
 	for(const title_spec& m : spec.maths){
-		math_parse_result parsed = parse_math(m.text);
-		if(parsed.tree && fonts::serif() && fonts::italic()){
-			math_box box = layout_math(*parsed.tree, 30.0f * ui);
-			maths.push_back({m, box, math_paths(box)});
+		if(!fonts::serif() || !fonts::italic()) break;
+		world_math w{m, {}, {}};
+		std::vector<std::string> texts = {m.text};
+		for(const becomes_step& b : m.becomes) texts.push_back(b.text);
+		for(const std::string& text : texts){
+			math_parse_result parsed = parse_math(text);
+			if(!parsed.tree) break;
+			w.stages.push_back(math_paths(layout_math(*parsed.tree, 30.0f * ui)));
+			if(w.stages.size() > 1) w.matches.push_back(match_pieces(w.stages[w.stages.size() - 2], w.stages.back()));
 		}
+		if(!w.stages.empty()) maths.push_back(std::move(w));
 	}
 
 	// arrows (docs/26): look the names up once
@@ -141,14 +147,55 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 // A title or formula's pieces, with its top-left corner at (x, y). While
 // it's being written (docs/38), each piece follows border_then_fill at its
 // own lagged progress; otherwise every piece is simply there.
-static void draw_words(render& renderer,const vgroup& group,const title_spec& when,float x,float y,
-                       px::Pixel color,float shadow,float t){
-	float progress = when.write > 0.0f ? (t - when.start) / when.write : 1.0f;
+static void draw_words(render& renderer,const vgroup& group,float progress,float x,float y,
+                       px::Pixel color,float shadow){
 	int n = int(group.pieces.size());
 	for(int i = 0;i<n;i++){
 		const vpiece& p = group.pieces[size_t(i)];
 		piece_look look = progress < 1.0f ? border_then_fill(piece_progress(i, n, progress)) : piece_look{};
 		renderer.draw_vpiece(p, x + p.at.x, y + p.at.y, color, look, shadow);
+	}
+}
+
+// How far a title or formula's writing is at t (1 = done, or not written in).
+static float written(const title_spec& when,float t){
+	return when.write > 0.0f ? (t - when.start) / when.write : 1.0f;
+}
+
+// One formula turning into the next (docs/39), f = 0..1 of the way.
+//   a piece with a partner glides from its place to the partner's, and grows
+//   or shrinks to its size (a bar stretches to its length)
+//   a piece without one fades out; a new piece fades in
+static void draw_change(render& renderer,const vgroup& a,const vgroup& b,const std::vector<int>& to,
+                        float xa,float xb,float y,float f,px::Pixel color,float shadow){
+	auto lerp = [f](float u,float v){ return u + (v - u) * f; };
+	std::vector<bool> arrived(b.pieces.size(), false);
+	for(size_t i = 0;i<a.pieces.size();i++){
+		const vpiece& p = a.pieces[i];
+		if(to[i] >= 0){
+			const vpiece& q = b.pieces[size_t(to[i])];
+			arrived[size_t(to[i])] = true;
+			piece_look look;
+			look.moving = true;
+			if(p.key >= 0){
+				look.scale_x = look.scale_y = lerp(p.size, q.size) / p.size;
+			}else{
+				look.scale_x = lerp(p.width, q.width) / p.width;
+				look.scale_y = lerp(p.height, q.height) / p.height;
+			}
+			renderer.draw_vpiece(p, lerp(xa + p.at.x, xb + q.at.x), lerp(y + p.at.y, y + q.at.y), color, look, shadow);
+		}else{
+			px::Pixel fading = color;
+			fading.a = uint8_t(std::lround(color.a * (1.0f - f)));
+			renderer.draw_vpiece(p, xa + p.at.x, y + p.at.y, fading, piece_look{}, shadow);
+		}
+	}
+	for(size_t j = 0;j<b.pieces.size();j++){
+		if(arrived[j]) continue;
+		const vpiece& q = b.pieces[j];
+		px::Pixel coming = color;
+		coming.a = uint8_t(std::lround(color.a * f));
+		renderer.draw_vpiece(q, xb + q.at.x, y + q.at.y, coming, piece_look{}, shadow);
 	}
 }
 
@@ -174,18 +221,38 @@ void world::draw_overlays(render& renderer,float t){
 		float x = (cam.width - render::text_width(s.when.text, s.size)) / 2.0f;
 		px::Pixel color(240, 240, 245, uint8_t(255 * seen));
 		if(s.paths.pieces.empty()) renderer.draw_text(x, top, s.when.text, s.size, color);
-		draw_words(renderer, s.paths, s.when, x, top, color, std::max(1.0f, s.size / 16.0f), t);
+		draw_words(renderer, s.paths, written(s.when, t), x, top, color, std::max(1.0f, s.size / 16.0f));
 		top += render::text_height(s.size) + 6.0f * ui;
 	}
 	// formulas under the titles, centered, each during its own time range
 	for(const world_math& m : maths){
 		float seen = seen_at(m.when, t);
 		if(seen <= 0.0f) continue;
-		float x = (cam.width - m.formula.width) / 2.0f;
 		float y = top + 4.0f * ui;
 		px::Pixel color(240, 240, 245, uint8_t(std::lround(255.0f * seen)));
-		draw_words(renderer, m.paths, m.when, x, y, color, 1.5f * ui, t);
-		top += m.formula.height + m.formula.depth + 12.0f * ui;
+		// which formula is showing, or which two it's between (docs/39)
+		size_t k = 0;
+		float f = -1.0f;
+		for(size_t i = 0;i + 1<m.stages.size();i++){
+			const becomes_step& step = m.when.becomes[i];
+			if(t >= step.end) k = i + 1;
+			else{
+				if(t >= step.start){ k = i; f = smooth_curve((t - step.start) / (step.end - step.start)); }
+				break;
+			}
+		}
+		const vgroup& a = m.stages[k];
+		float xa = (cam.width - a.width) / 2.0f;
+		float tall = a.height + a.depth;
+		if(f < 0.0f){
+			// only the first one is written in (38); the others arrive by changing
+			draw_words(renderer, a, k == 0 ? written(m.when, t) : 1.0f, xa, y, color, 1.5f * ui);
+		}else{
+			const vgroup& b = m.stages[k + 1];
+			draw_change(renderer, a, b, m.matches[k], xa, (cam.width - b.width) / 2.0f, y, f, color, 1.5f * ui);
+			tall += (b.height + b.depth - tall) * f;
+		}
+		top += tall + 12.0f * ui;
 	}
 
 	for(const world_arrow& a : arrows){

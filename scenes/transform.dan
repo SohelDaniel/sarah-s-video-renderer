@@ -1,0 +1,10 @@
+# Transform (docs/39): a formula turns into another. Letters that are in
+# both glide to their new places; the rest fade out or in (like Manim's
+# TransformMatchingTex).
+
+scene "transform"
+title "Mass and energy" 0s-20s write 1s
+math "E = mc^2" 0s-20s write 1.5s becomes "E^2 = (mc^2)^2 + (pc)^2" at 4s-6s becomes "E = \gamma mc^2" at 10s-12s
+
+sun    = sphere big gold important label "rest" always
+planet = octahedron red orbits sun 1 turn 0s-20s label "moving" always

@@ -207,6 +207,7 @@ static std::vector<token> tokenize(const std::string& source){
 //    title      = "title" text [ time "-" time ] [ write ]
 //    math       = "math" text [ time "-" time ] [ write ] (the text is checked by parse_math, docs/30)
 //    write      = "write" [ time ]                        (1 s if no time, docs/38)
+//    math       ... { "becomes" text "at" time "-" time }   (formulas only, docs/39)
 //    header     = "scene" [ text ] [ "view" view_word ]
 //    definition = name "=" shape { property }
 //    fact       = name phrase { [","] phrase }
@@ -249,6 +250,8 @@ private:
 	void title();
 	void formula();
 	void write_in(title_spec& s,const std::string& what);
+	void becomes(title_spec& s);
+	void check_formula(const token& words);
 	void definition();
 	void fact();
 	void property(object_spec& o);
@@ -384,6 +387,46 @@ static std::string format_seconds(float seconds){
 	return out.str();
 }
 
+// A formula in quotes, checked by the math parser (30). An error points at
+// the exact character: the text starts one column after its quote.
+void parser::check_formula(const token& words){
+	math_parse_result check = parse_math(words.value);
+	if(!check.error.empty()){
+		token at = words;
+		at.column = words.column + check.column;
+		fail(at, "in the formula: " + check.error);
+	}
+}
+
+// { "becomes" text "at" time "-" time }      (docs/39)
+// Each change has to happen while the formula is shown, after the writing
+// and after the change before it.
+void parser::becomes(title_spec& s){
+	float earliest = s.start + s.write;
+	while(peek().kind == token_kind::word && peek().value == "becomes"){
+		next();   // "becomes"
+		const token& words = next();
+		if(words.kind != token_kind::text) fail(words, "expected the new formula in quotes, like: becomes \"E = mc^2\" at 5s-6s");
+		check_formula(words);
+		const token& at = next();
+		if(!(at.kind == token_kind::word && at.value == "at")) fail(at, "expected 'at' and when it changes, like: at 5s-6s");
+		const token& from = peek();
+		becomes_step step{words.value, time("for when the change starts, like 5s"), 0.0f};
+		const token& dash = next();
+		if(dash.kind != token_kind::dash) fail(dash, "expected '-' between the start and end times, like 5s-6s");
+		step.end = time("for when the change is done, like 6s");
+		if(step.end <= step.start) fail(from, "the change has to end after it starts");
+		if(step.start < earliest){
+			fail(from, "the change can't start before " + format_seconds(earliest)
+			           + (s.becomes.empty() ? (s.write > 0.0f ? " (when the writing is done)" : " (when the formula appears)")
+			                                : " (when the change before it is done)"));
+		}
+		if(s.end >= 0.0f && step.end > s.end) fail(from, "the change has to be done by " + format_seconds(s.end) + ", when the formula goes away");
+		s.becomes.push_back(step);
+		earliest = step.end;
+	}
+}
+
 // write = "write" [ time ]      (docs/38): drawn in over that long (1 s if
 // no time is given), from the start of its time range.
 void parser::write_in(title_spec& s,const std::string& what){
@@ -424,13 +467,7 @@ void parser::formula(){
 	next();   // "math"
 	const token& words = next();
 	if(words.kind != token_kind::text) fail(words, "expected the formula in quotes, like: math \"E = mc^2\" 0s-5s");
-	math_parse_result check = parse_math(words.value);
-	if(!check.error.empty()){
-		// point at the exact character: the text starts one column after its quote
-		token at = words;
-		at.column = words.column + check.column;
-		fail(at, "in the formula: " + check.error);
-	}
+	check_formula(words);
 	title_spec s{words.value, 0.0f, -1.0f};
 	if(peek().kind == token_kind::time){
 		s.start = time("");
@@ -439,6 +476,7 @@ void parser::formula(){
 		s.end = time("for when the formula goes away, like 5s");
 	}
 	write_in(s, "formula");
+	becomes(s);
 	if(!at_end_of_line()) fail(peek(), "unexpected " + describe(peek()) + " after the formula");
 	result.spec.maths.push_back(s);
 }

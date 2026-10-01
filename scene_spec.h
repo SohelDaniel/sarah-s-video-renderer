@@ -4,6 +4,7 @@
 
 #include <deque>
 #include <string>
+#include <utility>
 #include <vector>
 
 // ============================================================================
@@ -187,12 +188,22 @@ struct arrow_spec{
 	float end = -1.0f;   // visible from start to end; end < 0 = always
 };
 
+// A formula turning into another one (docs/39): from start to end it
+// changes into `text`, which then stays.
+struct becomes_step{
+	std::string text;
+	float start, end;
+};
+
 // Words shown on screen (docs/27): a title across the top.
 struct title_spec{
+	title_spec(std::string text = "",float start = 0.0f,float end = -1.0f)
+		: text(std::move(text)), start(start), end(end){}
 	std::string text;
 	float start = 0.0f;
 	float end = -1.0f;   // shown from start to end; end < 0 = always
 	float write = 0.0f;  // > 0: drawn in letter by letter over this many seconds from start (docs/38)
+	std::vector<becomes_step> becomes;   // formulas only: what it turns into, and when (docs/39)
 };
 
 // The whole scene, as described.

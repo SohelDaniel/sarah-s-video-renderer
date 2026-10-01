@@ -701,6 +701,41 @@ static void test_write(){
 	      "'write 0s', writing for longer than it's shown, and 'write -1s' are mistakes (the '-' at column 18)");
 }
 
+// Transform (docs/39): matching the pieces of two formulas.
+static void test_transform(){
+	std::printf("\ntransform:\n");
+	auto paths = [](const char* text){ return math_paths(layout_math(*parse_math(text).tree, 30.0f)); };
+	auto count = [](const std::vector<int>& to,size_t in_b,int& matched,int& gone,int& added){
+		matched = 0;
+		for(int j : to) if(j >= 0) matched++;
+		gone = int(to.size()) - matched;
+		added = int(in_b) - matched;
+	};
+	vgroup a = paths("E = mc^2"), b = paths("E^2 = (mc^2)^2 + (pc)^2"), c = paths("E = \\gamma mc^2");
+	std::vector<int> ab = match_pieces(a, b), bc = match_pieces(b, c);
+	int matched, gone, added;
+	count(ab, b.pieces.size(), matched, gone, added);
+	check(matched == 5 && gone == 0 && added == 10 && ab == std::vector<int>({0, 2, 4, 5, 6}),
+	      "E = mc^2 -> E^2 = (mc^2)^2 + (pc)^2: E, =, m, c, 2 glide (to pieces 0, 2, 4, 5, 6), 10 new ones fade in");
+	count(bc, c.pieces.size(), matched, gone, added);
+	check(matched == 5 && gone == 10 && added == 1 && bc[1] == -1 && bc[6] == 5,
+	      "-> E = \\gamma mc^2: 5 glide, 10 fade out (E's own 2 among them: it isn't the 2 of c^2), gamma fades in");
+
+	std::vector<int> small = match_pieces(paths("E^2 = c^2"), paths("E = c^2"));
+	check(small == std::vector<int>({0, -1, 1, 2, 3}),
+	      "E^2 = c^2 -> E = c^2: E, =, c, 2 match; E's own 2 fades (the table in docs/39)");
+
+	parse_result chain = parse_scene("math \"a\" 0s-12s write 1s becomes \"b\" at 2s-3s becomes \"c\" at 5s-6s\n");
+	check(chain.ok() && chain.spec.maths[0].becomes.size() == 2 && chain.spec.maths[0].becomes[1].text == "c"
+	      && chain.spec.maths[0].becomes[1].start == 5.0f,
+	      "'becomes \"b\" at 2s-3s becomes \"c\" at 5s-6s' is read as two changes, in order");
+	parse_result early = parse_scene("math \"a\" 0s-12s write 2s becomes \"b\" at 1s-3s\n");
+	parse_result late = parse_scene("math \"a\" 0s-5s becomes \"b\" at 4s-6s\n");
+	parse_result broken = parse_scene("math \"a\" becomes \"x^\" at 1s-2s\n");
+	check(!early.ok() && !late.ok() && !broken.ok() && broken.errors[0].column == 20,
+	      "changing before the writing is done, or after the formula is gone, is a mistake; a broken new formula points at its '^' (column 20)");
+}
+
 int main(){
 	test_clipping();
 	test_fly_camera();
@@ -719,6 +754,7 @@ int main(){
 	test_smooth_shading();
 	test_vector_paths();
 	test_write();
+	test_transform();
 	std::printf("\n%s: %d check%s failed\n", failures == 0 ? "ALL PASSED" : "FAILED", failures, failures == 1 ? "" : "s");
 	return failures == 0 ? 0 : 1;
 }

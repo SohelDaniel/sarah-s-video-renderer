@@ -66,8 +66,8 @@ private:
 	std::vector<world_title> titles;
 	struct world_math{
 		title_spec when;
-		math_box formula;
-		vgroup paths;
+		std::vector<vgroup> stages;              // the formula, then each one it becomes (docs/39)
+		std::vector<std::vector<int>> matches;   // matches[k]: where stage k's pieces go in stage k + 1
 	};
 	std::vector<world_math> maths;
 	struct world_label{

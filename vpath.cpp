@@ -119,3 +119,35 @@ piece_look border_then_fill(float p){
 	}
 	return look;
 }
+
+// The longest common subsequence (docs/39), by dynamic programming:
+//   L[i][j] = how many pieces a[i..] and b[j..] can match, in order
+//           = 1 + L[i+1][j+1]                 if a[i] and b[j] are the same letter
+//           = max(L[i+1][j], L[i][j+1])       otherwise (skip one of them)
+// filled from the ends backwards, then walked from the start: match when the
+// letters are the same, otherwise skip whichever side keeps L the biggest
+// (skipping in b when it's a tie, so a piece goes as early in b as it can).
+std::vector<int> match_pieces(const vgroup& a,const vgroup& b){
+	size_t n = a.pieces.size(), m = b.pieces.size();
+	std::vector<std::vector<int>> L(n + 1, std::vector<int>(m + 1, 0));
+	for(size_t i = n;i-- > 0;){
+		for(size_t j = m;j-- > 0;){
+			L[i][j] = a.pieces[i].key == b.pieces[j].key ? 1 + L[i + 1][j + 1]
+			                                             : std::max(L[i + 1][j], L[i][j + 1]);
+		}
+	}
+	std::vector<int> to(n, -1);
+	size_t i = 0, j = 0;
+	while(i < n && j < m){
+		if(a.pieces[i].key == b.pieces[j].key){
+			to[i] = int(j);
+			i++;
+			j++;
+		}else if(L[i][j + 1] >= L[i + 1][j]){
+			j++;
+		}else{
+			i++;
+		}
+	}
+	return to;
+}

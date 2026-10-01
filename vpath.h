@@ -41,11 +41,14 @@ struct vgroup{
 
 // How one piece is drawn right now. The defaults: just there, filled.
 struct piece_look{
-	float scale = 1.0f;          // its size, compared with its own (Transform)
+	float scale_x = 1.0f;        // its size, compared with its own (Transform, docs/39):
+	float scale_y = 1.0f;        // a letter grows evenly, a bar can get longer without getting thicker
 	float fill = 1.0f;           // how filled in, 0..1
 	float stroke = 0.0f;         // how much of its outline is drawn, 0..1 of the length
 	float stroke_alpha = 0.0f;   // how strongly that outline shows, 0..1
-	bool still()const{ return scale == 1.0f && fill == 1.0f && stroke_alpha == 0.0f; }
+	bool moving = false;         // gliding (docs/39): drawn from its loops even at its own size,
+	                             // so it can sit between whole pixels instead of hopping
+	bool still()const{ return !moving && scale_x == 1.0f && scale_y == 1.0f && fill == 1.0f && stroke_alpha == 0.0f; }
 };
 
 // A line of text in one font: one piece per letter that has ink (a space
@@ -73,3 +76,10 @@ float piece_progress(int i,int n,float progress);
 //   second half: the fill comes up (0 -> 1) as the outline fades (1 -> 0)
 // Both halves eased with smooth (23). At p = 1 it's plainly there.
 piece_look border_then_fill(float p);
+
+// ---- Transform (docs/39) ----
+// Which piece of `b` each piece of `a` turns into (-1: none, it fades out).
+// The longest common subsequence of their keys (the same letter, or bar
+// with bar), like a diff: as many matches as possible, all in reading order
+// in both, so nothing crosses over. Ties go to the earliest place in b.
+std::vector<int> match_pieces(const vgroup& a,const vgroup& b);

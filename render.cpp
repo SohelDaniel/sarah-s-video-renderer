@@ -495,7 +495,7 @@ void render::draw_vpiece(const vpiece& piece,float x,float y,px::Pixel color,con
 //  turning titles and formulas into vector paths changes no pixel.
 //
 //  Animated: from the loops, every frame.
-//    each point:  q = (x, y) + p · scale
+//    each point:  q = (x, y) + p · scale   (scale_x across, scale_y down)
 //    fill:        the winding rule (fill_loops, 29) over the piece's box, times look.fill
 //    outline:     the first look.stroke of every loop (loop_prefix), each
 //                 pixel covered as much as the nearest side covers it
@@ -538,7 +538,7 @@ void render::paint_vpiece(const vpiece_item& v,float dx,float dy,px::Pixel color
 	float x0 = 1e9f, y0 = 1e9f, x1 = -1e9f, y1 = -1e9f;
 	for(auto& loop : loops){
 		for(point2& q : loop){
-			q = {x + q.x * v.look.scale, y + q.y * v.look.scale};
+			q = {x + q.x * v.look.scale_x, y + q.y * v.look.scale_y};
 			x0 = std::min(x0, q.x); y0 = std::min(y0, q.y); x1 = std::max(x1, q.x); y1 = std::max(y1, q.y);
 		}
 	}
