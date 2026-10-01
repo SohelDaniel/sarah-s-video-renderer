@@ -20,21 +20,25 @@ void player::play(camera& cam,const std::vector<object*>& scene){
 	// jump if the computer changes its time), so it's the one for timing
 	using clock = std::chrono::steady_clock;
 	const clock::time_point started = clock::now();
-	float t = 0.0f;
+	float real = 0.0f;       // real seconds since we started
 	int frames = 0;
 
 	fly_camera fly;          // the free camera (docs/20)
 	bool free = false;
-	float last = 0.0f;       // t of the previous frame, for real dt
+	float last = 0.0f;       // `real` of the previous frame, for real dt
 
 	while(screen.is_open()){
 		// 1. seconds since we started playing. Using real time (not a frame
 		// count) means a slow computer shows fewer frames of the same motion,
 		// instead of playing in slow motion.
-		t = std::chrono::duration<float>(clock::now() - started).count();
-		if(t > seconds) break;
-		float dt = t - last;   // real seconds since the last frame
-		last = t;
+		real = std::chrono::duration<float>(clock::now() - started).count();
+		if(!loop && real > seconds) break;
+		float dt = real - last;   // real seconds since the last frame: for walking
+		last = real;
+		// the scene's own time: it goes round and round when looping. The
+		// timeline replays from the start every frame anyway (docs/09), so
+		// jumping back to 0 needs nothing else at all.
+		float t = loop ? loop_time(real, seconds) : real;
 
 		// Tab: switch camera. Going free starts exactly where the scripted
 		// camera is now; going back hands control back to the script.
@@ -68,8 +72,8 @@ void player::play(camera& cam,const std::vector<object*>& scene){
 		frames++;
 	}
 
-	std::cout << "played " << frames << " frames in " << t << " s ("
-	          << frames / t << " frames per second)\n";
+	std::cout << "played " << frames << " frames in " << real << " s ("
+	          << frames / real << " frames per second)\n";
 }
 
 void player::save_still(camera& cam,const std::vector<object*>& scene,float t,const std::string& filename){

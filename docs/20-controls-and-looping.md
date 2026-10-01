@@ -1,5 +1,7 @@
 # 20 · Walking around (and looping)
 
+(The keys work in every window: scenes 1–5 and `./main clip`.)
+
 The video player now lets you **walk around inside** the scene while it
 plays, like in Minecraft:
 
@@ -170,6 +172,58 @@ free camera:
 
 The live keyboard and mouse can't be tested automatically, but everything
 they feed into can.
+
+---
+
+## 8. Looping
+
+The video now plays **over and over** until the window is closed, so there's
+always something moving while you walk around. Real time keeps going up;
+the scene's time goes round:
+
+```
+scene t = fmod(real t, duration)          fmod = the remainder of a division, for floats
+```
+
+| real time | duration 20 s | scene time |
+|---|---|---|
+| 7 s | | 7 s |
+| 25 s | 25 = 1 · 20 + **5** | 5 s |
+| 40 s | 40 = 2 · 20 + **0** | 0 s |
+
+### Why this is free
+
+The timeline doesn't remember the previous frame: it **replays from the
+start** for whatever time it's asked about (09). So jumping from t = 19.99
+back to t = 0 needs no reset, no "rewind", nothing at all. Every frame just
+asks a different t. (A design that nudged things a bit each frame would have
+to put every object back where it started by hand.)
+
+### Two clocks
+
+```
+scene time  = loop_time(real, duration)     → where everything is (animations)
+dt          = real − real of last frame     → how far you walk (20, section 3)
+```
+
+Walking uses the **real** clock, so you don't jump backwards at the loop
+point: only the scene restarts.
+
+### The seam
+
+At the loop point the scene jumps from its last moment to its first. If they
+look the same, you can't see the seam:
+
+- **orbits** with whole turns (1, 2, 3) end exactly where they started
+- a **fly-by** or a **hit** jumps back to its starting point
+- scene 4 is 22 s (the last motion ends at 20 s, plus 2 s, see `world::duration`):
+  the planets stop for 2 s at their starting spots, then carry on
+
+To make a seamless loop, give everything whole turns, or make the last
+motion bring things back to where they began.
+
+`loop_time(5, 0)` returns 0 instead of dividing by zero; the tests check
+all four cases above.
 
 ---
 

@@ -98,6 +98,7 @@ Leg 2 starts from 8 even though nobody told it "from 8".
   how the doc images are made, and how the solver will check animation
   paths for collisions.
 - **Easy to reason about.** The state depends only on t.
+- **Looping is free** (20): asking for t = 0 again after t = 19.99 just works.
 
 **Overlaps:** different properties (move and rotate together) are fine.
 Two changes to the *same* property at once blend into each other, which is

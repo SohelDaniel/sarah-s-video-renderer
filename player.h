@@ -13,7 +13,8 @@
 //      (or, in free mode, move the camera with the keys and mouse, docs/20)
 //   3. draw a fresh picture with our own rasterizer
 //   4. show it in the window
-// Then again, about 60 times a second, until time is up or the window is closed.
+// Then again, about 60 times a second, until the window is closed. The
+// video loops: after the last second it starts again from 0 (docs/20).
 //
 // Keys: Tab = free camera on/off, WASD = move, mouse = look, Space/Shift =
 // up/down, Ctrl = faster, Esc = back to the scripted camera.
@@ -24,6 +25,8 @@ public:
 
 	// cut triangles at the near plane (docs/19); off only to show why it matters
 	bool clipping = true;
+	// start again from 0 when the video ends, until the window is closed
+	bool loop = true;
 
 	void play(camera& cam,const std::vector<object*>& scene);
 

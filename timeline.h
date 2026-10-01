@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <cmath>
 #include <functional>
 #include <vector>
 #include "vec3.h"
@@ -20,6 +21,14 @@ inline float lerp(float from,float to,float f){
 }
 inline vec3 lerp(const vec3& from,const vec3& to,float f){
 	return from + (to - from) * f;
+}
+
+// Looping (docs/20): real time t, a video `duration` seconds long, played
+// over and over. fmod is the remainder of a division for floats:
+//   loop_time(25, 20) = 5      loop_time(40, 20) = 0      loop_time(7, 20) = 7
+inline float loop_time(float t,float duration){
+	if(duration <= 0.0f) return 0.0f;
+	return std::fmod(t, duration);
 }
 
 // A stretch of time in seconds, e.g. from second 3 to second 6.

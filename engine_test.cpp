@@ -7,6 +7,7 @@
 #include "camera.h"
 #include "fly_camera.h"
 #include "render.h"
+#include "timeline.h"
 
 #include <cmath>
 
@@ -133,9 +134,19 @@ static void test_fly_camera(){
 	check(close(a.eye, b.eye, 0.0f) && a.yaw == b.yaw && a.pitch == b.pitch, "the same inputs always give the same camera");
 }
 
+// ---- looping (docs/20) ----
+static void test_looping(){
+	std::printf("looping:\n");
+	check(loop_time(7.0f, 20.0f) == 7.0f, "before the end, time is unchanged (7 s -> 7 s)");
+	check(loop_time(25.0f, 20.0f) == 5.0f, "after the end, it starts again (25 s -> 5 s)");
+	check(loop_time(40.0f, 20.0f) == 0.0f, "two whole loops later it's back at 0 (40 s -> 0 s)");
+	check(loop_time(5.0f, 0.0f) == 0.0f, "a video with no length doesn't divide by zero");
+}
+
 int main(){
 	test_clipping();
 	test_fly_camera();
+	test_looping();
 	std::printf("\n%s: %d check%s failed\n", failures == 0 ? "ALL PASSED" : "FAILED", failures, failures == 1 ? "" : "s");
 	return failures == 0 ? 0 : 1;
 }

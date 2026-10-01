@@ -28,6 +28,9 @@ while(screen.is_open()){
 Every frame is drawn **from scratch**. The motion comes from t being a
 little bigger each time.
 
+(Since 20 the video **loops** instead of stopping after `seconds`, and Tab
+switches to a camera you steer with WASD and the mouse.)
+
 ## 2. Real time, not a frame count
 
 If you instead added 1/60 s per frame, then:
