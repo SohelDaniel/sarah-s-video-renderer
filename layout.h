@@ -40,6 +40,12 @@ public:
 	void set_lens(float fov_y,float aspect);
 	vec3 camera_eye()const;
 	vec3 camera_target()const;
+	// Is a sphere at p with radius r completely inside the picture (docs/15)?
+	bool in_picture(const vec3& p,float r)const;
+	// Make the automatic camera also fit this sphere (a motion path, docs/16),
+	// then place the camera again. Only does anything after method::framed.
+	void include_in_frame(const vec3& center,float radius);
+	void reframe();
 
 	// mesh_radii[i] = bounding radius of object i's mesh at size 1
 	// (same order as spec.objects). The layout never loads files itself.
@@ -120,6 +126,7 @@ private:
 	void frame();
 	float fov_y  = 50.0f * 3.14159265f / 180.0f;
 	float aspect = 640.0f / 480.0f;
+	std::vector<std::pair<vec3, float>> extra_bounds;   // more spheres the camera has to fit
 	vec3 scene_center{0.0f, 0.0f, 0.0f};   // found by frame()
 	float scene_radius = 0.0f;
 	float camera_distance = 0.0f;

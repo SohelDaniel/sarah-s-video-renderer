@@ -1,5 +1,6 @@
 #include "solver.h"
 
+#include <algorithm>
 #include <sstream>
 
 
@@ -15,6 +16,28 @@ scene_solver::scene_solver(const scene_spec& spec,const std::vector<float>& mesh
 	  still_layout(split.still, still_radii(split, mesh_radii)),
 	  planner(solve_still(still_how), make_paths(spec, mesh_radii)){
 	planner.solve(moving_how);
+	// step E4: the camera also has to fit the paths
+	if(moving_how == motion_plan::method::framed){
+		for(const obstacle& b : planner.bounds()) still_layout.include_in_frame(b.position, b.radius);
+		still_layout.reframe();
+	}
+}
+
+int scene_solver::moving_off_screen()const{
+	int count = 0;
+	float dt = planner.sample_step();
+	float last = planner.duration();
+	for(const path& p : planner.paths()){
+		for(int k = 0;;k++){
+			float t = std::min(k * dt, last);
+			if(!still_layout.in_picture(p.at(t), p.radius)){
+				count++;
+				break;
+			}
+			if(t >= last) break;
+		}
+	}
+	return count;
 }
 
 // Solve the still objects, and hand them to the motion planner as obstacles.
@@ -76,6 +99,7 @@ std::string scene_solver::report()const{
 	out << still_layout.report();
 	if(!planner.paths().empty() || !split.errors.empty()){
 		out << planner.report();
+		out << "  moving objects that leave the picture at some moment: " << moving_off_screen() << "\n";
 	}
 	if(!split.errors.empty()){
 		out << "  problems with motions in the description:\n";

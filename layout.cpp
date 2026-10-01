@@ -340,21 +340,25 @@ static vec3 view_direction(view_word v){
 //  4. eye = center + direction · distance, looking at the center.
 // ---------------------------------------------------------------------------
 void layout::frame(){
-	if(placed.empty()) return;
+	// every sphere the camera has to fit: the objects, plus any extras
+	// (motion paths, docs/16)
+	std::vector<std::pair<vec3, float>> spheres = extra_bounds;
+	for(const placement& p : placed) spheres.push_back({p.position, p.radius});
+	if(spheres.empty()) return;
 
-	vec3 low  = placed[0].position;
-	vec3 high = placed[0].position;
-	for(const placement& p : placed){
+	vec3 low  = spheres[0].first;
+	vec3 high = spheres[0].first;
+	for(const auto& s : spheres){
 		for(int k = 0;k<3;k++){
-			low[k]  = std::min(low[k],  p.position[k] - p.radius);
-			high[k] = std::max(high[k], p.position[k] + p.radius);
+			low[k]  = std::min(low[k],  s.first[k] - s.second);
+			high[k] = std::max(high[k], s.first[k] + s.second);
 		}
 	}
 	scene_center = (low + high) * 0.5f;
 
 	scene_radius = 0.0f;
-	for(const placement& p : placed){
-		scene_radius = std::max(scene_radius, distance(p.position, scene_center) + p.radius);
+	for(const auto& s : spheres){
+		scene_radius = std::max(scene_radius, distance(s.first, scene_center) + s.second);
 	}
 
 	float fov_x = 2.0f * std::atan(std::tan(fov_y / 2.0f) * aspect);
@@ -418,15 +422,32 @@ int layout::count_hidden()const{
 // The screen edges are at x = ±tan(fov_x / 2) and y = ±tan(fov_y / 2) in
 // look()'s units, so an object's circle is inside when its center plus its
 // radius stays within them, on both axes (docs/15).
-int layout::count_off_screen()const{
+bool layout::in_picture(const vec3& p,float r)const{
+	camera_axes a = axes_of(eye, target);
+	vec3 v = p - eye;
+	float depth = dot(v, a.forward);
+	if(depth <= 0.0f) return false;
+	float x = dot(v, a.right) / depth;
+	float y = dot(v, a.up) / depth;
 	float edge_y = std::tan(fov_y / 2.0f);
 	float edge_x = edge_y * aspect;
+	return std::fabs(x) + r / depth <= edge_x && std::fabs(y) + r / depth <= edge_y;
+}
+
+int layout::count_off_screen()const{
 	int count = 0;
-	for(size_t i = 0;i<placed.size();i++){
-		seen s = look(int(i));
-		if(s.depth <= 0.0f || std::fabs(s.x) + s.radius > edge_x || std::fabs(s.y) + s.radius > edge_y) count++;
+	for(const placement& p : placed){
+		if(!in_picture(p.position, p.radius)) count++;
 	}
 	return count;
+}
+
+void layout::include_in_frame(const vec3& center,float radius){
+	extra_bounds.push_back({center, radius});
+}
+
+void layout::reframe(){
+	if(framed) frame();
 }
 
 // ---------------------------------------------------------------------------

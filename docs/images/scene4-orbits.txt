@@ -35,6 +35,7 @@ motion (orbits): 3 moving objects, 4 colliding pairs
     comet hits moon, first at 5.68 s (closest: inside each other by 1.16)
     comet hits sun, first at 6.06 s (closest: inside each other by 2.25)
     comet hits rock, first at 7.35 s (closest: inside each other by 1.64)
+  moving objects that leave the picture at some moment: 3
   problems with motions in the description:
     moon orbits planet1: planet1 moves too, and moving around something that moves isn't supported yet (it stands still instead)
 wrote docs/images/scene4-orbits.png

@@ -116,6 +116,8 @@ void motion_plan::solve(method how){
 		case method::orbits: place_naive(); plan_orbits(); method_name = "orbits"; break;
 		case method::flights:
 			place_naive(); plan_orbits(); plan_flights(); method_name = "flights"; break;
+		case method::framed:
+			place_naive(); plan_orbits(); plan_flights(); method_name = "framed"; break;
 	}
 }
 
@@ -292,6 +294,19 @@ void motion_plan::plan_flights(){
 			                   + " (using the last one tried)");
 		}
 	}
+}
+
+std::vector<obstacle> motion_plan::bounds()const{
+	std::vector<obstacle> spheres;
+	for(const path& p : moving){
+		if(p.kind == motion_kind::orbits){
+			spheres.push_back({p.name, p.center, p.orbit_radius + p.radius});
+		}else{
+			spheres.push_back({p.name, p.from, p.radius});
+			spheres.push_back({p.name, p.to, p.radius});
+		}
+	}
+	return spheres;
 }
 
 const std::vector<path>& motion_plan::paths()const{

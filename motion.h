@@ -22,6 +22,8 @@
 //    flights: orbits as above, and every fly-by tries lines in front of,
 //             above, below and behind what it passes, and takes the first
 //             one that never comes too close to anything
+//    framed : flights, and the automatic camera also fits every path, so
+//             nothing leaves the picture while it moves (done in solver.cpp)
 // ============================================================================
 
 
@@ -73,13 +75,18 @@ struct path{
 
 class motion_plan{
 public:
-	enum class method{ naive, orbits, flights };
+	enum class method{ naive, orbits, flights, framed };
 
 	motion_plan(const std::vector<obstacle>& still,std::vector<path> moving);
 
 	void solve(method how);
 
 	const std::vector<path>& paths()const;
+	// Spheres that hold each whole path: for an orbit, its circle; for a
+	// fly-by, its two end points (the segment lies between them).
+	std::vector<obstacle> bounds()const;
+	// the time between two checks (docs/16)
+	float sample_step()const;
 	// the time from 0 to when the last motion ends
 	float duration()const;
 
@@ -97,7 +104,6 @@ private:
 	bool clear_of_still(const path& p)const;
 	bool clear_of_moving(size_t k)const;
 	std::vector<std::string> warnings;
-	float sample_step()const;
 	float sample_step_with(const path& extra)const;
 
 	// One pair that hit each other.

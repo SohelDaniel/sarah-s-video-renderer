@@ -85,7 +85,7 @@ int main(){
 
 	std::vector<test_scene> scenes = all_test_scenes();
 
-	const motion_plan::method moving = motion_plan::method::flights;
+	const motion_plan::method moving = motion_plan::method::framed;
 
 	std::printf("%-14s %-8s %4s %8s %7s %5s %10s %6s %8s %6s %6s %8s\n", "scene", "step", "objs", "overlaps",
 	            "hidden", "off", "relations", "errors", "warnings", "halved", "moving", "collide");
@@ -117,6 +117,8 @@ int main(){
 		check(s.off_screen == 0, t.name, "everything inside the picture (" + std::to_string(s.off_screen) + " outside)");
 		int collisions = once.plan().measure().collisions;
 		check(collisions == 0, t.name, "moving objects never collide (" + std::to_string(collisions) + " pairs)");
+		int leaving = once.moving_off_screen();
+		check(leaving == 0, t.name, "moving objects stay in the picture (" + std::to_string(leaving) + " leave it)");
 		check(errors >= t.expected_errors, t.name,
 		      "reports its mistakes (" + std::to_string(errors) + " of at least " + std::to_string(t.expected_errors) + ")");
 	}

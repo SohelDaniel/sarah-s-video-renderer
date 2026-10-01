@@ -40,6 +40,7 @@ motion (naive): 3 moving objects, 9 colliding pairs
     comet hits sun, first at 6.09 s (closest: inside each other by 2.24)
     comet hits rock, first at 7.37 s (closest: inside each other by 1.64)
     planet1 hits moon, first at 8.52 s (closest: inside each other by 0.60)
+  moving objects that leave the picture at some moment: 1
   problems with motions in the description:
     moon orbits planet1: planet1 moves too, and moving around something that moves isn't supported yet (it stands still instead)
 wrote docs/images/scene4-naive.png

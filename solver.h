@@ -26,6 +26,9 @@ public:
 	// where object i stands, if it stands still (nullptr if it moves)
 	const placement* placed(int i)const;
 
+	// how many moving objects leave the picture at some moment (docs/16)
+	int moving_off_screen()const;
+
 	std::string report()const;
 
 private:

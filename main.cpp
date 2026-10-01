@@ -185,7 +185,8 @@ motion_plan::method motion_step(const std::string& step){
 	if(step == "naive")  return motion_plan::method::naive;
 	if(step == "orbits")  return motion_plan::method::orbits;
 	if(step == "flights") return motion_plan::method::flights;
-	throw std::invalid_argument("unknown motion step \"" + step + "\" (try: naive, orbits, flights)");
+	if(step == "framed")  return motion_plan::method::framed;
+	throw std::invalid_argument("unknown motion step \"" + step + "\" (try: naive, orbits, flights, framed)");
 }
 
 int main(int argc,char** argv){
@@ -198,7 +199,7 @@ int main(int argc,char** argv){
 			             argc > 3 ? argv[3] : "", 0.0f);
 		}
 		else if(which == "4"){
-			solved_scene(lazy_motion_scene(), layout::method::framed, motion_step(argc > 2 ? argv[2] : "flights"),
+			solved_scene(lazy_motion_scene(), layout::method::framed, motion_step(argc > 2 ? argv[2] : "framed"),
 			             argc > 3 ? argv[3] : "", argc > 4 ? std::stof(argv[4]) : 0.0f);
 		}
 		else if(which == "stress" && argc > 2){
@@ -207,7 +208,7 @@ int main(int argc,char** argv){
 				if(t.name != argv[2]) continue;
 				found = true;
 				std::cout << t.name << ": " << t.attacks << "\n";
-				solved_scene(t.spec, still_step(argc > 3 ? argv[3] : "framed"), motion_plan::method::naive,
+				solved_scene(t.spec, still_step(argc > 3 ? argv[3] : "framed"), motion_plan::method::framed,
 				             argc > 4 ? argv[4] : "", 0.0f);
 			}
 			if(!found) throw std::invalid_argument(std::string("no test scene called \"") + argv[2] + "\"");

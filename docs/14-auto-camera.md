@@ -135,6 +135,8 @@ greedy  →  frame  →  refine  →  frame
 - **Frame again after**, because refining moved things. The second framing
   only changes the camera a little, so what refinement achieved still holds.
 
+Moving objects' paths are included too, since step E4 ([16](16-motion-placement.md)).
+
 ## 5. Result
 
 From the report ([scene3-framed.txt](images/scene3-framed.txt)):

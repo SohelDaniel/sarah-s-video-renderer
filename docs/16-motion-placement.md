@@ -178,7 +178,7 @@ they happen. At 0 s the rock and both planets are one red tangle; at 7 s
 the comet is inside the sun.
 
 The camera only frames the still objects, so moving ones can leave the
-picture. That gets fixed in E4.
+picture: all 3 of them do at some point. That gets fixed in E4.
 
 ---
 
@@ -363,6 +363,81 @@ this too: **moving objects never collide** is a hard check for every scene
 What's left: at 7 s the comet is at the top edge, cut off, and planet2's
 wide orbit leaves the picture. The camera still frames only the still
 objects.
+
+---
+
+## 8. Step E4: framing the paths
+
+Step D (14) fits the camera around a sphere that holds every **still**
+object. Now it also has to hold every **path**:
+
+| Path | Sphere that holds all of it |
+|---|---|
+| orbit (center c, radius R, object radius r) | center c, radius **R + r** |
+| fly-by (A → B, object radius r) | two spheres: **A** and **B**, radius r |
+
+For the fly-by, two spheres are enough: every point of the segment lies
+between A and B, so it's never farther from the scene's center than the
+farther of the two ends. (Distance from a point is a "convex" function: on
+a straight line, it's largest at one of the ends.) So the sphere around
+everything that holds both ends also holds the whole path.
+
+`scene_solver` hands these to the layout (`include_in_frame`) and frames
+again (`reframe`). A new check walks every path with the same sample step as
+section 4 and counts moving objects that leave the picture at **any**
+moment.
+
+### Worked example
+
+```
+planet1's orbit:  center (0, 0, 0),  radius 4.60 + 0.80 = 5.40
+planet2's orbit:  center (0, 0, 0),  radius 6.67 + 0.87 = 7.53
+comet's ends:     (±7.53, 2.67, 0),  radius 0.87
+farthest from the center: a comet end, √(7.53² + 2.67²) + 0.87 = 7.99 + 0.87 = 8.86
+distance = 1.05 · 8.86 / sin(25°) = 22.00                                          (14)
+```
+
+| | flights (E3) | framed (E4) |
+|---|---|---|
+| camera distance | 7.21 | **22.00** |
+| scene radius | 2.90 (still objects only) | **8.86** (with the paths) |
+| moving objects that leave the picture | 3 | **0** |
+
+From [scene4-flights.txt](images/scene4-flights.txt) and
+[scene4-framed.txt](images/scene4-framed.txt). The stress tests check it
+too: **moving objects stay in the picture** is a hard check for every scene.
+
+| 0 s | 3 s | 7 s | 12 s |
+|---|---|---|---|
+| ![](images/scene4-framed-0.png) | ![](images/scene4-framed-3.png) | ![](images/scene4-framed-7.png) | ![](images/scene4-framed-12.png) |
+
+### The honest limit: a sphere is a loose fit
+
+Everything is always in the picture now, but the scene looks small. The
+camera fits one **sphere** around everything, and this scene is wide and
+flat (two flat orbits and a sideways fly-by). A sphere is as tall as it is
+wide, so there's empty space above and below. The fit is safe but loose.
+
+The better way, and a good next step: keep the camera's direction, then
+**binary-search the distance**. Find the smallest distance at which every
+sphere's projection is still inside the picture (`in_picture`, 15). That
+would also make scene 3's framing tighter, so it should be done for both at
+once, with 14 updated.
+
+---
+
+## 9. The whole of step E
+
+| | E1 naive | E2 orbits | E3 flights | E4 framed |
+|---|---|---|---|---|
+| colliding pairs | 9 | 4 | 0 | **0** |
+| moving objects leaving the picture | 3 | 3 | 3 | **0** |
+| orbit radii | 2.60, 2.67 | 4.60, 6.67 | 4.60, 6.67 | 4.60, 6.67 |
+| comet's path | through the sun | through the sun | above the sun | above the sun |
+
+From a description that says only "orbits sun" and "flies past sun", the
+planner found paths that never collide at any moment, keep everything
+visible the whole time, and reported the one motion it can't do yet.
 
 ---
 

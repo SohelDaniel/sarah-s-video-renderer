@@ -49,11 +49,15 @@ The circles are each object's bounding sphere: red = overlapping something.
 - gradient-descent refinement with spring, overlap, relation and
   **screen-space visibility** terms, plus a backtracking line search
 - automatic camera framing from a view word
+- **moving objects** (`orbits`, `flies_past`): exact orbit radii from
+  point-to-circle distances, fly-by lines checked with point-to-segment
+  distances, and time sampling that provably can't miss a collision
+  ([docs/16](docs/16-motion-placement.md))
 - a plain-text report of every overlap, hidden pair and relation verdict:
   the feedback the AI will read
-- stress tests (`make test`): 12 adversarial scenes (crowded, cyclic,
-  contradictory, typo-ridden, empty) and 60 automatic checks. They found 4
-  bugs, each fixed in its own commit ([docs/15](docs/15-stress-tests.md))
+- stress tests (`make test`): 13 adversarial scenes (crowded, cyclic,
+  contradictory, typo-ridden, empty, moving) and 91 automatic checks. They
+  found 4 bugs, each fixed in its own commit ([docs/15](docs/15-stress-tests.md))
 
 ## Build and run
 
@@ -64,6 +68,8 @@ make run              scene 1: three objects animated over 12 s
 make run SCENE=2      scene 2: a small solar system, 20 s
 ./main 3 framed       scene 3: the "lazy AI" scene above, fully solved
 ./main 3 greedy       ... or stopped after one step (naive, greedy, refined, framed)
+./main 4              scene 4: a "lazy AI" animation with orbits and a fly-by, fully solved
+./main 4 naive        ... or with naive paths (naive, orbits, flights, framed)
 ./main stress crowd   any of the stress test scenes (crowd, chain, cycle, typos, ...)
 make test             solve every stress scene with every step and check the rules
 make stills           regenerate the pictures and reports in docs/images/
@@ -91,7 +97,10 @@ scene description ─► layout solver ─► world ─► model → view → pr
 | `object`, `camera`, `timeline.h` | things in the scene and how they change over time |
 | `player`, `window` | the frame loop and the SDL window |
 | `scene_spec.h` | how a scene is described (what the AI will produce) |
-| `layout` | the layout solver |
+| `layout` | the layout solver for still objects |
+| `motion` | paths for moving objects, and collision checks over time |
+| `solver` | runs both: still first, then moving |
+| `test_scenes`, `solver_test.cpp` | the stress tests |
 | `world` | turns a description + solved layout into objects and a camera |
 | `pixel.h` | a small single-header image library (PNG/PPM output) |
 | `shapes/` | test meshes |
@@ -100,7 +109,10 @@ scene description ─► layout solver ─► world ─► model → view → pr
 
 - a small text format and parser for scene descriptions, and hooking up an
   AI to write them, with the solver's report sent back as feedback
-- placement that understands motion (orbits, paths that mustn't collide)
+- orbits around moving objects (a moon around a planet), with parent/child
+  transforms
+- tighter camera framing (binary search on projected size instead of one
+  bounding sphere)
 - near-plane clipping, then walking around the scene with WASD + mouse
 - looping playback
 
