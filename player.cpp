@@ -123,10 +123,14 @@ void player::record(frame_source& source,const std::string& filename){
 	// ffmpeg reads raw pictures from its input ("-i -"): 4 bytes per pixel,
 	// r g b a, width x height each, and turns them into an H.264 video.
 	// yuv420p is the color format every video player understands.
+	// -crf 16: high quality (lower = better, 0 = lossless, 23 = the default).
+	// -preset slow: take longer to squeeze the file smaller at that quality.
+	// -tune animation: for flat colors and sharp edges, like ours (docs/34).
 	std::string command = "ffmpeg -y -loglevel error -f rawvideo -pix_fmt rgba -s "
 	                    + std::to_string(width) + "x" + std::to_string(height)
 	                    + " -framerate " + std::to_string(frames_per_second)
-	                    + " -i - -c:v libx264 -pix_fmt yuv420p -crf 18 " + shell_quote(filename);
+	                    + " -i - -c:v libx264 -pix_fmt yuv420p -crf 16 -preset slow -tune animation "
+	                    + shell_quote(filename);
 	FILE* pipe = popen(command.c_str(), "w");
 	if(!pipe) throw std::runtime_error("could not start ffmpeg (install it with: brew install ffmpeg)");
 
@@ -136,6 +140,7 @@ void player::record(frame_source& source,const std::string& filename){
 	int frames = int(std::ceil(source.seconds() * frames_per_second));
 	std::cout << "recording " << frames << " frames (" << source.seconds() << " s at "
 	          << frames_per_second << " fps) to " << filename << std::endl;
+	auto started = std::chrono::steady_clock::now();
 	for(int k = 0;k<frames;k++){
 		float t = float(k) / float(frames_per_second);
 		camera& cam = source.cam();
@@ -150,7 +155,9 @@ void player::record(frame_source& source,const std::string& filename){
 	}
 	int status = pclose(pipe);
 	if(status != 0) throw std::runtime_error("ffmpeg failed (exit " + std::to_string(status) + "): is it installed? brew install ffmpeg");
-	std::cout << "wrote " << filename << std::endl;
+	float took = std::chrono::duration<float>(std::chrono::steady_clock::now() - started).count();
+	std::cout << "wrote " << filename << " in " << took << " s ("
+	          << 1000.0f * took / float(std::max(frames, 1)) << " ms per frame, " << samples << "x" << samples << " samples)" << std::endl;
 }
 
 void player::save_still(camera& cam,const std::vector<object*>& scene,float t,const std::string& filename){

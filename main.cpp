@@ -410,8 +410,11 @@ int main(int raw_argc,char** raw_argv){
 				return 0;
 			}
 			player video(live.seconds());
-	video.samples = aa_samples;
-	video.record_to = video_path;
+			video.samples = aa_samples;
+			video.record_to = video_path;
+			// an HD video doesn't have to keep up with the clock, so it can
+			// afford 3x3 supersampling (docs/34)
+			if(!video_path.empty() && picture_look.height >= 1080) video.samples = std::max(aa_samples, 3);
 			video.play(live);
 			return 0;
 		}
