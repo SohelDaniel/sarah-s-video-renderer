@@ -359,6 +359,21 @@ int layout::count_hidden()const{
 	return count;
 }
 
+// How many objects aren't completely inside the picture.
+// The screen edges are at x = ±tan(fov_x / 2) and y = ±tan(fov_y / 2) in
+// look()'s units, so an object's circle is inside when its center plus its
+// radius stays within them, on both axes (docs/15).
+int layout::count_off_screen()const{
+	float edge_y = std::tan(fov_y / 2.0f);
+	float edge_x = edge_y * aspect;
+	int count = 0;
+	for(size_t i = 0;i<placed.size();i++){
+		seen s = look(int(i));
+		if(s.depth <= 0.0f || std::fabs(s.x) + s.radius > edge_x || std::fabs(s.y) + s.radius > edge_y) count++;
+	}
+	return count;
+}
+
 // ---------------------------------------------------------------------------
 //  Step C: refinement by gradient descent.
 //
@@ -540,6 +555,7 @@ void layout::refine(){
 		}
 		if(step == 1 || step == 2 || step % 50 == 0) log(step);
 	}
+	halved += shortened;
 	energy_log.push_back("steps halved because they went uphill: " + std::to_string(shortened));
 }
 
@@ -599,6 +615,24 @@ layout::verdict layout::check(int i,const link& l)const{
 	return verdict::failed;                      // wrong side (or level with it)
 }
 
+layout::metrics layout::measure()const{
+	metrics m;
+	m.objects    = int(placed.size());
+	m.overlaps   = count_overlaps();
+	m.hidden     = count_hidden();
+	m.off_screen = count_off_screen();
+	for(size_t i = 0;i<links.size();i++){
+		for(const link& l : links[i]){
+			m.relations_total++;
+			if(check(int(i), l) == verdict::ok) m.relations_ok++;
+		}
+	}
+	m.errors       = int(errors.size());
+	m.warnings     = int(warnings.size());
+	m.steps_halved = halved;
+	return m;
+}
+
 std::string layout::report()const{
 	std::ostringstream out;
 	out << std::fixed << std::setprecision(2);
@@ -606,6 +640,7 @@ std::string layout::report()const{
 	out << "layout (" << method_name << "): " << placed.size() << " objects, "
 	    << count_overlaps() << " overlapping pairs, "
 	    << count_hidden() << " pairs overlapping on screen\n";
+	out << "  objects not fully in the picture: " << count_off_screen() << "\n";
 
 	out << "  objects (in placement order):\n";
 	for(int i : order){

@@ -53,6 +53,21 @@ public:
 	// Everything an AI (or a person) needs to know about how it went.
 	std::string report()const;
 
+	// The numbers that say how good a layout is (docs/15). The tests check
+	// these; the report prints them.
+	struct metrics{
+		int objects         = 0;
+		int overlaps        = 0;   // pairs overlapping in 3D
+		int hidden          = 0;   // pairs overlapping on screen
+		int off_screen      = 0;   // objects not completely inside the picture
+		int relations_ok    = 0;
+		int relations_total = 0;
+		int errors          = 0;   // mistakes in the description
+		int warnings        = 0;   // problems while solving
+		int steps_halved    = 0;   // refinement steps that overshot (docs/13)
+	};
+	metrics measure()const;
+
 	// wanted empty space between two objects' spheres (world units)
 	static constexpr float gap = 0.4f;
 	// "near" is satisfied if the two surfaces are at most this far apart
@@ -107,6 +122,7 @@ private:
 	float scene_radius = 0.0f;
 	float camera_distance = 0.0f;
 	int count_hidden()const;
+	int count_off_screen()const;
 
 	enum class verdict{ ok, weak, failed };
 	verdict check(int i,const link& l)const;
@@ -123,4 +139,5 @@ private:
 	vec3 target{0.0f, 0.0f, 0.0f};
 	std::string method_name = "none";
 	bool framed = false;
+	int halved = 0;                         // refinement steps that had to be halved
 };

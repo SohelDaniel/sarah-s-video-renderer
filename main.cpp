@@ -3,6 +3,7 @@
 #include "object.h"
 #include "player.h"
 #include "scene_spec.h"
+#include "test_scenes.h"
 #include "world.h"
 
 #include <iostream>
@@ -16,6 +17,8 @@
 //   ./main 3 framed           a "lazy AI" scene, placed by the layout solver
 //                             (steps: naive, greedy, refined, framed)
 //   ./main 3 framed out.png   same, but save one picture instead of playing
+//   ./main stress crowd       one of the stress test scenes (docs/15), solved
+//   ./main stress crowd x.png   (names: see test_scenes.cpp or `make test`)
 
 // Scene 1: the same scene as the old 3 pictures, but now as a video: first we say how
 // everything starts, then what changes and WHEN (from second a to second b).
@@ -150,27 +153,10 @@ void solar_system(){
 	video.play(cam, scene);
 }
 
-// Scene 3: written the way an AI would write it. No coordinates at all,
-// only what exists and how things relate, and a bit sloppy on purpose:
-// lots of things crowd "near cube", and one relation points at an object
-// that doesn't exist. The layout solver has to make sense of it.
-scene_spec lazy_ai_scene(){
-	scene_spec spec;
-	spec.add("cube",        "shapes/cube.obj",        px::Pixel(230, 130,  60), size_word::big, 10);
-	spec.add("sphere",      "shapes/sphere.obj",      px::Pixel( 80, 160, 230)).near("cube");
-	spec.add("cone",        "shapes/cone.obj",        px::Pixel(120, 200,  90)).near("cube");
-	spec.add("cylinder",    "shapes/cylinder.obj",    px::Pixel(200, 120, 220)).near("cube");
-	spec.add("icosahedron", "shapes/icosahedron.obj", px::Pixel(240, 220,  80), size_word::small).near("cube");
-	spec.add("pyramid",     "shapes/pyramid.obj",     px::Pixel(235, 235, 245)).above("cube");
-	spec.add("torus",       "shapes/torus.obj",       px::Pixel( 90, 210, 200)).left_of("sphere");
-	spec.add("tetrahedron", "shapes/tetrahedron.obj", px::Pixel(220,  80,  70), size_word::small).behind("cube");
-	spec.add("octahedron",  "shapes/octahedron.obj",  px::Pixel(160, 160, 170), size_word::small).near("moon");
-	return spec;
-}
-
-// Solve scene 3's layout with one of the solver's steps, print the report,
+// Solve a described scene with one of the solver's steps, print the report,
 // then play it (every object slowly spins in place) or save one picture.
-void solved_scene(const std::string& step,const std::string& picture){
+// Scene 3 is lazy_ai_scene() from test_scenes.cpp.
+void solved_scene(const scene_spec& spec,const std::string& step,const std::string& picture){
 	layout::method how;
 	if(step == "naive")       how = layout::method::naive;
 	else if(step == "greedy") how = layout::method::greedy;
@@ -178,7 +164,7 @@ void solved_scene(const std::string& step,const std::string& picture){
 	else if(step == "framed")  how = layout::method::framed;
 	else throw std::invalid_argument("unknown solver step \"" + step + "\" (try: naive, greedy, refined, framed)");
 
-	world w(lazy_ai_scene(), how);
+	world w(spec, how);
 	std::cout << w.plan().report();
 
 	std::vector<object*> scene = w.scene();
@@ -196,9 +182,19 @@ int main(int argc,char** argv){
 	try {
 		if(which == "1")      example_scene();
 		else if(which == "2") solar_system();
-		else if(which == "3") solved_scene(argc > 2 ? argv[2] : "framed", argc > 3 ? argv[3] : "");
+		else if(which == "3") solved_scene(lazy_ai_scene(), argc > 2 ? argv[2] : "framed", argc > 3 ? argv[3] : "");
+		else if(which == "stress" && argc > 2){
+			bool found = false;
+			for(const test_scene& t : all_test_scenes()){
+				if(t.name != argv[2]) continue;
+				found = true;
+				std::cout << t.name << ": " << t.attacks << "\n";
+				solved_scene(t.spec, "framed", argc > 3 ? argv[3] : "");
+			}
+			if(!found) throw std::invalid_argument(std::string("no test scene called \"") + argv[2] + "\"");
+		}
 		else {
-			std::cerr << "usage: ./main [1|2|3] [solver step] [picture.png]\n";
+			std::cerr << "usage: ./main [1|2|3] [solver step] [picture.png]   or   ./main stress <scene> [picture.png]\n";
 			return 1;
 		}
 	} catch (const std::exception& e) {

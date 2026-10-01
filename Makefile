@@ -7,10 +7,14 @@ SDL_CFLAGS = $(shell pkg-config --cflags sdl3)
 SDL_LIBS   = $(shell pkg-config --libs sdl3)
 
 TARGET  = main
-SOURCES = main.cpp camera.cpp layout.cpp mesh.cpp object.cpp player.cpp render.cpp vec3.cpp window.cpp world.cpp
+SOURCES = main.cpp camera.cpp layout.cpp mesh.cpp object.cpp player.cpp render.cpp test_scenes.cpp vec3.cpp window.cpp world.cpp
+
+# The solver's stress tests: no window, so no SDL (docs/15).
+TEST_TARGET  = solver_test
+TEST_SOURCES = solver_test.cpp layout.cpp mesh.cpp test_scenes.cpp vec3.cpp
 HEADERS = $(wildcard *.h)
 
-.PHONY: all run stills clean
+.PHONY: all run stills test clean
 
 all: $(TARGET)
 
@@ -28,6 +32,13 @@ stills: $(TARGET)
 	@mkdir -p docs/images
 	@for s in $(STEPS); do ./$(TARGET) 3 $$s docs/images/scene3-$$s.png > docs/images/scene3-$$s.txt; done
 
+$(TEST_TARGET): $(TEST_SOURCES) $(HEADERS)
+	$(CXX) $(CXXFLAGS) $(TEST_SOURCES) -o $(TEST_TARGET)
+
+# Solve every test scene with every step, print the numbers, check the rules.
+test: $(TEST_TARGET)
+	./$(TEST_TARGET)
+
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(TEST_TARGET)
 	rm -rf renders out

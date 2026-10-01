@@ -1,5 +1,6 @@
 # build output
 main
+solver_test
 
 # rendered images
 out/

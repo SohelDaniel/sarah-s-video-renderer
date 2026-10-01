@@ -1,4 +1,5 @@
 layout (naive): 9 objects, 36 overlapping pairs, 36 pairs overlapping on screen
+  objects not fully in the picture: 0
   objects (in placement order):
     cube        big     r= 2.42  at (  0.00,   0.00,   0.00)  OVERLAPS
     sphere      normal  r= 0.80  at (  0.00,   0.00,   0.00)  OVERLAPS
