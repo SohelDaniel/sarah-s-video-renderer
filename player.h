@@ -45,6 +45,7 @@ public:
 	// Instead of playing: draw the single frame at time t and save it as a
 	// PNG. Used for the pictures in docs/.
 	void save_still(camera& cam,const std::vector<object*>& scene,float t,const std::string& filename);
+	void save_still(frame_source& source,float t,const std::string& filename);
 
 private:
 	float seconds;

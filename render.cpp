@@ -33,6 +33,7 @@ void render::begin(const camera& cam){
 	camera_eye = cam.eye();
 	overlay.clear();
 	waiting.clear();
+	lines.clear();
 }
 
 void render::draw_mesh(const mesh& model,const mat4<float>& model_matrix,px::Pixel color){
@@ -146,6 +147,114 @@ void render::draw(vec3 v1,vec3 v2,vec3 v3,px::Pixel color,float see_through_by){
 	opacity = 1.0f;
 }
 
+// ---------------------------------------------------------------------------
+//  Lines and arrows (docs/26).
+//
+//  A line is drawn in screen space: project both ends, then for every pixel
+//  near it, measure the distance d from the pixel's center to the segment
+//  (the closest point is found by projecting onto it, docs/16):
+//      coverage = clamp(width/2 + 1/2 - d, 0, 1)
+//  1 well inside, 0 well outside, and in between for the one pixel the edge
+//  passes through: that's what makes the edge smooth (anti-aliased) without
+//  drawing anything bigger. The coverage becomes the pixel's alpha.
+// ---------------------------------------------------------------------------
+void render::draw_line(vec3 a,vec3 b,float width,px::Pixel color){
+	lines.push_back({a, b, width, color, false});
+}
+
+void render::draw_arrow(vec3 a,vec3 b,px::Pixel color){
+	lines.push_back({a, b, 2.5f, color, true});
+}
+
+float render::line_coverage(float px,float py,float x0,float y0,float x1,float y1,float width){
+	float dx = x1 - x0, dy = y1 - y0;
+	float length2 = dx * dx + dy * dy;
+	float s = length2 > 0.0f ? std::clamp(((px - x0) * dx + (py - y0) * dy) / length2, 0.0f, 1.0f) : 0.0f;
+	float cx = x0 + s * dx - px, cy = y0 + s * dy - py;
+	float d = std::sqrt(cx * cx + cy * cy);
+	return std::clamp(width / 2.0f + 0.5f - d, 0.0f, 1.0f);
+}
+
+// Keep only the part of the segment in front of the near plane (the same
+// test as for triangles, docs/19), and project its ends to the screen.
+bool render::clip_segment(vec3& a,vec3& b,vec3& sa,vec3& sb)const{
+	vec4<float> ca = view_projection * vec4<float>{a[0], a[1], a[2], 1.0f};
+	vec4<float> cb = view_projection * vec4<float>{b[0], b[1], b[2], 1.0f};
+	float da = ca.z + ca.w, db = cb.z + cb.w;
+	if(da < 0.0f && db < 0.0f) return false;             // all behind the camera
+	if(da < 0.0f || db < 0.0f){
+		float t = da / (da - db);
+		vec4<float> cut{ca.x + (cb.x - ca.x) * t, ca.y + (cb.y - ca.y) * t, ca.z + (cb.z - ca.z) * t, ca.w + (cb.w - ca.w) * t};
+		vec3 cut_world = lerp(a, b, t);
+		if(da < 0.0f){ ca = cut; a = cut_world; }
+		else         { cb = cut; b = cut_world; }
+	}
+	sa = to_pixels(ca);
+	sb = to_pixels(cb);
+	return true;
+}
+
+void render::rasterize_line(const line& l){
+	vec3 a = l.a, b = l.b, sa, sb;
+	if(!clip_segment(a, b, sa, sb)) return;
+	float width = l.width * samples;                      // the image may be drawn bigger (docs/25)
+
+	// the arrowhead: a triangle at b pointing along the line, on screen
+	float head = 0.0f;
+	vec3 tip = sb, left, right;
+	float dx = sb[0] - sa[0], dy = sb[1] - sa[1];
+	float length = std::sqrt(dx * dx + dy * dy);
+	if(length < 1.0f) return;
+	float ux = dx / length, uy = dy / length;                // along the line
+	if(l.arrowhead){
+		head = std::min(14.0f * samples, length * 0.5f);     // its length, in pixels
+		vec3 base(sb[0] - ux * head, sb[1] - uy * head, sb[2]);
+		left  = vec3(base[0] - uy * head * 0.45f, base[1] + ux * head * 0.45f, sb[2]);
+		right = vec3(base[0] + uy * head * 0.45f, base[1] - ux * head * 0.45f, sb[2]);
+		sb = base;                                           // the shaft stops where the head starts
+	}
+
+	// every pixel in the box around it (plus the width), clamped to the image
+	float pad = width + head;
+	int min_x = std::max(0, int(std::floor(std::min(sa[0], tip[0]) - pad)));
+	int max_x = std::min(image.Width() - 1, int(std::ceil(std::max(sa[0], tip[0]) + pad)));
+	int min_y = std::max(0, int(std::floor(std::min(sa[1], tip[1]) - pad)));
+	int max_y = std::min(image.Height() - 1, int(std::ceil(std::max(sa[1], tip[1]) + pad)));
+
+	for(int y = min_y;y<=max_y;y++){
+		for(int x = min_x;x<=max_x;x++){
+			float cx = x + 0.5f, cy = y + 0.5f;
+			float coverage = line_coverage(cx, cy, sa[0], sa[1], sb[0], sb[1], width);
+			if(l.arrowhead){
+				// inside the head triangle: the smallest distance to its three
+				// edges (positive inside), plus a half pixel for a smooth edge
+				auto edge = [&](const vec3& p,const vec3& q){
+					float ex = q[0] - p[0], ey = q[1] - p[1];
+					float len = std::sqrt(ex * ex + ey * ey);
+					return ((cx - p[0]) * ey - (cy - p[1]) * ex) / len;
+				};
+				float inside = std::min({edge(tip, right), edge(right, left), edge(left, tip)});
+				// the triangle may be wound either way: use whichever sign is inside
+				float other = std::min({-edge(tip, right), -edge(right, left), -edge(left, tip)});
+				coverage = std::max(coverage, std::clamp(std::max(inside, other) + 0.5f, 0.0f, 1.0f));
+			}
+			if(coverage <= 0.0f) continue;
+
+			// depth along the line (screen-space depth is linear, docs/08),
+			// and only where nothing solid is in front
+			float dlx = sb[0] - sa[0], dly = sb[1] - sa[1];
+			float l2 = dlx * dlx + dly * dly;
+			float s = l2 > 0.0f ? std::clamp(((cx - sa[0]) * dlx + (cy - sa[1]) * dly) / l2, 0.0f, 1.0f) : 1.0f;
+			float z = sa[2] + (sb[2] - sa[2]) * s;
+			if(z > depth[size_t(y) * image.Width() + x] + 1e-4f) continue;
+
+			px::Pixel c = l.color;
+			c.a = uint8_t(std::lround(255.0f * coverage));
+			image.Draw(x, y, c);
+		}
+	}
+}
+
 void render::draw_see_through(const mesh& model,const mat4<float>& model_matrix,px::Pixel color,float how_solid){
 	// the object's center is where the model matrix moves (0,0,0) to: its last column
 	vec3 center(model_matrix(0, 3), model_matrix(1, 3), model_matrix(2, 3));
@@ -227,6 +336,11 @@ void render::finish(){
 	}
 	opacity = 1.0f;
 	waiting.clear();
+
+	// lines and arrows, now that everything they could be hidden behind is
+	// drawn (docs/26)
+	for(const line& l : lines) rasterize_line(l);
+	lines.clear();
 
 	// Anti-aliasing (docs/25): everything was drawn samples x samples times
 	// bigger. Each final pixel is the average of its block of small ones, so

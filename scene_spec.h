@@ -173,9 +173,24 @@ private:
 	}
 };
 
+// An arrow from one object to another (docs/26): "this pulls that".
+// Its ends sit on the two objects' surfaces and follow them as they move.
+struct arrow_spec{
+	std::string from, to;
+	px::Pixel color = px::Pixel(235, 235, 245);
+	float start = 0.0f;
+	float end = -1.0f;   // visible from start to end; end < 0 = always
+};
+
 // The whole scene, as described.
 class scene_spec{
 public:
+	arrow_spec& add_arrow(const std::string& from,const std::string& to){
+		arrows.push_back(arrow_spec{from, to, px::Pixel(235, 235, 245), 0.0f, -1.0f});
+		return arrows.back();
+	}
+	std::deque<arrow_spec> arrows;
+
 	object_spec& add(const std::string& name,const std::string& mesh_file,px::Pixel color,
 	                 size_word size = size_word::normal,int importance = 1){
 		objects.push_back(object_spec{name, mesh_file, color, size, importance, {}, {}, {}});

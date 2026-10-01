@@ -23,6 +23,10 @@ float live_scene::seconds(){
 	return current ? current->duration() : 20.0f;
 }
 
+void live_scene::draw_overlays(render& renderer,float t){
+	if(current) current->draw_overlays(renderer, t);
+}
+
 bool live_scene::has_scene()const{
 	return current != nullptr;
 }

@@ -139,6 +139,20 @@ static void test_fly_camera(){
 	check(close(a.eye, b.eye, 0.0f) && a.yaw == b.yaw && a.pitch == b.pitch, "the same inputs always give the same camera");
 }
 
+// ---- lines and arrows (docs/26) ----
+static void test_lines(){
+	std::printf("lines and arrows:\n");
+	// a horizontal line along y = 10, 2 pixels wide
+	check(std::fabs(render::line_coverage(5.0f, 10.0f, 0, 10, 20, 10, 2.0f) - 1.0f) < 1e-6f, "a pixel on the line is fully covered");
+	check(std::fabs(render::line_coverage(5.0f, 11.0f, 0, 10, 20, 10, 2.0f) - 0.5f) < 1e-6f, "a pixel 1 away from a 2-wide line is half covered (2/2 + 1/2 - 1 = 0.5)");
+	check(render::line_coverage(5.0f, 13.0f, 0, 10, 20, 10, 2.0f) == 0.0f, "a pixel 3 away isn't covered at all");
+	check(std::fabs(render::line_coverage(23.0f, 14.0f, 0, 10, 20, 10, 2.0f)) < 1e-6f, "past the end, the distance is to the end point (5 away: 0)");
+
+	parse_result p = parse_scene("sun = sphere\ncomet = pyramid\narrow comet sun red 2s-8s\n");
+	check(p.ok() && p.spec.arrows.size() == 1 && p.spec.arrows[0].from == "comet" && p.spec.arrows[0].end == 8.0f,
+	      "'arrow comet sun red 2s-8s' is read as an arrow from comet to sun, shown from 2 s to 8 s");
+}
+
 // ---- fades (docs/24) ----
 static void test_fades(){
 	std::printf("fades:\n");
@@ -209,6 +223,7 @@ static void test_looping(){
 // Are two descriptions exactly the same? If not, say where they differ.
 static bool same_spec(const scene_spec& a,const scene_spec& b,std::string& why){
 	if(a.objects.size() != b.objects.size()){ why = "different number of objects"; return false; }
+	if(a.arrows.size() != b.arrows.size()){ why = "different number of arrows"; return false; }
 	if(a.view != b.view){ why = "different view"; return false; }
 	for(size_t i = 0;i<a.objects.size();i++){
 		const object_spec& x = a.objects[i];
@@ -320,6 +335,7 @@ static void test_live_reload(){
 int main(){
 	test_clipping();
 	test_fly_camera();
+	test_lines();
 	test_fades();
 	test_easing();
 	test_looping();

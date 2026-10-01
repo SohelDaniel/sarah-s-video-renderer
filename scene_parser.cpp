@@ -201,7 +201,8 @@ static std::vector<token> tokenize(const std::string& source){
 //  The grammar (docs/21 has it with examples):
 //
 //    scene      = { line }
-//    line       = [ header | definition | fact ] end_of_line
+//    line       = [ header | arrow | definition | fact ] end_of_line
+//    arrow      = "arrow" name name [ color ] [ time "-" time ]
 //    header     = "scene" [ text ] [ "view" view_word ]
 //    definition = name "=" shape { property }
 //    fact       = name phrase { [","] phrase }
@@ -239,6 +240,7 @@ private:
 
 	void line();
 	void header();
+	void arrow();
 	void definition();
 	void fact();
 	void property(object_spec& o);
@@ -316,6 +318,7 @@ void parser::line(){
 	const token& first = peek();
 	if(first.kind != token_kind::word) fail(first, "a line should start with a name, got " + describe(first));
 	if(first.value == "scene"){ header(); return; }
+	if(first.value == "arrow" && tokens[pos + 1].kind != token_kind::equals){ arrow(); return; }
 	if(tokens[pos + 1].kind == token_kind::equals){ definition(); return; }
 
 	// a fact: remember where it is, skip it for now
@@ -338,6 +341,30 @@ void parser::header(){
 		result.spec.view = it->second;
 	}
 	if(!at_end_of_line()) fail(peek(), "unexpected " + describe(peek()) + " after the scene line");
+}
+
+// arrow = "arrow" name name [ color ] [ time "-" time ]      (docs/26)
+void parser::arrow(){
+	next();   // "arrow"
+	std::string from = name("for where the arrow starts, like: arrow comet planet");
+	std::string to = name("for where the arrow points, like: arrow comet planet");
+	arrow_spec& a = result.spec.add_arrow(from, to);
+	while(!at_end_of_line()){
+		const token& t = next();
+		if(t.kind == token_kind::color){
+			unsigned value = std::stoul(t.value, nullptr, 16);
+			a.color = px::Pixel(uint8_t(value >> 16), uint8_t(value >> 8), uint8_t(value));
+		}else if(t.kind == token_kind::word && color_words.count(t.value)){
+			a.color = color_words.at(t.value);
+		}else if(t.kind == token_kind::time){
+			a.start = std::stof(t.value);
+			const token& dash = next();
+			if(dash.kind != token_kind::dash) fail(dash, "expected '-' between the start and end times, like 2s-8s");
+			a.end = time("for when the arrow goes away, like 8s");
+		}else{
+			fail(t, "unexpected " + describe(t) + " in an arrow; it takes a color and a time range, like: arrow comet planet red 2s-8s");
+		}
+	}
 }
 
 // definition = name "=" shape { property }

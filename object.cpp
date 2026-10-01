@@ -121,6 +121,10 @@ vec3 object::position_at(float t)const{
 	return own;
 }
 
+float object::bounding_radius()const{
+	return shape->bounding_radius() * now.size;
+}
+
 vec3 object::get_position()const{
 	return position_at(now_time);
 }

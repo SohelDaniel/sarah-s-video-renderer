@@ -27,6 +27,7 @@ public:
 	const std::vector<object*>& objects() override;
 	float seconds() override;
 	void poll() override;            // checks the file, at most every 0.5 s
+	void draw_overlays(render& renderer,float t) override;
 
 	// Check the file right now (the tests use this, so they don't have to wait).
 	// Returns true if a new scene was swapped in.

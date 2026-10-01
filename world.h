@@ -1,5 +1,6 @@
 #pragma once
 #include "camera.h"
+#include "frame_source.h"
 #include "mesh.h"
 #include "object.h"
 #include "scene_spec.h"
@@ -31,6 +32,8 @@ public:
 	// how long the video should play: until the last motion ends, at least 20 s
 	float duration()const;
 	std::string report()const;
+	// arrows between objects, at time t (docs/26). Call after drawing the objects.
+	void draw_overlays(render& renderer,float t)const;
 
 private:
 	// loads the meshes and returns each object's mesh radius (for the solver)
@@ -42,4 +45,26 @@ private:
 	scene_solver solved;
 	std::vector<object> objects;
 	std::vector<bool> moves;              // moves[i]: does object i follow a path?
+
+	struct world_arrow{
+		int from, to;                     // object indices
+		px::Pixel color;
+		float start, end;
+	};
+	std::vector<world_arrow> arrows;
+	std::vector<std::string> arrow_errors;
+};
+
+// A world as a frame source, for the player (docs/22).
+class world_source : public frame_source{
+public:
+	explicit world_source(world& w) : w(w), all(w.scene()){}
+	camera& cam() override{ return w.cam; }
+	const std::vector<object*>& objects() override{ return all; }
+	float seconds() override{ return w.duration(); }
+	void draw_overlays(render& renderer,float t) override{ w.draw_overlays(renderer, t); }
+
+private:
+	world& w;
+	std::vector<object*> all;
 };

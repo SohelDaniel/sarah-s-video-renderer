@@ -1,0 +1,12 @@
+# Arrows (docs/26): the sun pulls on the planet, and the comet heads for
+# the planet. The arrows follow the objects as they move, and hide behind
+# anything in front of them.
+
+scene "arrows"
+
+sun    = sphere big gold important
+planet = octahedron red orbits sun 1 turn 0s-20s
+comet  = pyramid small white flies_past sun 4s-12s smooth
+
+arrow sun planet gold
+arrow comet planet teal 4s-12s

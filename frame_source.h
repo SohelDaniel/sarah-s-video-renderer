@@ -1,6 +1,7 @@
 #pragma once
 #include "camera.h"
 #include "object.h"
+#include "render.h"
 
 #include <vector>
 
@@ -18,6 +19,9 @@ public:
 	// called once per frame, before anything is drawn: a chance to change
 	// what's in the scene (live_scene checks its file here)
 	virtual void poll(){}
+	// called after the objects are drawn: arrows and other things that
+	// aren't objects (docs/26)
+	virtual void draw_overlays(render& /*renderer*/,float /*t*/){}
 };
 
 // The simple case: a camera and objects that someone else owns.

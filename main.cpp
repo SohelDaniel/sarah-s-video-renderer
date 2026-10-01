@@ -298,8 +298,9 @@ void solved_scene(const scene_spec& spec,layout::method still_how,motion_plan::m
 	player video(w.duration());
 	video.samples = aa_samples;
 	video.record_to = video_path;
-	if(picture.empty()) video.play(w.cam, w.scene());
-	else                video.save_still(w.cam, w.scene(), t, picture);
+	world_source source(w);
+	if(picture.empty()) video.play(source);
+	else                video.save_still(source, t, picture);
 }
 
 layout::method still_step(const std::string& step){
@@ -376,7 +377,7 @@ int main(int raw_argc,char** raw_argv){
 				if(!live.has_scene()) return 1;
 				player stills(live.seconds());
 				stills.samples = aa_samples;
-				stills.save_still(live.cam(), live.objects(), argc > 4 ? std::stof(argv[4]) : 0.0f, picture);
+				stills.save_still(live, argc > 4 ? std::stof(argv[4]) : 0.0f, picture);
 				return 0;
 			}
 			player video(live.seconds());

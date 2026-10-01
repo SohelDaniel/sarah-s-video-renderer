@@ -1,6 +1,7 @@
 #include "world.h"
 
 #include <algorithm>
+#include <cmath>
 
 
 std::vector<float> world::load_meshes(const scene_spec& spec){
@@ -79,6 +80,41 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 
 	cam.move(solved.still().camera_eye());
 	cam.point_at(solved.still().camera_target());
+
+	// arrows (docs/26): look the names up once
+	auto find = [&](const std::string& name){
+		for(size_t i = 0;i<spec.objects.size();i++) if(spec.objects[i].name == name) return int(i);
+		return -1;
+	};
+	for(const arrow_spec& a : spec.arrows){
+		int from = find(a.from), to = find(a.to);
+		if(from < 0 || to < 0 || from == to){
+			arrow_errors.push_back("arrow " + a.from + " -> " + a.to + ": "
+			                       + (from == to && from >= 0 ? std::string("it points at itself") : "there is no object called \""
+			                          + (from < 0 ? a.from : a.to) + "\"") + " (arrow left out)");
+			continue;
+		}
+		arrows.push_back({from, to, a.color, a.start, a.end});
+	}
+}
+
+// Each arrow goes from the surface of one object to the surface of the
+// other: from center to center, shortened at each end by that object's
+// bounding radius (plus a little gap), so it touches neither.
+void world::draw_overlays(render& renderer,float t)const{
+	for(const world_arrow& a : arrows){
+		if(t < a.start || (a.end >= 0.0f && t > a.end)) continue;
+		const object& from = objects[a.from];
+		const object& to = objects[a.to];
+		vec3 p = from.get_position(), q = to.get_position();
+		vec3 d = q - p;
+		float length = std::sqrt(dot(d, d));
+		float gap = 0.15f;
+		float cut_from = from.bounding_radius() + gap, cut_to = to.bounding_radius() + gap;
+		if(length <= cut_from + cut_to) continue;          // touching: no room for an arrow
+		vec3 dir = d * (1.0f / length);
+		renderer.draw_arrow(p + dir * cut_from, q - dir * cut_to, a.color);
+	}
 }
 
 std::vector<object*> world::scene(){
@@ -100,5 +136,10 @@ float world::duration()const{
 }
 
 std::string world::report()const{
-	return solved.report();
+	std::string text = solved.report();
+	if(!arrow_errors.empty()){
+		text += "  problems with arrows:\n";
+		for(const std::string& e : arrow_errors) text += "    " + e + "\n";
+	}
+	return text;
 }

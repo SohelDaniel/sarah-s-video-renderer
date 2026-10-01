@@ -89,6 +89,7 @@ void player::play(frame_source& source){
 		for(const object* o : scene){
 			o->draw(renderer);
 		}
+		source.draw_overlays(renderer, t);   // arrows (docs/26)
 		renderer.finish();
 
 		// 4. on screen
@@ -140,6 +141,7 @@ void player::record(frame_source& source,const std::string& filename){
 		for(object* o : source.objects()) o->update(t);
 		renderer.begin(cam);
 		for(const object* o : source.objects()) o->draw(renderer);
+		source.draw_overlays(renderer, t);
 		renderer.finish();
 		const px::Image& picture = renderer.picture();
 		fwrite(picture.Data(), sizeof(px::Pixel), size_t(width) * size_t(height), pipe);
@@ -150,16 +152,23 @@ void player::record(frame_source& source,const std::string& filename){
 }
 
 void player::save_still(camera& cam,const std::vector<object*>& scene,float t,const std::string& filename){
+	fixed_source source(cam, scene, seconds);
+	save_still(source, t, filename);
+}
+
+void player::save_still(frame_source& source,float t,const std::string& filename){
+	camera& cam = source.cam();
 	render renderer(cam.width, cam.height, samples);
 	renderer.clipping = clipping;
 	cam.update(t);
-	for(object* o : scene){
+	for(object* o : source.objects()){
 		o->update(t);
 	}
 	renderer.begin(cam);
-	for(const object* o : scene){
+	for(const object* o : source.objects()){
 		o->draw(renderer);
 	}
+	source.draw_overlays(renderer, t);
 	renderer.finish();
 	if(!renderer.save(filename)){
 		throw std::runtime_error("could not write " + filename);

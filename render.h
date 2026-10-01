@@ -33,6 +33,17 @@ public:
 	// only remembered here and drawn by finish(), on top of everything:
 	// red if it overlaps another one in this frame, grey if not.
 	void draw_bounds(vec3 center,float radius);
+	// A line between two points in the world, `width` pixels wide, with
+	// smooth edges, hidden behind things that are in front of it (docs/26).
+	// Like see-through things, it's drawn by finish(), after the solid ones.
+	void draw_line(vec3 a,vec3 b,float width,px::Pixel color);
+	// A line with an arrowhead at b.
+	void draw_arrow(vec3 a,vec3 b,px::Pixel color);
+
+	// How much of the pixel at (px, py) a line from (x0,y0) to (x1,y1),
+	// `width` wide, covers: 0..1 (docs/26). Public so the tests can check it.
+	static float line_coverage(float px,float py,float x0,float y0,float x1,float y1,float width);
+
 	// Draw what has to wait: see-through objects, then the circles on top.
 	// Call after all objects.
 	void finish();
@@ -81,6 +92,16 @@ private:
 		float distance;                // from the camera, for sorting
 	};
 	std::vector<see_through> waiting;  // waiting for finish()
+
+	struct line{
+		vec3 a, b;
+		float width;
+		px::Pixel color;
+		bool arrowhead;
+	};
+	std::vector<line> lines;           // waiting for finish()
+	void rasterize_line(const line& l);
+	bool clip_segment(vec3& a,vec3& b,vec3& sa,vec3& sb)const;
 	float opacity = 1.0f;              // of what's being drawn right now
 	vec3 camera_eye;
 

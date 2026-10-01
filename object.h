@@ -70,6 +70,8 @@ public:
 	// Where it really is, after following its parent (at the time of the
 	// last update)
 	vec3 get_position()const;
+	// The radius of its bounding sphere right now (mesh radius x size)
+	float bounding_radius()const;
 	// ... and at any time t, without changing anything
 	vec3 position_at(float t)const;
 	// translate * rotate * scale: scale first, then turn, then move
