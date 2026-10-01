@@ -12,8 +12,9 @@ which paths moving things take so they never collide (unless they're meant
 to), and where the camera should stand. A CPU software rasterizer then draws
 it, live in a window you can walk around in, with the things an explainer
 needs (like [Manim](https://www.manim.community/)): titles, labels that
-place themselves, math formulas typeset by its own small TeX, smooth
-outline text, arrows, easing, fades, and mp4 export up to 1080p.
+place themselves, math formulas typeset by its own small TeX that
+**write themselves in** and **turn into the next formula** (Manim's Write
+and Transform), smooth outline text, arrows, easing, fades, and mp4 export up to 1080p.
 
 The AI writes a `.dan` file; the engine reloads it every time it's saved and
 writes `<file>.dan.report` with every error and every problem the solver
@@ -30,6 +31,9 @@ sun    = sphere big gold important label "the sun"
 planet = octahedron red orbits sun 1 turn 0s-20s label "planet"
 moon   = tetrahedron small white orbits planet 3 turns 0s-20s label "moon"
 comet  = pyramid small teal flies_past sun 4s-12s smooth label "comet"
+
+# scenes/transform.dan (excerpt)
+math "E = mc^2" 0s-20s write 1.5s becomes "E^2 = (mc^2)^2 + (pc)^2" at 4s-6s
 
 # scenes/math.dan (excerpt)
 math "F = G\frac{m_1 m_2}{r^2}" 0s-10s
@@ -81,6 +85,13 @@ The circles are each object's bounding sphere: red = overlapping something.
 - **math**: our own small TeX (a box model: powers, indices, fractions,
   roots, Greek, TeX's spacing), with errors that point at the column
   ([docs/30](docs/30-math.md))
+- **vector paths**: titles and formulas kept as loops of points, filled by
+  the winding rule or stroked, measured by arc length ([docs/37](docs/37-vector-paths.md))
+- **Write**: letters traced then filled, each overlapping the next
+  (Manim's lag ratio and DrawBorderThenFill) ([docs/38](docs/38-write.md))
+- **Transform**: `becomes "..." at 4s-6s` turns a formula into the next;
+  pieces are matched by longest common subsequence (like a diff) and glide,
+  the rest fade ([docs/39](docs/39-transform.md))
 
 **Live player**
 - a frame loop driven by a real-time clock (frame-rate independent)
@@ -139,9 +150,9 @@ The circles are each object's bounding sphere: red = overlapping something.
   keeps the last good scene and says why in the `.report` file ([docs/22](docs/22-live-reload.md))
 
 `make test` runs both test programs: the solver's 181 checks and the
-engine's 99 (clipping, the fly camera, fonts, math, labels, text, lines,
+engine's 118 (clipping, the fly camera, fonts, math, labels, text, lines,
 fades, easing, looping, the parser, live reload, picture sizes, linear
-light, smooth shading).
+light, smooth shading, vector paths, write, transform).
 
 ## Build and run
 
@@ -160,6 +171,9 @@ make run SCENE=2      scene 2: a small solar system, 20 s
 ./main scenes/labels.dan --aa                 labels, titles, a moon and a comet, with smooth edges
 ./main scenes/math.dan --aa                   formulas, and formulas as labels
 ./main scenes/showcase.dan --aa               everything at once
+./main scenes/write.dan --hd --aa             a title and formula writing themselves in, at 1080p
+./main scenes/transform.dan --hd --aa         E = mc^2 turning into the next formulas
+./main paths picture.png                      a formula filled, outlined, and as its points
 ./main stress flyby_mover                     a probe flying past a planet that is itself orbiting
 ./main scenes/labels.dan --aa --video out.mp4 the same, as an mp4 (needs ffmpeg)
 ./main scenes/showcase.dan --hd --video hd.mp4 1080p, 3x3 anti-aliased, no debugging circles
@@ -197,6 +211,7 @@ small numbers you can check on paper. One point is followed from the cube's
 | `label_layout` | placing labels on the screen, every frame |
 | `font`, `fonts/` | outline fonts: reading TrueType files, flattening curves, filling glyphs |
 | `math_layout` | the small TeX: parsing formulas and laying them out as boxes |
+| `vpath` | text and formulas as vector paths: arc length, Write timing, Transform matching |
 | `font8x8.h` | the public-domain bitmap font (kept for tests) |
 | `stb_truetype.h` | Sean Barrett's font-file reader (only reads the files) |
 | `scene_spec.h` | how a scene is described (what the AI will produce) |

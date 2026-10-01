@@ -420,3 +420,30 @@ auto started = std::chrono::steady_clock::now();
 float took = std::chrono::duration<float>(std::chrono::steady_clock::now() - started).count();
 ```
 `duration<float>` turns the difference into seconds as a float (34).
+
+### Counting down with `size_t`
+```cpp
+for(size_t i = n;i-- > 0;){ ... }
+```
+`size_t` can't go below 0 (it would wrap round to a huge number), so
+`for(size_t i = n - 1;i >= 0;i--)` never stops. `i-- > 0` tests first,
+then subtracts: the loop sees n − 1 down to 0 and stops (39).
+
+### A table as a vector of vectors
+```cpp
+std::vector<std::vector<int>> L(n + 1, std::vector<int>(m + 1, 0));
+```
+n + 1 rows, each a vector of m + 1 zeros: `L[i][j]`. The extra row and
+column are the "empty list" edges of the dynamic-programming table (39).
+
+### A constructor with defaults keeps `{...}` working
+```cpp
+struct title_spec{
+	title_spec(std::string text = "",float start = 0.0f,float end = -1.0f);
+	...
+};
+title_spec s{"Orbits", 0.0f, 5.0f};
+```
+Adding a field to a struct that's filled with `{a, b, c}` gives a "missing
+field" warning everywhere. A constructor with default arguments takes the
+same braces and sets the new field to its default (39).

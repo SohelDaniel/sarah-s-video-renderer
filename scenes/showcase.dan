@@ -1,15 +1,15 @@
-# Everything at once: titles and formulas with their own times, labels
+# Everything at once: titles and formulas that write themselves in and
+# turn into the next step (docs/38, 39), titles with their own times, labels
 # (always on, timed, and formulas), orbits, a moon, a fly-by past a moving
 # planet (docs/32), a planned hit that sticks (docs/18), easing, fades,
 # see-through glass and arrows. No coordinates anywhere: the solver places it all.
 # ./main scenes/showcase.dan --aa
 
 scene "showcase"
-title "A solar system, solved"
+title "A solar system, solved" write 1.5s
 title "a probe flies past the moving planet" 4s-12s
 title "a comet hits it, and sticks" 13s-20s
-math "F = G\frac{m_1 m_2}{r^2}" 0s-12s
-math "v = \sqrt{\frac{GM}{r}}" 12s-24s
+math "F = G\frac{m_1 m_2}{r^2}" 1s-24s write 2s becomes "F = \frac{GMm}{r^2}" at 6s-7s becomes "v = \sqrt{\frac{GM}{r}}" at 12s-13s
 
 sun    = sphere big gold important label math "M" always
 rock   = icosahedron grey near sun label "a rock" 0s-6s
