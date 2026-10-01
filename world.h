@@ -52,6 +52,7 @@ private:
 		float start, end;
 	};
 	std::vector<world_arrow> arrows;
+	std::vector<title_spec> titles;
 	std::vector<std::string> arrow_errors;
 };
 

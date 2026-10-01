@@ -3,6 +3,8 @@
 # anything in front of them.
 
 scene "arrows"
+title "What pulls on what"
+title "the comet heads for the planet" 4s-12s
 
 sun    = sphere big gold important
 planet = octahedron red orbits sun 1 turn 0s-20s

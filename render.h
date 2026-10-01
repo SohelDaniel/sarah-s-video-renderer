@@ -40,6 +40,14 @@ public:
 	// A line with an arrowhead at b.
 	void draw_arrow(vec3 a,vec3 b,px::Pixel color);
 
+	// Text (docs/27), with its top-left corner at pixel (x, y) of the finished
+	// picture. Each font pixel becomes a scale x scale square. A dark shadow
+	// one step down and right keeps it readable over anything. Drawn last.
+	void draw_text(int x,int y,const std::string& text,int scale,px::Pixel color);
+	// How wide and tall text will be, in pixels
+	static int text_width(const std::string& text,int scale);
+	static int text_height(int scale);
+
 	// How much of the pixel at (px, py) a line from (x0,y0) to (x1,y1),
 	// `width` wide, covers: 0..1 (docs/26). Public so the tests can check it.
 	static float line_coverage(float px,float py,float x0,float y0,float x1,float y1,float width);
@@ -100,6 +108,15 @@ private:
 		bool arrowhead;
 	};
 	std::vector<line> lines;           // waiting for finish()
+
+	struct text_item{
+		int x, y;
+		std::string text;
+		int scale;
+		px::Pixel color;
+	};
+	std::vector<text_item> texts;      // waiting for finish()
+	void paint_text(const text_item& t,int dx,int dy,px::Pixel color);
 	void rasterize_line(const line& l);
 	bool clip_segment(vec3& a,vec3& b,vec3& sa,vec3& sb)const;
 	float opacity = 1.0f;              // of what's being drawn right now

@@ -139,6 +139,35 @@ static void test_fly_camera(){
 	check(close(a.eye, b.eye, 0.0f) && a.yaw == b.yaw && a.pitch == b.pitch, "the same inputs always give the same camera");
 }
 
+// ---- text (docs/27) ----
+static void test_text(){
+	std::printf("text:\n");
+	camera cam;
+	cam.width = 24;
+	cam.height = 12;
+	cam.update(0.0f);
+	render r(cam.width, cam.height);
+	r.begin(cam);
+	r.draw_text(0, 0, "A", 1, px::Pixel(255, 255, 255));
+	r.finish();
+	const px::Image& img = r.picture();
+	auto lit = [&](int x,int y){ px::Pixel p = img.Get(x, y); return p.r == 255 && p.g == 255 && p.b == 255; };
+
+	// row 0 of 'A' is 0x0C = 0000 1100: lowest bit first, so pixels 2 and 3
+	std::string row0;
+	for(int x = 0;x<8;x++) row0 += lit(x, 0) ? 'X' : '.';
+	check(row0 == "..XX....", "row 0 of 'A' (0x0C) lights pixels 2 and 3: " + row0);
+	// row 4 is 0x3F = 0011 1111: pixels 0 to 5
+	std::string row4;
+	for(int x = 0;x<8;x++) row4 += lit(x, 4) ? 'X' : '.';
+	check(row4 == "XXXXXX..", "row 4 of 'A' (0x3F) lights pixels 0 to 5: " + row4);
+	check(render::text_width("hello", 3) == 120, "'hello' at scale 3 is 5 x 8 x 3 = 120 pixels wide");
+
+	parse_result p = parse_scene("title \"Orbits\" 0s-5s\nsun = sphere\n");
+	check(p.ok() && p.spec.titles.size() == 1 && p.spec.titles[0].text == "Orbits" && p.spec.titles[0].end == 5.0f,
+	      "'title \"Orbits\" 0s-5s' is read as a title shown for the first 5 s");
+}
+
 // ---- lines and arrows (docs/26) ----
 static void test_lines(){
 	std::printf("lines and arrows:\n");
@@ -224,6 +253,7 @@ static void test_looping(){
 static bool same_spec(const scene_spec& a,const scene_spec& b,std::string& why){
 	if(a.objects.size() != b.objects.size()){ why = "different number of objects"; return false; }
 	if(a.arrows.size() != b.arrows.size()){ why = "different number of arrows"; return false; }
+	if(a.titles.size() != b.titles.size()){ why = "different number of titles"; return false; }
 	if(a.view != b.view){ why = "different view"; return false; }
 	for(size_t i = 0;i<a.objects.size();i++){
 		const object_spec& x = a.objects[i];
@@ -335,6 +365,7 @@ static void test_live_reload(){
 int main(){
 	test_clipping();
 	test_fly_camera();
+	test_text();
 	test_lines();
 	test_fades();
 	test_easing();

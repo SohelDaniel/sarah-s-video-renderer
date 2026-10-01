@@ -203,6 +203,7 @@ static std::vector<token> tokenize(const std::string& source){
 //    scene      = { line }
 //    line       = [ header | arrow | definition | fact ] end_of_line
 //    arrow      = "arrow" name name [ color ] [ time "-" time ]
+//    title      = "title" text [ time "-" time ]
 //    header     = "scene" [ text ] [ "view" view_word ]
 //    definition = name "=" shape { property }
 //    fact       = name phrase { [","] phrase }
@@ -241,6 +242,7 @@ private:
 	void line();
 	void header();
 	void arrow();
+	void title();
 	void definition();
 	void fact();
 	void property(object_spec& o);
@@ -319,6 +321,7 @@ void parser::line(){
 	if(first.kind != token_kind::word) fail(first, "a line should start with a name, got " + describe(first));
 	if(first.value == "scene"){ header(); return; }
 	if(first.value == "arrow" && tokens[pos + 1].kind != token_kind::equals){ arrow(); return; }
+	if(first.value == "title" && tokens[pos + 1].kind != token_kind::equals){ title(); return; }
 	if(tokens[pos + 1].kind == token_kind::equals){ definition(); return; }
 
 	// a fact: remember where it is, skip it for now
@@ -365,6 +368,22 @@ void parser::arrow(){
 			fail(t, "unexpected " + describe(t) + " in an arrow; it takes a color and a time range, like: arrow comet planet red 2s-8s");
 		}
 	}
+}
+
+// title = "title" text [ time "-" time ]      (docs/27)
+void parser::title(){
+	next();   // "title"
+	const token& words = next();
+	if(words.kind != token_kind::text) fail(words, "expected the title's words in quotes, like: title \"Orbits\" 0s-5s");
+	title_spec s{words.value, 0.0f, -1.0f};
+	if(peek().kind == token_kind::time){
+		s.start = time("");
+		const token& dash = next();
+		if(dash.kind != token_kind::dash) fail(dash, "expected '-' between the start and end times, like 0s-5s");
+		s.end = time("for when the title goes away, like 5s");
+	}
+	if(!at_end_of_line()) fail(peek(), "unexpected " + describe(peek()) + " after the title");
+	result.spec.titles.push_back(s);
 }
 
 // definition = name "=" shape { property }

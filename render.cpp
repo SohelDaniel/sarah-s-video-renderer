@@ -1,4 +1,5 @@
 #include "render.h"
+#include "font8x8.h"
 #include "timeline.h"
 #include "transform.h"
 
@@ -34,6 +35,7 @@ void render::begin(const camera& cam){
 	overlay.clear();
 	waiting.clear();
 	lines.clear();
+	texts.clear();
 }
 
 void render::draw_mesh(const mesh& model,const mat4<float>& model_matrix,px::Pixel color){
@@ -385,6 +387,50 @@ void render::finish(){
 		out().DrawCircle(int(std::lround(mid[0] / samples)), int(std::lround(mid[1] / samples)), r, color);
 	}
 	overlay.clear();
+
+	// text last, on top of everything (docs/27)
+	for(const text_item& t : texts){
+		paint_text(t, t.scale, t.scale, px::Pixel(0, 0, 0, 170));   // the shadow
+		paint_text(t, 0, 0, t.color);
+	}
+	texts.clear();
+}
+
+// ---------------------------------------------------------------------------
+//  Text (docs/27): an 8x8 bitmap font. Each character is 8 bytes, one per
+//  row; bit x of a row's byte (lowest bit = leftmost) says whether pixel x
+//  of that row is lit. Every lit pixel becomes a scale x scale square.
+// ---------------------------------------------------------------------------
+void render::draw_text(int x,int y,const std::string& text,int scale,px::Pixel color){
+	texts.push_back({x, y, text, scale, color});
+}
+
+int render::text_width(const std::string& text,int scale){
+	return int(text.size()) * 8 * scale;
+}
+
+int render::text_height(int scale){
+	return 8 * scale;
+}
+
+void render::paint_text(const text_item& t,int dx,int dy,px::Pixel color){
+	px::Image& picture = out();
+	for(size_t i = 0;i<t.text.size();i++){
+		unsigned char c = (unsigned char)t.text[i];
+		if(c >= 128) c = '?';                                   // only plain ASCII in this font
+		int left = t.x + int(i) * 8 * t.scale + dx;
+		for(int row = 0;row<8;row++){
+			unsigned char bits = font8x8_basic[c][row];
+			for(int col = 0;col<8;col++){
+				if(((bits >> col) & 1) == 0) continue;
+				for(int sy = 0;sy<t.scale;sy++){
+					for(int sx = 0;sx<t.scale;sx++){
+						picture.Draw(left + col * t.scale + sx, t.y + dy + row * t.scale + sy, color);
+					}
+				}
+			}
+		}
+	}
 }
 
 bool render::save(const std::string& filename)const{

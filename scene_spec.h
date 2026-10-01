@@ -182,6 +182,13 @@ struct arrow_spec{
 	float end = -1.0f;   // visible from start to end; end < 0 = always
 };
 
+// Words shown on screen (docs/27): a title across the top.
+struct title_spec{
+	std::string text;
+	float start = 0.0f;
+	float end = -1.0f;   // shown from start to end; end < 0 = always
+};
+
 // The whole scene, as described.
 class scene_spec{
 public:
@@ -190,6 +197,7 @@ public:
 		return arrows.back();
 	}
 	std::deque<arrow_spec> arrows;
+	std::deque<title_spec> titles;
 
 	object_spec& add(const std::string& name,const std::string& mesh_file,px::Pixel color,
 	                 size_word size = size_word::normal,int importance = 1){

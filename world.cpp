@@ -81,6 +81,8 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 	cam.move(solved.still().camera_eye());
 	cam.point_at(solved.still().camera_target());
 
+	titles.assign(spec.titles.begin(), spec.titles.end());
+
 	// arrows (docs/26): look the names up once
 	auto find = [&](const std::string& name){
 		for(size_t i = 0;i<spec.objects.size();i++) if(spec.objects[i].name == name) return int(i);
@@ -102,6 +104,18 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 // other: from center to center, shortened at each end by that object's
 // bounding radius (plus a little gap), so it touches neither.
 void world::draw_overlays(render& renderer,float t)const{
+	// titles, across the top, centered (docs/27); several stack downwards
+	int row = 0;
+	for(const title_spec& s : titles){
+		if(t < s.start || (s.end >= 0.0f && t > s.end)) continue;
+		// as big as fits: scale 3, or smaller if it would run off the sides
+		int scale = 3;
+		while(scale > 1 && render::text_width(s.text, scale) > cam.width - 32) scale--;
+		int x = (cam.width - render::text_width(s.text, scale)) / 2;
+		renderer.draw_text(x, 16 + row * (render::text_height(scale) + 8), s.text, scale, px::Pixel(240, 240, 245));
+		row++;
+	}
+
 	for(const world_arrow& a : arrows){
 		if(t < a.start || (a.end >= 0.0f && t > a.end)) continue;
 		const object& from = objects[a.from];
