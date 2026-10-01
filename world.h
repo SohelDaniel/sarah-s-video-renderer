@@ -1,6 +1,7 @@
 #pragma once
 #include "camera.h"
 #include "frame_source.h"
+#include "label_layout.h"
 #include "mesh.h"
 #include "object.h"
 #include "scene_spec.h"
@@ -32,8 +33,9 @@ public:
 	// how long the video should play: until the last motion ends, at least 20 s
 	float duration()const;
 	std::string report()const;
-	// arrows between objects, at time t (docs/26). Call after drawing the objects.
-	void draw_overlays(render& renderer,float t)const;
+	// titles, arrows and labels, at time t (docs/26-28). Call after drawing
+	// the objects. (Not const: labels remember last frame, docs/28.)
+	void draw_overlays(render& renderer,float t);
 
 private:
 	// loads the meshes and returns each object's mesh radius (for the solver)
@@ -53,6 +55,8 @@ private:
 	};
 	std::vector<world_arrow> arrows;
 	std::vector<title_spec> titles;
+	std::vector<std::string> labels;      // labels[i] = object i's label ("" = none)
+	label_layout placer;
 	std::vector<std::string> arrow_errors;
 };
 

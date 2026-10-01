@@ -121,6 +121,10 @@ vec3 object::position_at(float t)const{
 	return own;
 }
 
+float object::opacity()const{
+	return now.opacity;
+}
+
 float object::bounding_radius()const{
 	return shape->bounding_radius() * now.size;
 }

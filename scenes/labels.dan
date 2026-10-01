@@ -1,0 +1,11 @@
+# Labels (docs/28): words next to objects, placed every frame so they never
+# cover each other or the objects, and don't jump from side to side.
+
+scene "labels"
+title "A tiny solar system"
+
+sun    = sphere big gold important label "the sun"
+rock   = icosahedron grey near sun label "a rock"
+planet = octahedron red orbits sun 1 turn 0s-20s label "planet"
+moon   = tetrahedron small white orbits planet 3 turns 0s-20s label "moon"
+comet  = pyramid small teal flies_past sun 4s-12s smooth label "comet"

@@ -40,6 +40,14 @@ public:
 	// A line with an arrowhead at b.
 	void draw_arrow(vec3 a,vec3 b,px::Pixel color);
 
+	// Where a point in the world lands on the finished picture, in pixels,
+	// and how big a sphere of radius r around it looks there (docs/28).
+	// False if it's behind the camera.
+	bool where_on_screen(const vec3& p,float r,float& x,float& y,float& radius)const;
+	// A smooth line straight on the finished picture (no depth): label
+	// leader lines (docs/28). Drawn by finish(), just before the text.
+	void draw_screen_line(float x0,float y0,float x1,float y1,float width,px::Pixel color);
+
 	// Text (docs/27), with its top-left corner at pixel (x, y) of the finished
 	// picture. Each font pixel becomes a scale x scale square. A dark shadow
 	// one step down and right keeps it readable over anything. Drawn last.
@@ -116,6 +124,12 @@ private:
 		px::Pixel color;
 	};
 	std::vector<text_item> texts;      // waiting for finish()
+
+	struct screen_line{
+		float x0, y0, x1, y1, width;
+		px::Pixel color;
+	};
+	std::vector<screen_line> screen_lines;   // waiting for finish()
 	void paint_text(const text_item& t,int dx,int dy,px::Pixel color);
 	void rasterize_line(const line& l);
 	bool clip_segment(vec3& a,vec3& b,vec3& sa,vec3& sb)const;

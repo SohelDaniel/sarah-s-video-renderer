@@ -132,6 +132,7 @@ struct object_spec{
 	std::vector<relation> relations;
 	std::vector<motion> motions;   // empty = it stands still
 	std::vector<fade_step> fades;  // fading in or out (docs/24)
+	std::string label;             // words shown next to it (docs/28); empty = none
 
 	// Each of these adds a relation and returns the object itself, so they
 	// can be chained:  spec.add(...).near("cube").above("table");
@@ -201,7 +202,7 @@ public:
 
 	object_spec& add(const std::string& name,const std::string& mesh_file,px::Pixel color,
 	                 size_word size = size_word::normal,int importance = 1){
-		objects.push_back(object_spec{name, mesh_file, color, size, importance, {}, {}, {}});
+		objects.push_back(object_spec{name, mesh_file, color, size, importance, {}, {}, {}, ""});
 		return objects.back();
 	}
 

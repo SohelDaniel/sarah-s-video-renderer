@@ -15,7 +15,8 @@ std::vector<float> world::load_meshes(const scene_spec& spec){
 }
 
 world::world(const scene_spec& spec,layout::method still_how,motion_plan::method moving_how)
-	: solved(spec, load_meshes(spec), still_how, moving_how){
+	: solved(spec, load_meshes(spec), still_how, moving_how), placer(cam.width, cam.height){
+	for(const object_spec& o : spec.objects) labels.push_back(o.label);
 	objects.reserve(spec.objects.size());
 	for(size_t i = 0;i<spec.objects.size();i++){
 		const object_spec& o = spec.objects[i];
@@ -103,7 +104,7 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 // Each arrow goes from the surface of one object to the surface of the
 // other: from center to center, shortened at each end by that object's
 // bounding radius (plus a little gap), so it touches neither.
-void world::draw_overlays(render& renderer,float t)const{
+void world::draw_overlays(render& renderer,float t){
 	// titles, across the top, centered (docs/27); several stack downwards
 	int row = 0;
 	for(const title_spec& s : titles){
@@ -128,6 +129,41 @@ void world::draw_overlays(render& renderer,float t)const{
 		if(length <= cut_from + cut_to) continue;          // touching: no room for an arrow
 		vec3 dir = d * (1.0f / length);
 		renderer.draw_arrow(p + dir * cut_from, q - dir * cut_to, a.color);
+	}
+
+	// labels (docs/28): where each labelled object is on screen, then the
+	// label layout decides where its words go
+	std::vector<label_request> requests;
+	std::vector<size_t> owner;
+	for(size_t i = 0;i<objects.size();i++){
+		if(labels[i].empty()) continue;
+		label_request r{float(render::text_width(labels[i], 2)), float(render::text_height(2)), {0, 0}, 0, false};
+		float x, y, radius;
+		if(objects[i].opacity() > 0.05f && renderer.where_on_screen(objects[i].get_position(), objects[i].bounding_radius(), x, y, radius)){
+			r.anchor = {x, y};
+			r.radius = radius;
+			r.visible = x >= 0 && y >= 0 && x <= cam.width && y <= cam.height;
+		}
+		requests.push_back(r);
+		owner.push_back(i);
+	}
+	if(requests.empty()) return;
+	const std::vector<placed_label>& placed = placer.place(requests);
+	for(size_t k = 0;k<placed.size();k++){
+		if(!placed[k].shown) continue;
+		const box2& b = placed[k].where;
+		if(placed[k].leader){
+			// from the circle's edge towards the label's middle
+			point2 c = b.center();
+			float dx = c.x - requests[k].anchor.x, dy = c.y - requests[k].anchor.y;
+			float len = std::sqrt(dx * dx + dy * dy);
+			if(len > 1.0f){
+				float sx = requests[k].anchor.x + dx / len * requests[k].radius;
+				float sy = requests[k].anchor.y + dy / len * requests[k].radius;
+				renderer.draw_screen_line(sx, sy, c.x, c.y, 1.0f, px::Pixel(200, 200, 210, 200));
+			}
+		}
+		renderer.draw_text(int(std::lround(b.x0)), int(std::lround(b.y0)), labels[owner[k]], 2, px::Pixel(240, 240, 245));
 	}
 }
 

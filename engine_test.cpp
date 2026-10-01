@@ -6,6 +6,7 @@
 // ============================================================================
 #include "camera.h"
 #include "fly_camera.h"
+#include "label_layout.h"
 #include "live_scene.h"
 #include "render.h"
 #include "scene_parser.h"
@@ -139,6 +140,68 @@ static void test_fly_camera(){
 	check(close(a.eye, b.eye, 0.0f) && a.yaw == b.yaw && a.pitch == b.pitch, "the same inputs always give the same camera");
 }
 
+// ---- labels (docs/28): the original notes, replayed ----
+static void test_labels(){
+	std::printf("labels:\n");
+
+	// the notes' greedy example: a 200 x 100 screen, labels 40 x 10, dots of
+	// radius 2, gap 3. A at (100, 50), B at (106, 58).
+	label_layout layout(200, 100);
+	std::vector<label_request> ab = {{40, 10, {100, 50}, 2}, {40, 10, {106, 58}, 2}};
+	const std::vector<placed_label>& got = layout.place(ab);
+	box2 a = got[0].where, b = got[1].where;
+	check(got[0].side == 0 && a.x0 == 105 && a.x1 == 145 && a.y0 == 45 && a.y1 == 55,
+	      "A's label goes right: [105, 145] x [45, 55], as in the notes");
+	check(got[1].side == 1 && b.x0 == 61 && b.x1 == 101 && b.y0 == 53 && b.y1 == 63,
+	      "B's right spot overlaps A's label, so B goes left: [61, 101] x [53, 63]");
+
+	// the notes' gradient example: home (81, 58), an obstacle at (84, 62), R = 10
+	point2 p1 = label_layout::gradient_step({81, 58}, {81, 58}, {84, 62}, 10.0f);
+	point2 p2 = label_layout::gradient_step(p1, {81, 58}, {84, 62}, 10.0f);
+	check(std::fabs(p1.x - 80.4f) < 1e-4f && std::fabs(p1.y - 57.2f) < 1e-4f, "gradient step 1: (81, 58) -> (80.4, 57.2)");
+	check(std::fabs(p2.x - 80.04f) < 1e-4f && std::fabs(p2.y - 56.72f) < 1e-4f, "gradient step 2: -> (80.04, 56.72)");
+
+	// ... and where it settles: 7.5 from the obstacle, not the 10 asked for
+	point2 p = {81, 58};
+	for(int k = 0;k<200;k++) p = label_layout::gradient_step(p, {81, 58}, {84, 62}, 10.0f);
+	float d = std::sqrt((p.x - 84) * (p.x - 84) + (p.y - 62) * (p.y - 62));
+	check(std::fabs(d - 7.5f) < 1e-3f, "it settles 7.5 from the obstacle (spring and push balance), not 10 (" + std::to_string(d) + ")");
+
+	parse_result lp = parse_scene("sun = sphere big gold label \"the sun\"\n");
+	check(lp.ok() && lp.spec.objects[0].label == "the sun", "'label \"the sun\"' is read as the sun's label");
+
+	// a crowd: 15 labels around points close together: no two shown labels overlap
+	label_layout crowd(640, 480);
+	std::vector<label_request> many;
+	for(int k = 0;k<15;k++){
+		float angle = k * 0.42f;
+		many.push_back({56, 16, {320 + 70 * std::cos(angle) * (1 + k % 3), 240 + 50 * std::sin(angle)}, 14});
+	}
+	const std::vector<placed_label>& out = crowd.place(many);
+	int shown = 0, overlaps = 0;
+	for(size_t i = 0;i<out.size();i++){
+		if(out[i].shown) shown++;
+		for(size_t j = i + 1;j<out.size();j++) if(out[i].shown && out[j].shown && overlap(out[i].where, out[j].where)) overlaps++;
+	}
+	check(overlaps == 0, "15 crowded labels: " + std::to_string(shown) + " shown, 0 overlapping (" + std::to_string(overlaps) + ")");
+
+	// flicker: B's object jitters back and forth (30 pixels) just right of
+	// A's, for 120 frames; count how often the labels switch side
+	auto flips = [](bool keep){
+		label_layout l(640, 480);
+		l.hysteresis = keep;
+		for(int f = 0;f<120;f++){
+			float x = 415 + 30 * std::sin(f * 0.9f);
+			std::vector<label_request> two = {{60, 16, {320, 240}, 20}, {60, 16, {x, 240}, 20}};
+			l.place(two);
+		}
+		return l.side_changes();
+	};
+	int with = flips(true), without = flips(false);
+	check(with < without, "keeping last frame's side means fewer flips: " + std::to_string(with) + " with, "
+	      + std::to_string(without) + " without");
+}
+
 // ---- text (docs/27) ----
 static void test_text(){
 	std::printf("text:\n");
@@ -254,6 +317,7 @@ static bool same_spec(const scene_spec& a,const scene_spec& b,std::string& why){
 	if(a.objects.size() != b.objects.size()){ why = "different number of objects"; return false; }
 	if(a.arrows.size() != b.arrows.size()){ why = "different number of arrows"; return false; }
 	if(a.titles.size() != b.titles.size()){ why = "different number of titles"; return false; }
+	for(size_t i = 0;i<a.objects.size();i++) if(a.objects[i].label != b.objects[i].label){ why = "labels differ"; return false; }
 	if(a.view != b.view){ why = "different view"; return false; }
 	for(size_t i = 0;i<a.objects.size();i++){
 		const object_spec& x = a.objects[i];
@@ -365,6 +429,7 @@ static void test_live_reload(){
 int main(){
 	test_clipping();
 	test_fly_camera();
+	test_labels();
 	test_text();
 	test_lines();
 	test_fades();

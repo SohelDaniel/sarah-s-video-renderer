@@ -36,6 +36,7 @@ void render::begin(const camera& cam){
 	waiting.clear();
 	lines.clear();
 	texts.clear();
+	screen_lines.clear();
 }
 
 void render::draw_mesh(const mesh& model,const mat4<float>& model_matrix,px::Pixel color){
@@ -388,6 +389,25 @@ void render::finish(){
 	}
 	overlay.clear();
 
+	// leader lines from labels to their objects (docs/28), on the final picture
+	px::Image& picture = out();
+	for(const screen_line& l : screen_lines){
+		int x0 = std::max(0, int(std::floor(std::min(l.x0, l.x1) - l.width)));
+		int x1 = std::min(picture.Width() - 1, int(std::ceil(std::max(l.x0, l.x1) + l.width)));
+		int y0 = std::max(0, int(std::floor(std::min(l.y0, l.y1) - l.width)));
+		int y1 = std::min(picture.Height() - 1, int(std::ceil(std::max(l.y0, l.y1) + l.width)));
+		for(int y = y0;y<=y1;y++){
+			for(int x = x0;x<=x1;x++){
+				float c = line_coverage(x + 0.5f, y + 0.5f, l.x0, l.y0, l.x1, l.y1, l.width);
+				if(c <= 0.0f) continue;
+				px::Pixel p = l.color;
+				p.a = uint8_t(std::lround(p.a * c));
+				picture.Draw(x, y, p);
+			}
+		}
+	}
+	screen_lines.clear();
+
 	// text last, on top of everything (docs/27)
 	for(const text_item& t : texts){
 		paint_text(t, t.scale, t.scale, px::Pixel(0, 0, 0, 170));   // the shadow
@@ -401,6 +421,20 @@ void render::finish(){
 //  row; bit x of a row's byte (lowest bit = leftmost) says whether pixel x
 //  of that row is lit. Every lit pixel becomes a scale x scale square.
 // ---------------------------------------------------------------------------
+bool render::where_on_screen(const vec3& p,float r,float& x,float& y,float& radius)const{
+	vec3 mid, edge;
+	if(!project(p, mid) || !project(p + camera_up * r, edge)) return false;
+	x = mid[0] / samples;
+	y = mid[1] / samples;
+	float dx = edge[0] - mid[0], dy = edge[1] - mid[1];
+	radius = std::sqrt(dx * dx + dy * dy) / samples;
+	return true;
+}
+
+void render::draw_screen_line(float x0,float y0,float x1,float y1,float width,px::Pixel color){
+	screen_lines.push_back({x0, y0, x1, y1, width, color});
+}
+
 void render::draw_text(int x,int y,const std::string& text,int scale,px::Pixel color){
 	texts.push_back({x, y, text, scale, color});
 }

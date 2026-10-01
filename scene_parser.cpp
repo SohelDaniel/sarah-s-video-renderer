@@ -207,7 +207,7 @@ static std::vector<token> tokenize(const std::string& source){
 //    header     = "scene" [ text ] [ "view" view_word ]
 //    definition = name "=" shape { property }
 //    fact       = name phrase { [","] phrase }
-//    property   = size | color | "important" | phrase | ","
+//    property   = size | color | "important" | "label" text | phrase | ","
 //    phrase     = relation_word name
 //               | "orbits" name [ number ("turn" | "turns") ] time "-" time
 //               | "flies_past" name time "-" time
@@ -451,6 +451,12 @@ void parser::phrase(object_spec& o,const token& first){
 		o.flies_past(other, start, end, optional_rate());
 		return;
 	}
+	if(first.value == "label"){
+		const token& words = next();
+		if(words.kind != token_kind::text) fail(words, "expected the label's words in quotes, like: label \"the sun\"");
+		o.label = words.value;
+		return;
+	}
 	if(first.value == "fades_in" || first.value == "fades_out"){
 		float start = time("for when the fade starts, like 0s");
 		const token& dash = next();
@@ -476,7 +482,7 @@ void parser::phrase(object_spec& o,const token& first){
 		return;
 	}
 
-	std::vector<std::string> known = {"important", "orbits", "flies_past", "hits", "fades_in", "fades_out"};
+	std::vector<std::string> known = {"important", "orbits", "flies_past", "hits", "fades_in", "fades_out", "label"};
 	for(const auto& m : {keys_of(size_words), keys_of(color_words), keys_of(relation_words)}){
 		known.insert(known.end(), m.begin(), m.end());
 	}
