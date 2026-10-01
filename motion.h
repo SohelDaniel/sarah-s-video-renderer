@@ -55,7 +55,7 @@ struct path{
 	motion_kind kind = motion_kind::orbits;
 	float radius = 0.0f;      // the object's bounding radius
 	int around = -1;          // which still obstacle it moves around / past (or -1)
-	int around_path = -1;     // orbits only: which moving object it goes round (or -1)
+	int around_path = -1;     // orbits and hits: which moving object it goes round / hits (or -1)
 	float start = 0.0f, end = 0.0f;
 
 	// orbits: a circle in the horizontal plane through `center`
@@ -64,7 +64,9 @@ struct path{
 	float start_angle  = 0.0f;   // radians, 0 = the +x side
 	float turns = 1.0f;
 
-	// flies_past: a straight line, `from` at `start` to `to` at `end`
+	// flies_past and hits: a straight line, `from` at `start` to `to` at `end`
+	// (for hits, `to` is the point where it touches what it hits, and from
+	// `end` on it sticks there and rides along, docs/18)
 	vec3 from{0.0f, 0.0f, 0.0f};
 	vec3 to{0.0f, 0.0f, 0.0f};
 
@@ -100,7 +102,9 @@ public:
 
 	struct metrics{
 		int moving     = 0;
-		int collisions = 0;   // pairs that hit each other at some moment
+		int collisions = 0;   // pairs that hit each other at some moment (and weren't meant to)
+		int hits_planned = 0; // intended hits (docs/18)
+		int hits_on_time = 0; // ... that really touch, exactly at their time
 	};
 	metrics measure()const;
 	std::string report()const;
@@ -111,6 +115,12 @@ private:
 	void repair_orbits();
 	bool clear_of_still_sampled(size_t k)const;
 	void plan_flights();
+	void plan_hits();
+	vec3 target_position(size_t k,float t)const;   // where the thing it moves around / hits is
+	// Is this moment part of an intended hit between moving object k and the
+	// other one (a moving object, or a still obstacle)? Then touching is fine.
+	bool meant_to_touch(size_t k,int other_moving,int other_still,float t)const;
+	float hit_gap(size_t k)const;   // the gap when it arrives (should be 0)
 	bool clear_of_still(const path& p)const;
 	// orbits_only: ignore fly-bys (they're planned after the orbits)
 	bool clear_of_moving(size_t k,bool orbits_only = false)const;

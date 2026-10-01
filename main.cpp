@@ -19,6 +19,7 @@
 //   ./main 3 framed out.png   same, but save one picture instead of playing
 //   ./main 4 naive            a "lazy AI" animation: orbits and a fly-by (docs/16)
 //   ./main 4 naive x.png 7.5  same, but save the picture at 7.5 seconds
+//   ./main 5 framed           things that collide on purpose (docs/18)
 //   ./main stress crowd                 one of the stress test scenes (docs/15)
 //   ./main stress crowd greedy x.png    ... after one solver step, saved as a picture
 //                                       (names: see test_scenes.cpp or `make test`)
@@ -195,6 +196,10 @@ int main(int argc,char** argv){
 		else if(which == "3"){
 			solved_scene(lazy_ai_scene(), still_step(argc > 2 ? argv[2] : "framed"), motion_plan::method::naive,
 			             argc > 3 ? argv[3] : "", 0.0f);
+		}
+		else if(which == "5"){
+			solved_scene(impact_scene(), layout::method::framed, motion_step(argc > 2 ? argv[2] : "framed"),
+			             argc > 3 ? argv[3] : "", argc > 4 ? std::stof(argv[4]) : 0.0f);
 		}
 		else if(which == "4"){
 			solved_scene(lazy_motion_scene(), layout::method::framed, motion_step(argc > 2 ? argv[2] : "framed"),

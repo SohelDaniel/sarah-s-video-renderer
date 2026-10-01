@@ -1,0 +1,55 @@
+layout (framed): 2 objects, 0 overlapping pairs, 0 pairs overlapping on screen
+  objects not fully in the picture: 0
+  objects (in placement order):
+    sun         big     r= 1.40  at (  0.00,   0.00,   0.00)
+    rock        normal  r= 0.80  at (  2.60,   0.00,   0.00)
+  relations:
+    ok      rock near sun
+  1 of 1 relations satisfied
+  camera: from front_above, looking at (1.00, 0.00, 0.00), scene radius 2.40, distance 4.06 (sphere fit: 5.96)
+          eye at (1.00, 1.43, 3.80)
+  refinement (energy should go down):
+    step   0   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step   1   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step   2   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step  50   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 100   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 150   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 200   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 250   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 300   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 350   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 400   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 450   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 500   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    steps halved because they went uphill: 0
+    step   0   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step   1   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step   2   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step  50   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 100   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 150   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 200   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 250   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 300   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 350   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 400   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 450   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 500   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    steps halved because they went uphill: 0
+motion (naive): 3 moving objects, 5 colliding pairs
+  checked every 0.0417 s (fastest moves 2.3998 per second)
+  paths:
+    planet     orbits sun, 0.00-20.00 s: radius 2.60, 1.00 turns
+    comet      hits planet (which moves), 8.00-12.00 s: from (5.89, 0.00, 1.53), touching at (-0.44, 0.00, 1.53) at 12.00 s, then sticks
+    meteor     hits rock, 3.00-6.00 s: from (9.50, 0.00, 0.00), touching at (3.90, 0.00, 0.00) at 6.00 s, then sticks
+  planned hit: comet touches planet at 12.00 s (gap 0.00) as planned
+  planned hit: meteor touches rock at 6.00 s (gap 0.00) as planned
+  collisions:
+    planet hits rock, first at 0.00 s (closest: inside each other by 1.60)
+    comet hits rock, first at 9.54 s (closest: inside each other by 0.14)
+    comet hits sun, first at 10.58 s (closest: inside each other by 0.74)
+    comet hits meteor, first at 18.13 s (closest: inside each other by 1.00)
+    planet hits meteor, first at 19.50 s (closest: 0.00)
+  moving objects that leave the picture at some moment: 3
+wrote docs/images/scene5-naive.png

@@ -136,11 +136,21 @@ motion_plan::motion_plan(const std::vector<obstacle>& still,std::vector<path> mo
 	}
 }
 
+vec3 motion_plan::target_position(size_t k,float t)const{
+	const path& p = moving[k];
+	return p.around_path >= 0 ? position(size_t(p.around_path), t) : p.center;
+}
+
 // Where moving object k is at time t. If it orbits something that moves,
-// first ask where THAT is at t (docs/17), and so on up the chain.
+// first ask where THAT is at t (docs/17), and so on up the chain. Something
+// that hit its target sticks: it keeps the offset it had at the moment of
+// impact and rides along (docs/18).
 vec3 motion_plan::position(size_t k,float t)const{
 	const path& p = moving[k];
-	vec3 center = p.around_path >= 0 ? position(size_t(p.around_path), t) : p.center;
+	vec3 center = target_position(k, t);
+	if(p.kind == motion_kind::hits && t >= p.end){
+		return p.to + (center - target_position(k, p.end));
+	}
 	return p.at(t, center);
 }
 
@@ -158,11 +168,41 @@ int motion_plan::depth(size_t k)const{
 float motion_plan::reach(size_t k)const{
 	float r = moving[k].radius;
 	for(size_t j = 0;j<moving.size();j++){
-		if(moving[j].around_path == int(k)){
+		if(moving[j].around_path != int(k)) continue;
+		if(moving[j].kind == motion_kind::orbits){
 			r = std::max(r, moving[j].orbit_radius + reach(j));
+		}else if(moving[j].kind == motion_kind::hits){
+			// something stuck to it: touching it, and sticking out by its own size
+			r = std::max(r, moving[k].radius + 2.0f * moving[j].radius);
 		}
 	}
 	return r;
+}
+
+// An intended hit is allowed to touch its target, but only at the very end
+// of its approach (the last 2·gap/speed seconds: the time it needs to cover
+// the last bit of gap twice over) and while it's stuck afterwards. Hitting
+// it EARLIER is still a collision, and so is touching anything else.
+bool motion_plan::meant_to_touch(size_t k,int other_moving,int other_still,float t)const{
+	auto pair = [&](size_t hitter,int target_moving,int target_still){
+		const path& p = moving[hitter];
+		if(p.kind != motion_kind::hits) return false;
+		bool is_target = (target_moving >= 0 && p.around_path == target_moving)
+		              || (target_still >= 0 && p.around_path < 0 && p.around == target_still);
+		if(!is_target) return false;
+		float window = 2.0f * layout::gap / std::max(p.speed(), 1e-4f);
+		return t >= p.end - window;
+	};
+	if(pair(k, other_moving, other_still)) return true;
+	if(other_moving >= 0 && pair(size_t(other_moving), int(k), -1)) return true;
+	return false;
+}
+
+float motion_plan::hit_gap(size_t k)const{
+	const path& p = moving[k];
+	vec3 target = target_position(k, p.end);
+	float target_radius = p.around_path >= 0 ? moving[p.around_path].radius : still[p.around].radius;
+	return distance(position(k, p.end), target) - p.radius - target_radius;
 }
 
 void motion_plan::solve(method how){
@@ -170,9 +210,9 @@ void motion_plan::solve(method how){
 		case method::naive:  place_naive(); method_name = "naive"; break;
 		case method::orbits: place_naive(); plan_orbits(); repair_orbits(); method_name = "orbits"; break;
 		case method::flights:
-			place_naive(); plan_orbits(); repair_orbits(); plan_flights(); method_name = "flights"; break;
+			place_naive(); plan_orbits(); repair_orbits(); plan_hits(); plan_flights(); method_name = "flights"; break;
 		case method::framed:
-			place_naive(); plan_orbits(); repair_orbits(); plan_flights(); method_name = "framed"; break;
+			place_naive(); plan_orbits(); repair_orbits(); plan_hits(); plan_flights(); method_name = "framed"; break;
 	}
 }
 
@@ -185,12 +225,24 @@ void motion_plan::place_naive(){
 			float center_radius = p.around_path >= 0 ? moving[p.around_path].radius : still[p.around].radius;
 			p.orbit_radius = p.radius + center_radius + layout::gap;
 			p.start_angle  = 0.0f;
+		}else if(p.kind == motion_kind::hits){
+			continue;   // below, once every orbit has its radius
 		}else{
 			const obstacle& other = still[p.around];
 			float half = 2.0f * (p.radius + other.radius) + 3.0f;
 			p.from = other.position - vec3(half, 0.0f, 0.0f);
 			p.to   = other.position + vec3(half, 0.0f, 0.0f);
 		}
+	}
+	// hits: straight in along x, to where the target will be at impact
+	for(size_t k = 0;k<moving.size();k++){
+		path& p = moving[k];
+		if(p.kind != motion_kind::hits) continue;
+		float target_radius = p.around_path >= 0 ? moving[p.around_path].radius : still[p.around].radius;
+		float touch = p.radius + target_radius;
+		vec3 x(1.0f, 0.0f, 0.0f);
+		p.to   = target_position(k, p.end) + x * touch;
+		p.from = p.to + x * (2.0f * touch + 3.0f);
 	}
 }
 
@@ -284,8 +336,9 @@ bool motion_plan::clear_of_still_sampled(size_t k)const{
 	for(int step = 0;;step++){
 		float t = std::min(step * dt, last);
 		vec3 here = position(k, t);
-		for(const obstacle& o : still){
-			if(distance(here, o.position) - p.radius - o.radius < layout::gap / 4.0f) return false;
+		for(size_t j = 0;j<still.size();j++){
+			if(meant_to_touch(k, -1, int(j), t)) continue;
+			if(distance(here, still[j].position) - p.radius - still[j].radius < layout::gap / 4.0f) return false;
 		}
 		if(t >= last) break;
 	}
@@ -367,12 +420,56 @@ bool motion_plan::clear_of_moving(size_t k,bool orbits_only)const{
 		vec3 here = position(k, t);
 		for(size_t j = 0;j<moving.size();j++){
 			if(j == k || (orbits_only && moving[j].kind != motion_kind::orbits)) continue;
+			if(meant_to_touch(k, int(j), -1, t)) continue;
 			float surface_gap = distance(here, position(j, t)) - p.radius - moving[j].radius;
 			if(surface_gap < layout::gap / 4.0f) return false;
 		}
 		if(t >= last) break;
 	}
 	return true;
+}
+
+// ---------------------------------------------------------------------------
+//  Intended hits (docs/18).
+//
+//  "comet hits planet1 at 12 s": the comet must TOUCH planet1 at exactly
+//  12 s. All paths are worked out in advance, so where planet1 will be at
+//  12 s is known: target(12). Arriving from direction n (a unit vector),
+//  the comet touches it when its center is at
+//      contact = target(T) + n · (r_comet + r_target)
+//  so the path is a straight line from  contact + n·L  to contact, over the
+//  approach time. That intercepts a moving target exactly. The direction n
+//  and the length L are picked like a fly-by's: the first one that doesn't
+//  hit anything it isn't meant to.
+// ---------------------------------------------------------------------------
+void motion_plan::plan_hits(){
+	const vec3 sides[6] = {
+		vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, 1.0f, 0.0f), vec3(1.0f, 0.0f, 0.0f),
+		vec3(-1.0f, 0.0f, 0.0f), vec3(0.0f, -1.0f, 0.0f), vec3(0.0f, 0.0f, -1.0f),
+	};
+	for(size_t k = 0;k<moving.size();k++){
+		path& p = moving[k];
+		if(p.kind != motion_kind::hits) continue;
+		float target_radius = p.around_path >= 0 ? moving[p.around_path].radius : still[p.around].radius;
+		float touch = p.radius + target_radius;
+		vec3 target = target_position(k, p.end);
+
+		bool found = false;
+		for(float scale : {1.0f, 1.5f, 2.0f}){
+			for(const vec3& n : sides){
+				p.to   = target + n * touch;
+				p.from = p.to + n * ((2.0f * touch + 3.0f) * scale);
+				if(clear_of_still_sampled(k) && clear_of_moving(k)){
+					found = true;
+					break;
+				}
+			}
+			if(found) break;
+		}
+		if(!found){
+			warnings.push_back("no clear way in for " + p.name + " to hit its target (using the last one tried)");
+		}
+	}
 }
 
 void motion_plan::plan_flights(){
@@ -431,6 +528,8 @@ std::vector<obstacle> motion_plan::bounds()const{
 				spheres.push_back({p.name, point, cover});
 			}
 		}else{
+			// fly-by, or the approach of a hit (once stuck, it rides along
+			// inside its target's reach)
 			spheres.push_back({p.name, p.from, p.radius});
 			spheres.push_back({p.name, p.to, p.radius});
 		}
@@ -491,12 +590,15 @@ std::vector<motion_plan::collision> motion_plan::find_collisions()const{
 		for(size_t i = 0;i<moving.size();i++){
 			vec3 p = position(i, t);
 			// against everything standing still
-			for(const obstacle& o : still){
+			for(size_t j = 0;j<still.size();j++){
+				if(meant_to_touch(i, -1, int(j), t)) continue;
+				const obstacle& o = still[j];
 				float surface_gap = distance(p, o.position) - moving[i].radius - o.radius;
 				if(surface_gap < tolerance) record(moving[i].name, o.name, t, surface_gap);
 			}
 			// against the other moving objects
 			for(size_t j = i + 1;j<moving.size();j++){
+				if(meant_to_touch(i, int(j), -1, t)) continue;
 				float surface_gap = distance(p, position(j, t)) - moving[i].radius - moving[j].radius;
 				if(surface_gap < tolerance) record(moving[i].name, moving[j].name, t, surface_gap);
 			}
@@ -510,6 +612,11 @@ motion_plan::metrics motion_plan::measure()const{
 	metrics m;
 	m.moving = int(moving.size());
 	m.collisions = int(find_collisions().size());
+	for(size_t k = 0;k<moving.size();k++){
+		if(moving[k].kind != motion_kind::hits) continue;
+		m.hits_planned++;
+		if(std::fabs(hit_gap(k)) <= 0.01f) m.hits_on_time++;
+	}
 	return m;
 }
 
@@ -535,11 +642,22 @@ std::string motion_plan::report()const{
 		    << p.start << "-" << p.end << " s: ";
 		if(p.kind == motion_kind::orbits){
 			out << "radius " << p.orbit_radius << ", " << p.turns << " turns";
+		}else if(p.kind == motion_kind::hits){
+			out << "from (" << p.from[0] << ", " << p.from[1] << ", " << p.from[2] << "), touching at ("
+			    << p.to[0] << ", " << p.to[1] << ", " << p.to[2] << ") at " << p.end << " s, then sticks";
 		}else{
 			out << "from (" << p.from[0] << ", " << p.from[1] << ", " << p.from[2] << ") to ("
 			    << p.to[0] << ", " << p.to[1] << ", " << p.to[2] << ")";
 		}
 		out << "\n";
+	}
+	for(size_t k = 0;k<moving.size();k++){
+		if(moving[k].kind != motion_kind::hits) continue;
+		float g = hit_gap(k);
+		out << "  planned hit: " << moving[k].name << " touches "
+		    << (moving[k].around_path >= 0 ? moving[moving[k].around_path].name : still[moving[k].around].name)
+		    << " at " << moving[k].end << " s (gap " << std::fabs(g) << ")"
+		    << (std::fabs(g) <= 0.01f ? " as planned" : " NOT ON TIME") << "\n";
 	}
 	if(!warnings.empty()){
 		out << "  notes from planning:\n";

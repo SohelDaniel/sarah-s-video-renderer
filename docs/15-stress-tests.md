@@ -61,6 +61,7 @@ After the full solve (`framed`), every scene must pass:
 6. **moving objects never collide** (added with step E3, 16)
 7. **moving objects stay in the picture** at every moment (added with step E4, 16)
 8. **nothing is hidden behind something else on screen** (added with tight framing, 14)
+9. **planned hits touch exactly on time** (added with intended collisions, 18)
 
 If any check fails, `make test` fails.
 
@@ -179,6 +180,7 @@ From [stress-results.txt](images/stress-results.txt), after the full solve:
 | view_front / left / right | 9 | 0 | 0 | 0 | 7 of 7 | 1 |
 | motion (added with 16) | 6, 4 of them moving | 0 | 0 | 0 | 1 of 1 | 0 |
 | motion_typos (added with 17) | 8, 2 of them moving | 0 | 0 | 0 | 0 of 0 | 5 |
+| impact (added with 18) | 5, 3 of them moving, 2 planned hits | 0 | 0 | 0 | 1 of 1 | 0 |
 
 **ALL PASSED: 0 checks failed.**
 

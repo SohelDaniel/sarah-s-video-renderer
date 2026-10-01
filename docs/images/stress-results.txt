@@ -55,6 +55,10 @@ motion_typos   naive       8       15      15     0     0 of 0       5        0 
                greedy      8        0       5     0     0 of 0       5        0      0      2        0
                refined     8        0       0     0     0 of 0       5        0    169      2        0
                framed      8        0       0     0     0 of 0       5        0    320      2        0
+impact         naive       5        1       1     0     0 of 1       0        0      0      3        2
+               greedy      5        0       0     0     1 of 1       0        0      0      3        0
+               refined     5        0       0     0     1 of 1       0        0      0      3        0
+               framed      5        0       0     0     1 of 1       0        0      0      3        0
 
 checks:
   PASS  lazy           every position is a real number (no NaN / infinity)
@@ -63,6 +67,7 @@ checks:
   PASS  lazy           everything inside the picture (0 outside)
   PASS  lazy           nothing hidden behind something else on screen (0 pairs)
   PASS  lazy           moving objects never collide (0 pairs)
+  PASS  lazy           planned hits touch exactly on time (0 of 0)
   PASS  lazy           moving objects stay in the picture (0 leave it)
   PASS  lazy           reports its mistakes (1 of at least 1)
   PASS  crowd          every position is a real number (no NaN / infinity)
@@ -71,6 +76,7 @@ checks:
   PASS  crowd          everything inside the picture (0 outside)
   PASS  crowd          nothing hidden behind something else on screen (0 pairs)
   PASS  crowd          moving objects never collide (0 pairs)
+  PASS  crowd          planned hits touch exactly on time (0 of 0)
   PASS  crowd          moving objects stay in the picture (0 leave it)
   PASS  crowd          reports its mistakes (0 of at least 0)
   PASS  chain          every position is a real number (no NaN / infinity)
@@ -79,6 +85,7 @@ checks:
   PASS  chain          everything inside the picture (0 outside)
   PASS  chain          nothing hidden behind something else on screen (0 pairs)
   PASS  chain          moving objects never collide (0 pairs)
+  PASS  chain          planned hits touch exactly on time (0 of 0)
   PASS  chain          moving objects stay in the picture (0 leave it)
   PASS  chain          reports its mistakes (0 of at least 0)
   PASS  cycle          every position is a real number (no NaN / infinity)
@@ -87,6 +94,7 @@ checks:
   PASS  cycle          everything inside the picture (0 outside)
   PASS  cycle          nothing hidden behind something else on screen (0 pairs)
   PASS  cycle          moving objects never collide (0 pairs)
+  PASS  cycle          planned hits touch exactly on time (0 of 0)
   PASS  cycle          moving objects stay in the picture (0 leave it)
   PASS  cycle          reports its mistakes (1 of at least 1)
   PASS  contradiction  every position is a real number (no NaN / infinity)
@@ -95,6 +103,7 @@ checks:
   PASS  contradiction  everything inside the picture (0 outside)
   PASS  contradiction  nothing hidden behind something else on screen (0 pairs)
   PASS  contradiction  moving objects never collide (0 pairs)
+  PASS  contradiction  planned hits touch exactly on time (0 of 0)
   PASS  contradiction  moving objects stay in the picture (0 leave it)
   PASS  contradiction  reports its mistakes (2 of at least 2)
   PASS  sizes          every position is a real number (no NaN / infinity)
@@ -103,6 +112,7 @@ checks:
   PASS  sizes          everything inside the picture (0 outside)
   PASS  sizes          nothing hidden behind something else on screen (0 pairs)
   PASS  sizes          moving objects never collide (0 pairs)
+  PASS  sizes          planned hits touch exactly on time (0 of 0)
   PASS  sizes          moving objects stay in the picture (0 leave it)
   PASS  sizes          reports its mistakes (0 of at least 0)
   PASS  typos          every position is a real number (no NaN / infinity)
@@ -111,6 +121,7 @@ checks:
   PASS  typos          everything inside the picture (0 outside)
   PASS  typos          nothing hidden behind something else on screen (0 pairs)
   PASS  typos          moving objects never collide (0 pairs)
+  PASS  typos          planned hits touch exactly on time (0 of 0)
   PASS  typos          moving objects stay in the picture (0 leave it)
   PASS  typos          reports its mistakes (4 of at least 4)
   PASS  empty          every position is a real number (no NaN / infinity)
@@ -119,6 +130,7 @@ checks:
   PASS  empty          everything inside the picture (0 outside)
   PASS  empty          nothing hidden behind something else on screen (0 pairs)
   PASS  empty          moving objects never collide (0 pairs)
+  PASS  empty          planned hits touch exactly on time (0 of 0)
   PASS  empty          moving objects stay in the picture (0 leave it)
   PASS  empty          reports its mistakes (0 of at least 0)
   PASS  single         every position is a real number (no NaN / infinity)
@@ -127,6 +139,7 @@ checks:
   PASS  single         everything inside the picture (0 outside)
   PASS  single         nothing hidden behind something else on screen (0 pairs)
   PASS  single         moving objects never collide (0 pairs)
+  PASS  single         planned hits touch exactly on time (0 of 0)
   PASS  single         moving objects stay in the picture (0 leave it)
   PASS  single         reports its mistakes (0 of at least 0)
   PASS  view_front     every position is a real number (no NaN / infinity)
@@ -135,6 +148,7 @@ checks:
   PASS  view_front     everything inside the picture (0 outside)
   PASS  view_front     nothing hidden behind something else on screen (0 pairs)
   PASS  view_front     moving objects never collide (0 pairs)
+  PASS  view_front     planned hits touch exactly on time (0 of 0)
   PASS  view_front     moving objects stay in the picture (0 leave it)
   PASS  view_front     reports its mistakes (1 of at least 1)
   PASS  view_left      every position is a real number (no NaN / infinity)
@@ -143,6 +157,7 @@ checks:
   PASS  view_left      everything inside the picture (0 outside)
   PASS  view_left      nothing hidden behind something else on screen (0 pairs)
   PASS  view_left      moving objects never collide (0 pairs)
+  PASS  view_left      planned hits touch exactly on time (0 of 0)
   PASS  view_left      moving objects stay in the picture (0 leave it)
   PASS  view_left      reports its mistakes (1 of at least 1)
   PASS  view_right     every position is a real number (no NaN / infinity)
@@ -151,6 +166,7 @@ checks:
   PASS  view_right     everything inside the picture (0 outside)
   PASS  view_right     nothing hidden behind something else on screen (0 pairs)
   PASS  view_right     moving objects never collide (0 pairs)
+  PASS  view_right     planned hits touch exactly on time (0 of 0)
   PASS  view_right     moving objects stay in the picture (0 leave it)
   PASS  view_right     reports its mistakes (1 of at least 1)
   PASS  motion         every position is a real number (no NaN / infinity)
@@ -159,6 +175,7 @@ checks:
   PASS  motion         everything inside the picture (0 outside)
   PASS  motion         nothing hidden behind something else on screen (0 pairs)
   PASS  motion         moving objects never collide (0 pairs)
+  PASS  motion         planned hits touch exactly on time (0 of 0)
   PASS  motion         moving objects stay in the picture (0 leave it)
   PASS  motion         reports its mistakes (0 of at least 0)
   PASS  motion_typos   every position is a real number (no NaN / infinity)
@@ -167,7 +184,17 @@ checks:
   PASS  motion_typos   everything inside the picture (0 outside)
   PASS  motion_typos   nothing hidden behind something else on screen (0 pairs)
   PASS  motion_typos   moving objects never collide (0 pairs)
+  PASS  motion_typos   planned hits touch exactly on time (0 of 0)
   PASS  motion_typos   moving objects stay in the picture (0 leave it)
   PASS  motion_typos   reports its mistakes (5 of at least 5)
+  PASS  impact         every position is a real number (no NaN / infinity)
+  PASS  impact         solving twice gives exactly the same layout
+  PASS  impact         no overlaps after framing (0)
+  PASS  impact         everything inside the picture (0 outside)
+  PASS  impact         nothing hidden behind something else on screen (0 pairs)
+  PASS  impact         moving objects never collide (0 pairs)
+  PASS  impact         planned hits touch exactly on time (2 of 2)
+  PASS  impact         moving objects stay in the picture (0 leave it)
+  PASS  impact         reports its mistakes (0 of at least 0)
 
 ALL PASSED: 0 checks failed

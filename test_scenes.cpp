@@ -41,6 +41,19 @@ scene_spec lazy_motion_scene(){
 	return spec;
 }
 
+// Scene 5: collisions that are MEANT to happen. A comet hits a planet that
+// is moving round the sun, at exactly 12 s, and sticks; a meteor hits a rock
+// that stands still, at 6 s.
+scene_spec impact_scene(){
+	scene_spec spec;
+	spec.add("sun",    "shapes/sphere.obj",      px::Pixel(250, 200,  60), size_word::big, 10);
+	spec.add("rock",   "shapes/icosahedron.obj", colors[4]).near("sun");
+	spec.add("planet", "shapes/octahedron.obj",  colors[6]).orbits("sun", 1.0f, 0.0f, 20.0f);
+	spec.add("comet",  "shapes/pyramid.obj",     colors[5], size_word::small).hits("planet", 12.0f, 4.0f);
+	spec.add("meteor", "shapes/tetrahedron.obj", colors[3], size_word::small).hits("rock", 6.0f, 3.0f);
+	return spec;
+}
+
 // Every way a motion can't work.
 static scene_spec motion_mistakes(){
 	scene_spec spec;
@@ -152,5 +165,6 @@ std::vector<test_scene> all_test_scenes(){
 		{"view_right",    "the lazy scene seen from the right, above",        seen_from(view_word::right_above),   1},
 		{"motion",        "orbits, a moon, and a fly-by crossing a crowded spot", lazy_motion_scene(),             0},
 		{"motion_typos",  "every way a motion can't work",                    motion_mistakes(),                   5},
+		{"impact",        "collisions that are meant to happen, on time",     impact_scene(),                      0},
 	};
 }

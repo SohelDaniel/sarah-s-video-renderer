@@ -92,12 +92,15 @@ struct relation{
 // around or past what, and when; the solver picks the exact path.
 //   orbits     : goes round the other object `turns` times
 //   flies_past : flies by the other object in a straight line
-enum class motion_kind{ orbits, flies_past };
+//   hits       : flies into the other object ON PURPOSE, arriving exactly
+//                at `end`, and sticks to it (docs/18)
+enum class motion_kind{ orbits, flies_past, hits };
 
 inline const char* motion_name(motion_kind k){
 	switch(k){
 		case motion_kind::orbits:     return "orbits";
 		case motion_kind::flies_past: return "flies_past";
+		case motion_kind::hits:       return "hits";
 	}
 	return "?";
 }
@@ -136,6 +139,11 @@ struct object_spec{
 	}
 	object_spec& flies_past(const std::string& other,float start,float end){
 		motions.push_back({motion_kind::flies_past, other, 0.0f, start, end});
+		return *this;
+	}
+	// arrives at `time`, after flying for `approach` seconds, and sticks
+	object_spec& hits(const std::string& other,float time,float approach = 4.0f){
+		motions.push_back({motion_kind::hits, other, 0.0f, time - approach, time});
 		return *this;
 	}
 

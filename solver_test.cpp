@@ -118,6 +118,9 @@ int main(){
 		check(s.hidden == 0, t.name, "nothing hidden behind something else on screen (" + std::to_string(s.hidden) + " pairs)");
 		int collisions = once.plan().measure().collisions;
 		check(collisions == 0, t.name, "moving objects never collide (" + std::to_string(collisions) + " pairs)");
+		motion_plan::metrics mm = once.plan().measure();
+		check(mm.hits_on_time == mm.hits_planned, t.name, "planned hits touch exactly on time ("
+		      + std::to_string(mm.hits_on_time) + " of " + std::to_string(mm.hits_planned) + ")");
 		int leaving = once.moving_off_screen();
 		check(leaving == 0, t.name, "moving objects stay in the picture (" + std::to_string(leaving) + " leave it)");
 		check(errors >= t.expected_errors, t.name,

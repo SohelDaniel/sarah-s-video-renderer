@@ -31,12 +31,16 @@ STEPS = naive greedy refined framed
 # scene 4 (docs/16): each motion step, pictured at these seconds
 MOTION_STEPS = naive orbits flights framed
 MOTION_TIMES = 0 3 7 12
+# scene 5 (docs/18): before, at and after the planned hits
+IMPACT_TIMES = 5 6 10 12 16
 stills: $(TARGET) $(TEST_TARGET)
 	@mkdir -p docs/images
 	@for s in $(STEPS); do ./$(TARGET) 3 $$s docs/images/scene3-$$s.png > docs/images/scene3-$$s.txt; done
 	@for s in greedy framed; do ./$(TARGET) stress crowd $$s docs/images/crowd-$$s.png > docs/images/crowd-$$s.txt; done
 	@for s in refined framed; do ./$(TARGET) stress chain $$s docs/images/chain-$$s.png > docs/images/chain-$$s.txt; done
 	@./$(TARGET) stress cycle framed docs/images/cycle-framed.png > docs/images/cycle-framed.txt
+	@for s in naive framed; do ./$(TARGET) 5 $$s docs/images/scene5-$$s.png > docs/images/scene5-$$s.txt; \
+	  for t in $(IMPACT_TIMES); do ./$(TARGET) 5 $$s docs/images/scene5-$$s-$$t.png $$t > /dev/null; done; done
 	@for s in $(MOTION_STEPS); do ./$(TARGET) 4 $$s docs/images/scene4-$$s.png > docs/images/scene4-$$s.txt; \
 	  for t in $(MOTION_TIMES); do ./$(TARGET) 4 $$s docs/images/scene4-$$s-$$t.png $$t > /dev/null; done; done
 	@./solver_test > docs/images/stress-results.txt || true

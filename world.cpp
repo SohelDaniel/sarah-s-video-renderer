@@ -44,6 +44,7 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 				thing.move(p.at(0.0f, p.center));
 				thing.rotate_around(p.center, 6.2831853f * p.turns, 0.0f, p.start, p.end);
 			}else{
+				// fly-by, or a hit's approach (stuck to its target below)
 				thing.move(p.from);
 				thing.move(p.to, p.start, p.end);
 			}
@@ -61,6 +62,12 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 		if(p.kind == motion_kind::orbits && p.around_path >= 0){
 			int parent = solved.plan().paths()[p.around_path].object;
 			objects[i].attach_to(&objects[parent]);
+		}
+		if(p.kind == motion_kind::hits){
+			// stick to what it hit, from the moment of impact (docs/18)
+			int target = p.around_path >= 0 ? solved.plan().paths()[p.around_path].object
+			                                : solved.parts().still_index[p.around];
+			objects[i].stick_to(&objects[target], p.end);
 		}
 	}
 
