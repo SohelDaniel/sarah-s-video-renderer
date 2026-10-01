@@ -148,6 +148,17 @@ void layout::solve(method how){
 	energy_log.clear();
 	halved = 0;
 	framed = false;
+	// The band can't take more than 40% of the picture: past the middle,
+	// nothing could ever be below it, and the camera would back off forever
+	// looking for a distance where everything fits (docs/31).
+	float most = 0.4f * float(picture_height);
+	if(top_band_px > most){
+		std::ostringstream note;
+		note << "the titles and formulas need " << int(top_band_px) << " pixels at the top, more than "
+		     << int(most) << " (40% of the picture); fewer at the same time would leave more room for the scene";
+		warnings.push_back(note.str());
+		top_band_px = most;
+	}
 	switch(how){
 		case method::naive:  place_naive();  method_name = "naive";  break;
 		case method::greedy: place_greedy(); method_name = "greedy"; break;
@@ -392,16 +403,14 @@ void layout::frame(){
 		else                      low_d  = mid;
 	}
 	camera_distance = high_d;
-	eye    = scene_center + view_direction(spec.view) * camera_distance;
-	target = scene_center;
+	place_camera(camera_distance);
 	framed = true;
 }
 
 // Does every sphere fit in the picture, with a 5% margin, when the camera
 // stands `distance` from the scene's center? (Moves the camera to check.)
 bool layout::fits_at(float distance,const std::vector<sphere>& spheres){
-	eye    = scene_center + view_direction(spec.view) * distance;
-	target = scene_center;
+	place_camera(distance);
 	for(const sphere& s : spheres){
 		if(!in_picture(s.center, s.radius, 0.95f, s.extra_px)) return false;
 	}
@@ -428,6 +437,20 @@ static camera_axes axes_of(const vec3& eye,const vec3& target){
 	a.right   = normalize(cross(a.forward, vec3(0.0f, 1.0f, 0.0f)));
 	a.up      = cross(a.right, a.forward);
 	return a;
+}
+
+// The camera, `distance` away from the scene's center in the view's
+// direction. With titles at the top (docs/31), the picture left for the
+// scene is the part below the band, and its middle is band/2 below the
+// picture's middle. So the camera tilts up a little: looking at a point
+// u · distance above the center turns the view by atan(u), and the center
+// then shows up exactly u (in tan units) below the middle.
+//      u = (band / 2) · (1 px in tan units)
+void layout::place_camera(float distance){
+	eye    = scene_center + view_direction(spec.view) * distance;
+	target = scene_center;
+	float u = 0.5f * top_band_px * px_to_tan();
+	target = scene_center + axes_of(eye, target).up * (u * distance);
 }
 
 layout::seen layout::look(int i,bool with_label)const{

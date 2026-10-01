@@ -30,6 +30,28 @@ margin. The solver reserves that much at the top of the picture:
 band = 12 + 40 · titles + 60 · formulas          labelled.dan: 12 + 40 + 60 = 112 pixels
 ```
 
+**Only the ones on screen at the same time count.** The world stacks just
+the titles and formulas that are showing right now, so the band is the
+**tallest stack at any moment**. A stack only grows when something starts,
+so it's enough to count at every start time (`words_band` in `solver.cpp`).
+`scenes/showcase.dan` has 3 titles and 2 formulas, but never more than 2
+titles and 1 formula at once:
+
+```
+at 0 s:   title 1, formula 1             40 + 60      = 100
+at 4 s:   titles 1 and 2, formula 1      40 + 40 + 60 = 140   ← the tallest
+at 12 s:  title 1, formula 2             40 + 60      = 100
+at 13 s:  titles 1 and 3, formula 2      40 + 40 + 60 = 140
+band = 12 + 140 = 152 pixels          (adding them all up would give 252)
+```
+
+That scene found the bug: with 252 of 480 pixels reserved, the band reached
+past the middle of the picture. An object at the center is then already
+"under the titles" at **any** distance, so the camera's search backed off to
+a distance of 172,600. Now the band is counted properly, and as a safety
+net it never takes more than 40% of the picture; past that, the report
+says the scene has too many words at once.
+
 The framing's "is it in the picture" test (15) then uses a lower top edge. In
 look()'s tan units (13), one pixel is
 
@@ -38,9 +60,24 @@ look()'s tan units (13), one pixel is
 top edge = tan(25°) − band · 0.00194 = 0.4663 − 112 · 0.00194 = 0.2487
 ```
 
-so an object's circle must stay below 0.2487 instead of 0.4663. The camera's
-binary search (14) handles the frame being uneven: it just finds the closest
-distance where everything clears the band.
+so an object's circle must stay below 0.2487 instead of 0.4663.
+
+**Aim at the middle of what's left.** The picture left for the scene runs
+from the band's bottom edge down to the picture's bottom, so its middle is
+**band/2 below** the picture's middle. If the camera kept aiming at the
+scene's center, the scene would sit in the middle of the whole picture, and
+the camera would have to back off until its top cleared the band, leaving
+the bottom empty. So the camera tilts up a little (`place_camera`): looking
+at a point u · distance above the center turns the view by atan(u), and the
+center then shows up exactly u below the middle.
+
+```
+u = (band / 2) · (1 px in tan units) = 56 · 0.00194 = 0.109       labelled.dan
+```
+
+The camera's binary search (14) then finds the closest distance where
+everything fits below the band. For `labelled.dan` the camera came in from
+30.7 to 21.2, and the bottom of the picture is used.
 
 The **label layout** gets the same band as a **keep-out** box: no label may be
 placed on it (`label_layout::keep_out`). The world uses the real height of
@@ -109,7 +146,7 @@ crowded one; scenes without labels pass trivially.
 | labels with room | 8 of 9 (the cube's is missing) | **9 of 9** |
 | anything under the title band | the ring, right against the formula | **nothing** |
 | `near cube` relations | ok | **weak** (within 4 instead of 2) |
-| camera distance | 11.4 | 30.7 |
+| camera distance | 11.4 | 21.2 (30.7 before the camera aimed below the band) |
 
 Room for nine labels round one cube has to come from somewhere: the objects
 spread out a little further than "near" allows, and the camera backs off to
@@ -124,3 +161,6 @@ A scene with 2 titles and no formulas. How tall is the band, and where's the
 top edge in tan units?
 
 Answer: 12 + 2 · 40 = 92 pixels; 0.4663 − 92 · 0.00194 = 0.2876.
+
+And if one title shows 0–5 s and the other 5–10 s? Then they're never on
+screen together: 12 + 40 = 52 pixels.

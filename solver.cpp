@@ -77,12 +77,32 @@ static float estimate_label_width(const object_spec& o){
 	return 0.6f * 20.0f * float(shown) + 6.0f;
 }
 
+// How tall the band at the top must be (docs/31): a title takes ~40 pixels
+// and a formula ~60, plus a 12-pixel margin. But only the ones showing at
+// the same moment are stacked (world.cpp), so it's the tallest stack at any
+// moment. The stack only grows when something starts, so checking at every
+// start time is enough.
+static float words_band(const scene_spec& s){
+	auto showing = [](const title_spec& w,float t){ return t >= w.start && (w.end < 0.0f || t < w.end); };
+	float tallest = 0.0f;
+	std::vector<float> starts;
+	for(const title_spec& w : s.titles) starts.push_back(w.start);
+	for(const title_spec& w : s.maths) starts.push_back(w.start);
+	for(float t : starts){
+		float stack = 0.0f;
+		for(const title_spec& w : s.titles) if(showing(w, t)) stack += 40.0f;
+		for(const title_spec& w : s.maths) if(showing(w, t)) stack += 60.0f;
+		tallest = std::max(tallest, stack);
+	}
+	return tallest > 0.0f ? 12.0f + tallest : 0.0f;
+}
+
 // Solve the still objects, and hand them to the motion planner as obstacles.
 std::vector<obstacle> scene_solver::solve_still(layout::method how){
-	// room for words (docs/31): a band at the top for each title (~40 px) and
-	// formula (~60 px), and every label's width
+	// room for words (docs/31): a band at the top for the titles and
+	// formulas, and every label's width
 	const scene_spec& s = split.still;
-	float band = (s.titles.empty() && s.maths.empty()) ? 0.0f : 12.0f + 40.0f * s.titles.size() + 60.0f * s.maths.size();
+	float band = words_band(s);
 	std::vector<float> widths;
 	for(const object_spec& o : s.objects) widths.push_back(estimate_label_width(o));
 	still_layout.set_words(band, widths, 480);

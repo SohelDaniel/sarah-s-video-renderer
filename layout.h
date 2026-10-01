@@ -151,6 +151,7 @@ private:
 	float scene_radius = 0.0f;
 	float camera_distance = 0.0f;
 	float sphere_distance = 0.0f;           // the safe (loose) distance from the sphere fit
+	void place_camera(float distance);   // eye and target, tilted down below the titles (docs/31)
 	bool fits_at(float distance,const std::vector<sphere>& spheres);
 	int count_hidden()const;
 	int count_off_screen()const;
