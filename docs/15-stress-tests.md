@@ -28,6 +28,7 @@ Code: `test_scenes.h/.cpp` (the scenes), `solver_test.cpp` (the checks),
 | `empty` | no objects at all |
 | `single` | one object |
 | `view_front`, `view_left`, `view_right` | the lazy scene from every camera direction |
+| `motion` | scene 4 from 16: orbits and a fly-by through a crowded spot, plus an unsupported moon |
 
 Any of them can be watched: `./main stress crowd`, or after one step,
 `./main stress crowd greedy picture.png`.
@@ -57,6 +58,7 @@ After the full solve (`framed`), every scene must pass:
 4. **everything is inside the picture**
 5. **its mistakes are reported**: at least as many errors as the scene has
 6. **moving objects never collide** (added with step E3, 16)
+7. **moving objects stay in the picture** at every moment (added with step E4, 16)
 
 If any check fails, `make test` fails.
 
@@ -173,6 +175,7 @@ From [stress-results.txt](images/stress-results.txt), after the full solve:
 | empty | 0 | 0 | 0 | 0 | 0 of 0 | 0 |
 | single | 1 | 0 | 0 | 0 | 0 of 0 | 0 |
 | view_front / left / right | 9 | 0 | 0 | 0 | 7 of 7 | 1 |
+| motion (added with 16) | 6, 3 of them moving | 0 | 0 | 0 | 1 of 1 | 1 |
 
 **ALL PASSED: 0 checks failed.**
 
