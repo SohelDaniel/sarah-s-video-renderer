@@ -22,6 +22,7 @@ layout::layout(const scene_spec& spec,const std::vector<float>& mesh_radii)
 		placed.push_back(p);
 	}
 	resolve_names();
+	drop_contradictions();
 	sort_by_dependencies();
 }
 
@@ -57,6 +58,48 @@ void layout::resolve_names(){
 				links[i].push_back({r.kind, found});
 			}
 		}
+	}
+}
+
+// The opposite of a direction relation (near has none).
+static bool opposite(relation_kind a,relation_kind b){
+	auto pair = [&](relation_kind x,relation_kind y){ return (a == x && b == y) || (a == y && b == x); };
+	return pair(relation_kind::left_of, relation_kind::right_of)
+	    || pair(relation_kind::above, relation_kind::below)
+	    || pair(relation_kind::in_front_of, relation_kind::behind);
+}
+
+// Relations that can't both be true:
+//   "c above d" and "c below d"        (the same object, opposite directions)
+//   "a left_of b" and "b left_of a"    (two objects, each on the same side of the other)
+// The one written first wins; the later one is reported and ignored, so the
+// solver isn't stuck pulling in two directions at once.
+void layout::drop_contradictions(){
+	for(size_t i = 0;i<links.size();i++){
+		std::vector<link> kept;
+		for(const link& l : links[i]){
+			std::string clash;
+			for(const link& k : kept){
+				if(k.other == l.other && opposite(k.kind, l.kind)){
+					clash = placed[i].name + " " + relation_name(k.kind) + " " + placed[k.other].name;
+				}
+			}
+			if(l.kind != relation_kind::near && size_t(l.other) < i){
+				// the other object came first: does it say the same about us?
+				for(const link& k : links[l.other]){
+					if(k.other == int(i) && k.kind == l.kind){
+						clash = placed[l.other].name + " " + relation_name(k.kind) + " " + placed[i].name;
+					}
+				}
+			}
+			if(clash.empty()){
+				kept.push_back(l);
+			}else{
+				errors.push_back(placed[i].name + " " + relation_name(l.kind) + " " + placed[l.other].name
+				                 + " contradicts " + clash + " (relation ignored)");
+			}
+		}
+		links[i] = kept;
 	}
 }
 

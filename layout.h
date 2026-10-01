@@ -90,6 +90,7 @@ private:
 	};
 
 	void resolve_names();
+	void drop_contradictions();
 	void sort_by_dependencies();
 	void place_naive();
 	void place_greedy();
