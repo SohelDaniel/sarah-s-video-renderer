@@ -26,7 +26,9 @@ object::object(const mesh& shape,px::Pixel color)
 	: shape(&shape),color(color){}
 
 object::object(const flat_shape& flat,px::Pixel color)
-	: flat(&flat), color(color){}
+	: flat(&flat), color(color){
+	first_flat = &flat;
+}
 
 void object::set_flat_look(flat_look l){
 	look = l;
@@ -35,6 +37,19 @@ void object::set_flat_look(flat_look l){
 void object::create(float start,float end){
 	create_start = start;
 	create_end = end;
+}
+
+// Worked out once (docs/43): both shapes' outlines as 128 points evenly
+// along their length, the new one turned the same way round and started
+// where it best matches, so during the morph point i just slides straight
+// from from_points[i] to to_points[i].
+void object::morph_to(const flat_shape& next,float start,float end){
+	const flat_shape* from = morphs.empty() ? first_flat : morphs.back().to;
+	if(!from || from->paths.empty() || next.paths.empty()) return;
+	const int n = 128;
+	std::vector<point2> a = resample(from->paths[0].points, n);
+	std::vector<point2> b = align_loop(a, resample(next.paths[0].points, n));
+	morphs.push_back({&next, start, end, a, b});
 }
 
 // ---- right away: change the starting pose ----
@@ -108,6 +123,25 @@ void object::update(float t){
 			graph = graph || p.role == flat_path::curve;
 		}
 		look = create_look((t - create_start) / (create_end - create_start), filled, graph);
+	}
+	if(!morphs.empty()){
+		// which shape it is now, or which two it's between
+		flat = first_flat;
+		for(const morph_step& m : morphs){
+			if(t >= m.end){ flat = m.to; continue; }
+			if(t >= m.start){
+				float f = smooth_curve((t - m.start) / (m.end - m.start));
+				flat_path p = m.to->paths[0];
+				p.points.resize(m.from_points.size());
+				for(size_t i = 0;i<p.points.size();i++){
+					p.points[i] = {m.from_points[i].x + (m.to_points[i].x - m.from_points[i].x) * f,
+					               m.from_points[i].y + (m.to_points[i].y - m.from_points[i].y) * f};
+				}
+				between.paths = {p};
+				flat = &between;
+			}
+			break;
+		}
 	}
 }
 

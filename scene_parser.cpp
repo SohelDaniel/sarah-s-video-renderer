@@ -215,6 +215,7 @@ static std::vector<token> tokenize(const std::string& source){
 //    fact       = name phrase { [","] phrase }
 //    property   = size | color | "important" | "filled" | create | label | phrase | ","
 //    create     = "create" [ time "-" time ]               (flat shapes only, docs/41)
+//    becomes    = "becomes" flat_shape "at" time "-" time   (flat shapes only, docs/43)
 //    graph      = "graph" text [ "from" number "to" number ]   (a shape, docs/42)
 //    (shape: a mesh word, or a flat one: circle square triangle hexagon star, docs/40)
 //    label      = "label" [ "math" ] text { "math" | time "-" time | "always" }
@@ -579,6 +580,26 @@ void parser::property(object_spec& o){
 		}
 		return;
 	}
+	if(t.value == "becomes"){
+		// becomes shape "at" time "-" time      (docs/43)
+		if(o.flat.empty() || o.flat == "graph") fail(t, "only flat shapes (" + join(flat_shape_words()) + ") can become another shape");
+		const token& s = next();
+		const std::vector<std::string>& flats = flat_shape_words();
+		if(s.kind != token_kind::word || std::find(flats.begin(), flats.end(), s.value) == flats.end()){
+			fail(s, "expected the shape it becomes, got " + describe(s) + did_you_mean(s.value, flats));
+		}
+		const token& at = next();
+		if(!(at.kind == token_kind::word && at.value == "at")) fail(at, "expected 'at' and when it changes, like: becomes circle at 3s-4s");
+		const token& from = peek();
+		float start = time("for when the change starts, like 3s");
+		const token& dash = next();
+		if(dash.kind != token_kind::dash) fail(dash, "expected '-' between the start and end times, like 3s-4s");
+		float end = time("for when the change is done, like 4s");
+		if(end <= start) fail(from, "the change has to end after it starts");
+		if(!o.changes.empty() && start < o.changes.back().end) fail(from, "the change can't start before the one before it is done (" + format_seconds(o.changes.back().end) + ")");
+		o.changes.push_back({s.value, start, end});
+		return;
+	}
 	if(t.value == "filled"){
 		if(o.flat.empty()) fail(t, "only flat shapes (" + join(flat_shape_words()) + ") can be filled");
 		o.filled = true;
@@ -673,7 +694,7 @@ void parser::phrase(object_spec& o,const token& first){
 		return;
 	}
 
-	std::vector<std::string> known = {"important", "orbits", "flies_past", "hits", "fades_in", "fades_out", "label", "filled", "create"};
+	std::vector<std::string> known = {"important", "orbits", "flies_past", "hits", "fades_in", "fades_out", "label", "filled", "create", "becomes"};
 	for(const auto& m : {keys_of(size_words), keys_of(color_words), keys_of(relation_words)}){
 		known.insert(known.end(), m.begin(), m.end());
 	}

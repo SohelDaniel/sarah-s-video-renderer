@@ -73,6 +73,7 @@ All the math is built on **vectors and matrices** (01).
 | 40 | [Flat shapes](40-flat-shapes.md) | How can a drawing look 2D from the camera but be 3D when you walk round it? | `shapes2d.cpp`, `render.cpp` |
 | 41 | [Create](41-create.md) | How does a shape draw itself in along its outline? | `shapes2d.cpp`, `object.cpp` |
 | 42 | [Graphs](42-graphs.md) | How does "sin(x)" become axes, ticks and a curve? | `expression.cpp`, `shapes2d.cpp` |
+| 43 | [Morph](43-morph.md) | How does a square melt into a circle without twisting? | `shapes2d.cpp`, `object.cpp` |
 | | [Ranges and settings](ranges.md) | What values make sense? | `camera.h`, `object.h` |
 | | [C++ notes](cpp-notes.md) | What does this syntax mean? | everywhere |
 | | [Design](design.md) | Why is the code split up like this? | everywhere |

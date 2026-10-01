@@ -255,3 +255,63 @@ flat_shape graph_shape(const expr_node& f,float x0,float x1,const font* digits){
 	}
 	return shape;
 }
+
+// ---------------------------------------------------------------------------
+//  Morph (docs/43).
+// ---------------------------------------------------------------------------
+
+std::vector<point2> resample(const std::vector<point2>& loop,int n){
+	std::vector<point2> out;
+	if(loop.empty() || n <= 0) return out;
+	size_t m = loop.size();
+	auto side_length = [&](size_t i){ return distance(loop[i], loop[(i + 1) % m]); };
+	float length = 0.0f;
+	for(size_t i = 0;i<m;i++) length += side_length(i);
+	// walk round the loop once, dropping a point every length / n
+	size_t side = 0;
+	float before = 0.0f;   // the length of all the sides before `side`
+	for(int k = 0;k<n;k++){
+		float want = length * float(k) / float(n);
+		while(side + 1 < m && before + side_length(side) < want){
+			before += side_length(side);
+			side++;
+		}
+		point2 a = loop[side], b = loop[(side + 1) % m];
+		float len = side_length(side);
+		float s = len > 0.0f ? (want - before) / len : 0.0f;
+		out.push_back({a.x + (b.x - a.x) * s, a.y + (b.y - a.y) * s});
+	}
+	return out;
+}
+
+// The shoelace formula: half the sum of x_i·y_{i+1} − x_{i+1}·y_i
+float signed_area(const std::vector<point2>& loop){
+	float twice = 0.0f;
+	for(size_t i = 0;i<loop.size();i++){
+		const point2& p = loop[i];
+		const point2& q = loop[(i + 1) % loop.size()];
+		twice += p.x * q.y - q.x * p.y;
+	}
+	return twice / 2.0f;
+}
+
+std::vector<point2> align_loop(const std::vector<point2>& a,std::vector<point2> b){
+	size_t n = b.size();
+	if(n == 0 || a.size() != n) return b;
+	// turned the other way round: reverse it (keeping its first point first)
+	if((signed_area(a) < 0.0f) != (signed_area(b) < 0.0f)) std::reverse(b.begin() + 1, b.end());
+	size_t best = 0;
+	float least = 1e30f;
+	for(size_t k = 0;k<n;k++){
+		float sum = 0.0f;
+		for(size_t i = 0;i<n;i++){
+			const point2& p = a[i];
+			const point2& q = b[(i + k) % n];
+			sum += (p.x - q.x) * (p.x - q.x) + (p.y - q.y) * (p.y - q.y);
+		}
+		if(sum < least){ least = sum; best = k; }
+	}
+	std::vector<point2> out(n);
+	for(size_t i = 0;i<n;i++) out[i] = b[(i + best) % n];
+	return out;
+}

@@ -871,6 +871,50 @@ static void test_graphs(){
 	      "'graph \"sin(x)\" from -3.14 to 3.14' is read; an unclosed '(' points at column 15; from 3 to -3 is a mistake");
 }
 
+// Morph (docs/43): one flat shape melting into another.
+static void test_morph(){
+	std::printf("\nmorph:\n");
+	flat_shape square = polygon_shape(4);
+	std::vector<point2> eight = resample(square.paths[0].points, 8);
+	const float c = 0.7071f;
+	std::vector<point2> expect = {{c, c}, {c, 0}, {c, -c}, {0, -c}, {-c, -c}, {-c, 0}, {-c, c}, {0, c}};
+	bool same = eight.size() == 8;
+	for(size_t i = 0;same && i<8;i++) same = std::fabs(eight[i].x - expect[i].x) < 1e-3f && std::fabs(eight[i].y - expect[i].y) < 1e-3f;
+	check(same, "a square resampled to 8 points: its 4 corners and the 4 middles of its sides");
+	check(std::fabs(signed_area(square.paths[0].points) + 2.0f) < 1e-4f,
+	      "its signed area is -2: area 2 (sides 1.414), negative because it goes clockwise");
+
+	std::vector<point2> turned(8), backwards(8);
+	for(size_t i = 0;i<8;i++) turned[i] = eight[(i + 3) % 8];
+	backwards[0] = eight[0];
+	for(size_t i = 1;i<8;i++) backwards[i] = eight[8 - i];
+	auto equal = [](const std::vector<point2>& a,const std::vector<point2>& b){
+		for(size_t i = 0;i<a.size();i++) if(std::fabs(a[i].x - b[i].x) > 1e-4f || std::fabs(a[i].y - b[i].y) > 1e-4f) return false;
+		return true;
+	};
+	check(equal(align_loop(eight, turned), eight), "the same square started 3 points later is lined back up (offset 3 is best)");
+	check(equal(align_loop(eight, backwards), eight), "the same square going the other way round is turned back first");
+
+	flat_shape ring = circle_shape();
+	object o(square, px::Pixel(255, 255, 255));
+	o.morph_to(ring, 1.0f, 2.0f);
+	o.update(0.5f);
+	bool before = o.flat_now() == &square;
+	o.update(1.0f);
+	std::vector<point2> start = o.flat_now()->paths[0].points;
+	std::vector<point2> square128 = resample(square.paths[0].points, 128);
+	o.update(2.5f);
+	check(before && start.size() == 128 && equal(start, square128) && o.flat_now() == &ring,
+	      "before the morph it's the square; at its start the 128 points are exactly the square's; after it, it's the circle");
+
+	parse_result ok = parse_scene("s = square becomes circle at 2s-3s becomes star at 4s-5s\n");
+	parse_result solid = parse_scene("c = cube becomes circle at 2s-3s\n");
+	parse_result overlap = parse_scene("s = square becomes circle at 2s-4s becomes star at 3s-5s\n");
+	check(ok.ok() && ok.spec.objects[0].changes.size() == 2 && ok.spec.objects[0].changes[1].shape == "star"
+	      && !solid.ok() && !overlap.ok(),
+	      "'becomes circle at 2s-3s becomes star at 4s-5s' is two changes; a cube can't, and changes can't overlap");
+}
+
 int main(){
 	test_clipping();
 	test_fly_camera();
@@ -893,6 +937,7 @@ int main(){
 	test_flat_shapes();
 	test_create();
 	test_graphs();
+	test_morph();
 	std::printf("\n%s: %d check%s failed\n", failures == 0 ? "ALL PASSED" : "FAILED", failures, failures == 1 ? "" : "s");
 	return failures == 0 ? 0 : 1;
 }

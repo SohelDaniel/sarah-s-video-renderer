@@ -1,0 +1,9 @@
+# Morph (docs/43): a flat shape melting into another, point by point, like
+# Manim's Transform. The square becomes a circle, then a star, then a
+# triangle; the circle turns into a hexagon.
+
+scene "morph"
+title "Morph"
+
+shape = square teal filled big important create 0s-1s becomes circle at 2s-3s becomes star at 4s-5s becomes triangle at 6s-7s
+other = circle yellow right_of shape becomes hexagon at 2s-4s

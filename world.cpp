@@ -26,6 +26,9 @@ std::vector<float> world::load_meshes(const scene_spec& spec){
 				flat_shapes.try_emplace(key, f.tree ? graph_shape(*f.tree, o.graph_from, o.graph_to, fonts::sans()) : flat_shape{});
 			}else{
 				flat_shapes.try_emplace(key, make_flat_shape(o.flat, o.filled));
+				for(const object_spec::flat_change& c : o.changes){
+					flat_shapes.try_emplace(c.shape + (o.filled ? " filled" : ""), make_flat_shape(c.shape, o.filled));
+				}
 			}
 			radii.push_back(o.flat == "graph" ? graph_scale : 1.0f);
 			continue;
@@ -78,6 +81,9 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 			vec3 d = normalize(solved.still().camera_eye() - solved.still().camera_target());
 			thing.rotate(std::atan2(d[0], d[2]), -std::asin(d[1]));
 			if(o.create_end >= 0.0f) thing.create(o.create_start, o.create_end);   // drawn in (docs/41)
+			for(const object_spec::flat_change& c : o.changes){
+				thing.morph_to(flat_shapes.at(c.shape + (o.filled ? " filled" : "")), c.start, c.end);   // docs/43
+			}
 		}
 		// the circle turns red in any frame where it overlaps something
 		thing.show_bounds();

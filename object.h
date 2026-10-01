@@ -28,10 +28,13 @@ public:
 	// a flat shape (docs/40): unit size, its plane is its own x and y
 	object(const flat_shape& flat,px::Pixel color);
 	bool is_flat()const{ return flat != nullptr; }
+	const flat_shape* flat_now()const{ return flat; }   // the flat shape drawn at the last update (tests)
 	// Create (docs/41): how much of a flat shape is drawn
 	void set_flat_look(flat_look look);
 	// draw a flat shape in from `start` to `end` (docs/41); nothing before start
 	void create(float start,float end);
+	// turn into another flat shape from `start` to `end` (docs/43), point by point
+	void morph_to(const flat_shape& next,float start,float end);
 
 	// ---- right away: sets how the object starts (at second 0) ----
 
@@ -94,6 +97,14 @@ private:
 	const flat_shape* flat = nullptr;  // drawn instead of a mesh if set
 	flat_look look;
 	float create_start = 0.0f, create_end = -1.0f;   // end < start: no Create, just there
+	struct morph_step{
+		const flat_shape* to;
+		float start, end;
+		std::vector<point2> from_points, to_points;   // resampled and lined up, once (docs/43)
+	};
+	std::vector<morph_step> morphs;
+	const flat_shape* first_flat = nullptr;   // the shape before any morph
+	flat_shape between;                       // the in-between shape, rebuilt each frame of a morph
 	px::Pixel color;
 	timeline<pose> motion;  // how it starts + every change scheduled on it
 	pose now;               // where it is at the current time (its own motion)

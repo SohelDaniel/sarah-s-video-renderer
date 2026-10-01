@@ -69,3 +69,15 @@ constexpr float graph_scale = 2.5f;
 // The gap between ticks for a range this long: 1, 2 or 5 times a power of
 // ten, the smallest that gives at most 10 ticks.
 float tick_step(float range);
+
+// ---- Morph (docs/43): one shape melting into another, point by point ----
+// A closed loop as n points spaced evenly along its length, starting at
+// its first point.
+std::vector<point2> resample(const std::vector<point2>& loop,int n);
+// Positive if the loop goes anticlockwise (y up), negative if clockwise.
+float signed_area(const std::vector<point2>& loop);
+// b's points put in the order that best matches a's (both n long): turned
+// the same way round as a, then started at the offset k that makes
+//   sum over i of |a[i] − b[(i + k) mod n]|²
+// smallest, so no point has to travel round the shape.
+std::vector<point2> align_loop(const std::vector<point2>& a,std::vector<point2> b);
