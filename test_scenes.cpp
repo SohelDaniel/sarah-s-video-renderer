@@ -84,6 +84,17 @@ static scene_spec labelled_scene(){
 	return spec;
 }
 
+// A probe flying past a planet that is itself going round the sun (docs/32).
+static scene_spec flyby_mover_scene(){
+	scene_spec spec;
+	spec.add("sun",    "shapes/sphere.obj",      px::Pixel(250, 200, 60), size_word::big, 10);
+	spec.add("rock",   "shapes/icosahedron.obj", colors[4]).near("sun");
+	spec.add("planet", "shapes/octahedron.obj",  colors[6]).orbits("sun", 1.0f, 0.0f, 20.0f);
+	spec.add("probe",  "shapes/cube.obj",        colors[0], size_word::small).flies_past("planet", 4.0f, 12.0f, rate::smooth);
+	spec.add("comet",  "shapes/pyramid.obj",     colors[5], size_word::small).flies_past("sun", 2.0f, 9.0f);
+	return spec;
+}
+
 // Every way a motion can't work.
 static scene_spec motion_mistakes(){
 	scene_spec spec;
@@ -94,7 +105,7 @@ static scene_spec motion_mistakes(){
 	spec.add("d",     "shapes/pyramid.obj",     colors[3]).orbits("d", 1.0f, 0.0f, 10.0f);     // itself
 	spec.add("e",     "shapes/torus.obj",       colors[4]).orbits("sun", 1.0f, 8.0f, 2.0f);    // ends before it starts
 	spec.add("f",     "shapes/sphere.obj",      colors[5], size_word::small).orbits("sun", 1.0f, 0.0f, 10.0f);
-	spec.add("g",     "shapes/tetrahedron.obj", colors[6], size_word::small).flies_past("f", 2.0f, 6.0f);  // past a mover
+	spec.add("g",     "shapes/tetrahedron.obj", colors[6], size_word::small).flies_past("f", 2.0f, 6.0f);  // past a mover: fine since docs/32
 	return spec;
 }
 
@@ -194,9 +205,10 @@ std::vector<test_scene> all_test_scenes(){
 		{"view_left",     "the lazy scene seen from the left, above",         seen_from(view_word::left_above),    1},
 		{"view_right",    "the lazy scene seen from the right, above",        seen_from(view_word::right_above),   1},
 		{"motion",        "orbits, a moon, and a fly-by crossing a crowded spot", lazy_motion_scene(),             0},
-		{"motion_typos",  "every way a motion can't work",                    motion_mistakes(),                   5},
+		{"motion_typos",  "every way a motion can't work",                    motion_mistakes(),                   4},
 		{"impact",        "collisions that are meant to happen, on time",     impact_scene(),                      0},
 		{"labelled",      "9 labelled objects under a title and a formula",   labelled_scene(),                    0},
+		{"flyby_mover",   "a fly-by past a planet that is itself orbiting",   flyby_mover_scene(),                 0},
 		{"eased",         "eased hits and fly-bys: faster at their fastest",  eased_scene(),                       0},
 	};
 }

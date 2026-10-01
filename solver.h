@@ -34,6 +34,7 @@ public:
 private:
 	// these run in the member initializers, in this order
 	std::vector<obstacle> solve_still(layout::method how);
+	std::vector<obstacle> obstacles()const;
 	std::vector<path> make_paths(const scene_spec& spec,const std::vector<float>& mesh_radii)const;
 
 	split_scene split;      // declared first: everything below is built from it

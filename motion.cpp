@@ -74,16 +74,6 @@ split_scene split_motion(const scene_spec& spec){
 		}
 	}
 
-	// 3. flying past something that moves isn't supported yet
-	for(int i = 0;i<n;i++){
-		if(moves[i] && spec.objects[i].motions[0].kind == motion_kind::flies_past && moves[target[i]]){
-			parts.errors.push_back(spec.objects[i].name + " flies_past " + spec.objects[i].motions[0].other + ": "
-			                       + spec.objects[i].motions[0].other + " moves too, and flying past something that"
-			                       " moves isn't supported yet (it stands still instead)");
-			moves[i] = false;
-		}
-	}
-
 	// 4. the still scene, without any relation that points at a mover
 	for(int i = 0;i<n;i++){
 		if(moves[i]){
@@ -160,6 +150,10 @@ vec3 motion_plan::position(size_t k,float t)const{
 	if(p.kind == motion_kind::hits && t >= p.end){
 		return p.to + (center - target_position(k, p.end));
 	}
+	if(p.kind == motion_kind::flies_past && p.around_path >= 0){
+		// past something that moves: from and to are measured from it (docs/32)
+		return center + p.at(t, center);
+	}
 	return p.at(t, center);
 }
 
@@ -180,6 +174,11 @@ float motion_plan::reach(size_t k)const{
 		if(moving[j].around_path != int(k)) continue;
 		if(moving[j].kind == motion_kind::orbits){
 			r = std::max(r, moving[j].orbit_radius + reach(j));
+		}else if(moving[j].kind == motion_kind::flies_past){
+			// its line is measured from k: the farthest point is one of the ends
+			const path& f = moving[j];
+			float far = std::max(std::sqrt(dot(f.from, f.from)), std::sqrt(dot(f.to, f.to)));
+			r = std::max(r, far + f.radius);
 		}else if(moving[j].kind == motion_kind::hits){
 			// something stuck to it: touching it, and sticking out by its own size
 			r = std::max(r, moving[k].radius + 2.0f * moving[j].radius);
@@ -236,6 +235,11 @@ void motion_plan::place_naive(){
 			p.start_angle  = 0.0f;
 		}else if(p.kind == motion_kind::hits){
 			continue;   // below, once every orbit has its radius
+		}else if(p.around_path >= 0){
+			// past something that moves: measured from it, so straight through it is (±half, 0, 0)
+			float half = 2.0f * (p.radius + moving[p.around_path].radius) + 3.0f;
+			p.from = vec3(-half, 0.0f, 0.0f);
+			p.to   = vec3(half, 0.0f, 0.0f);
 		}else{
 			const obstacle& other = still[p.around];
 			float half = 2.0f * (p.radius + other.radius) + 3.0f;
@@ -491,18 +495,26 @@ void motion_plan::plan_flights(){
 	for(size_t k = 0;k<moving.size();k++){
 		path& p = moving[k];
 		if(p.kind != motion_kind::flies_past) continue;
-		const obstacle& other = still[p.around];
-		float D = p.radius + other.radius + layout::gap;
-		float half = 2.0f * (p.radius + other.radius) + 3.0f;
+		// past something still: lines in the world, checked exactly against
+		// still things. Past something that moves (docs/32): the same lines,
+		// but measured from it, and checked by sampling, since there's no
+		// formula for a line that's itself moving.
+		bool moves = p.around_path >= 0;
+		float other_radius = moves ? moving[p.around_path].radius : still[p.around].radius;
+		vec3 base = moves ? vec3(0.0f, 0.0f, 0.0f) : still[p.around].position;
+		std::string other_name = moves ? moving[p.around_path].name : still[p.around].name;
+		float D = p.radius + other_radius + layout::gap;
+		float half = 2.0f * (p.radius + other_radius) + 3.0f;
 		vec3 along(half, 0.0f, 0.0f);
 
 		bool found = false;
 		for(float scale : {1.0f, 1.5f, 2.0f, 3.0f, 4.0f}){
 			for(const vec3& side : sides){
-				vec3 middle = other.position + side * (D * scale);
+				vec3 middle = base + side * (D * scale);
 				p.from = middle - along;
 				p.to   = middle + along;
-				if(clear_of_still(p) && clear_of_moving(k)){
+				bool clear = moves ? clear_of_still_sampled(k) : clear_of_still(p);
+				if(clear && clear_of_moving(k)){
 					found = true;
 					break;
 				}
@@ -510,7 +522,7 @@ void motion_plan::plan_flights(){
 			if(found) break;
 		}
 		if(!found){
-			warnings.push_back("no clear line for " + p.name + " flying past " + other.name
+			warnings.push_back("no clear line for " + p.name + " flying past " + other_name
 			                   + " (using the last one tried)");
 		}
 	}
@@ -536,6 +548,8 @@ std::vector<obstacle> motion_plan::bounds()const{
 				vec3 point = p.center + vec3(p.orbit_radius * std::cos(angle), 0.0f, -p.orbit_radius * std::sin(angle));
 				spheres.push_back({p.name, point, cover});
 			}
+		}else if(p.kind == motion_kind::flies_past && p.around_path >= 0){
+			continue;   // measured from a mover: inside that mover's reach (docs/32)
 		}else{
 			// fly-by, or the approach of a hit (once stuck, it rides along
 			// inside its target's reach)
@@ -656,7 +670,8 @@ std::string motion_plan::report()const{
 			    << p.to[0] << ", " << p.to[1] << ", " << p.to[2] << ") at " << p.end << " s, then sticks";
 		}else{
 			out << "from (" << p.from[0] << ", " << p.from[1] << ", " << p.from[2] << ") to ("
-			    << p.to[0] << ", " << p.to[1] << ", " << p.to[2] << ")";
+			    << p.to[0] << ", " << p.to[1] << ", " << p.to[2] << ")"
+			    << (p.around_path >= 0 ? " measured from " + moving[p.around_path].name : std::string(""));
 		}
 		out << "\n";
 	}

@@ -44,11 +44,11 @@ that object stands still instead:
 | around itself | `it can't move around itself` |
 | end ≤ start | `it ends before it starts` |
 | motions in a circle (a orbits b, b orbits a) | `the motions go round in a circle` |
-| flying **past** something that moves | `flying past something that moves isn't supported yet` |
 | a still object placed relative to a mover | `comet moves, so it can't be used to place things (relation ignored)` |
 
 **Orbiting** something that moves is fine: a moon around a planet that goes
-round the sun. The moon's circle travels along with its planet (17). (The
+round the sun. The moon's circle travels along with its planet (17). So is
+**flying past** something that moves, since 32: the line travels along too. (The
 first version of step E reported it as "not supported yet", which is what
 the stress test `motion_typos` still checks for the cases above.)
 

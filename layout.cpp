@@ -143,6 +143,11 @@ void layout::sort_by_dependencies(){
 }
 
 void layout::solve(method how){
+	// solving again starts fresh (docs/32 solves twice)
+	warnings.clear();
+	energy_log.clear();
+	halved = 0;
+	framed = false;
 	switch(how){
 		case method::naive:  place_naive();  method_name = "naive";  break;
 		case method::greedy: place_greedy(); method_name = "greedy"; break;
@@ -524,6 +529,10 @@ int layout::count_off_screen()const{
 
 void layout::include_in_frame(const vec3& center,float radius){
 	extra_bounds.push_back({center, radius});
+}
+
+void layout::clear_frame_extras(){
+	extra_bounds.clear();
 }
 
 void layout::reframe(){

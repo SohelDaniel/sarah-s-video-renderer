@@ -77,7 +77,8 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 		int k = solved.path_of(int(i));
 		if(k < 0) continue;
 		const path& p = solved.plan().paths()[k];
-		if(p.kind == motion_kind::orbits && p.around_path >= 0){
+		if((p.kind == motion_kind::orbits || p.kind == motion_kind::flies_past) && p.around_path >= 0){
+			// round or past something that moves: measured from it, so attached (docs/17, 32)
 			int parent = solved.plan().paths()[p.around_path].object;
 			objects[i].attach_to(&objects[parent]);
 		}

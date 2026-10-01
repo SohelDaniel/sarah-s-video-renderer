@@ -56,6 +56,7 @@ public:
 	// Make the automatic camera also fit this sphere (a motion path, docs/16),
 	// then place the camera again. Only does anything after method::framed.
 	void include_in_frame(const vec3& center,float radius);
+	void clear_frame_extras();
 	void reframe();
 
 	// mesh_radii[i] = bounding radius of object i's mesh at size 1

@@ -44,6 +44,7 @@ static std::string video_path;
 //   Ctrl faster), Esc = back to the scripted camera.
 //   ./main stress crowd                 one of the stress test scenes (docs/15)
 //   ./main stress crowd greedy x.png    ... after one solver step, saved as a picture
+//   ./main stress flyby_mover framed x.png 8    ... at 8 seconds
 //                                       (names: see test_scenes.cpp or `make test`)
 
 // Scene 1: the same scene as the old 3 pictures, but now as a video: first we say how
@@ -444,14 +445,14 @@ int main(int raw_argc,char** raw_argv){
 				found = true;
 				std::cout << t.name << ": " << t.attacks << "\n";
 				solved_scene(t.spec, still_step(argc > 3 ? argv[3] : "framed"), motion_plan::method::framed,
-				             argc > 4 ? argv[4] : "", 0.0f);
+				             argc > 4 ? argv[4] : "", argc > 5 ? std::stof(argv[5]) : 0.0f);
 			}
 			if(!found) throw std::invalid_argument(std::string("no test scene called \"") + argv[2] + "\"");
 		}
 		else {
 			std::cerr << "usage: ./main [1|2|3] [solver step] [picture.png]\n"
 			             "       ./main 4 [motion step] [picture.png] [time]\n"
-			             "       ./main stress <scene> [solver step] [picture.png]\n";
+			             "       ./main stress <scene> [solver step] [picture.png] [time]\n";
 			return 1;
 		}
 	} catch (const std::exception& e) {

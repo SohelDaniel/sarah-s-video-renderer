@@ -18,10 +18,28 @@ scene_solver::scene_solver(const scene_spec& spec,const std::vector<float>& mesh
 	  planner(solve_still(still_how), make_paths(spec, mesh_radii)){
 	planner.solve(moving_how);
 	// step E4: the camera also has to fit the paths
-	if(moving_how == motion_plan::method::framed){
+	if(moving_how == motion_plan::method::framed && !planner.paths().empty()){
+		// A second pass (docs/32). The paths change where the camera ends up,
+		// and the refinement un-hides things for the camera it knows about.
+		// So: solve the still objects again with this first guess at the
+		// paths already in the framing, plan the motion again around the new
+		// positions, and frame one last time.
+		std::vector<obstacle> first_guess = planner.bounds();
+		still_layout.clear_frame_extras();
+		for(const obstacle& b : first_guess) still_layout.include_in_frame(b.position, b.radius);
+		still_layout.solve(still_how);
+		planner = motion_plan(obstacles(), make_paths(spec, mesh_radii));
+		planner.solve(moving_how);
+		still_layout.clear_frame_extras();
 		for(const obstacle& b : planner.bounds()) still_layout.include_in_frame(b.position, b.radius);
 		still_layout.reframe();
 	}
+}
+
+std::vector<obstacle> scene_solver::obstacles()const{
+	std::vector<obstacle> list;
+	for(const placement& p : still_layout.result()) list.push_back({p.name, p.position, p.radius});
+	return list;
 }
 
 int scene_solver::moving_off_screen()const{
@@ -69,11 +87,7 @@ std::vector<obstacle> scene_solver::solve_still(layout::method how){
 	for(const object_spec& o : s.objects) widths.push_back(estimate_label_width(o));
 	still_layout.set_words(band, widths, 480);
 	still_layout.solve(how);
-	std::vector<obstacle> obstacles;
-	for(const placement& p : still_layout.result()){
-		obstacles.push_back({p.name, p.position, p.radius});
-	}
-	return obstacles;
+	return obstacles();
 }
 
 std::vector<path> scene_solver::make_paths(const scene_spec& spec,const std::vector<float>& mesh_radii)const{

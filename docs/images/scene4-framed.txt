@@ -7,8 +7,22 @@ layout (framed): 2 objects, 0 overlapping pairs, 0 pairs overlapping on screen
     ok      rock near sun
   1 of 1 relations satisfied
   camera: from front_above, looking at (0.00, 0.59, 0.00), scene radius 10.40, distance 19.90 (sphere fit: 25.85)
-          eye at (0.00, 7.58, 18.63)
+          eye at (0.00, 7.58, 18.64)
   refinement (energy should go down):
+    step   0   E =   0.0001   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0001)
+    step   1   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step   2   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step  50   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 100   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 150   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 200   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 250   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 300   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 350   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 400   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 450   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    step 500   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
+    steps halved because they went uphill: 162
     step   0   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
     step   1   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
     step   2   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
@@ -22,23 +36,9 @@ layout (framed): 2 objects, 0 overlapping pairs, 0 pairs overlapping on screen
     step 400   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
     step 450   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
     step 500   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
-    steps halved because they went uphill: 0
-    step   0   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
-    step   1   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
-    step   2   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
-    step  50   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
-    step 100   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
-    step 150   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
-    step 200   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
-    step 250   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
-    step 300   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
-    step 350   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
-    step 400   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
-    step 450   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
-    step 500   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
-    steps halved because they went uphill: 0
+    steps halved because they went uphill: 160
 motion (framed): 4 moving objects, 0 colliding pairs
-  checked every 0.0184 s (fastest moves 5.4450 per second)
+  checked every 0.0184 s (fastest moves 5.4464 per second)
   paths:
     planet1    orbits sun, 0.00-20.00 s: radius 5.60, 1.00 turns
     planet2    orbits sun, 0.00-20.00 s: radius 8.67, 2.00 turns

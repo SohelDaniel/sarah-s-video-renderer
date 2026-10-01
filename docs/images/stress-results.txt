@@ -50,23 +50,27 @@ view_right     naive       9       36      36     0     0 of 7       1        0 
 motion         naive       6        1       1     0     0 of 1       0        0      0      4        0
                greedy      6        0       0     0     1 of 1       0        0      0      4        0
                refined     6        0       0     0     1 of 1       0        0      0      4        0
-               framed      6        0       0     0     1 of 1       0        0      0      4        0
-motion_typos   naive       8       15      15     0     0 of 0       5        0      0      2        0
-               greedy      8        0       5     0     0 of 0       5        0      0      2        0
-               refined     8        0       0     0     0 of 0       5        0    169      2        0
-               framed      8        0       0     0     0 of 0       5        0    320      2        0
+               framed      6        0       0     0     1 of 1       0        0    322      4        0
+motion_typos   naive       8       10      10     0     0 of 0       4        0      0      3        0
+               greedy      8        0       3     0     0 of 0       4        0      0      3        0
+               refined     8        0       0     0     0 of 0       4        0    169      3        0
+               framed      8        0       0     0     0 of 0       4        0    340      3        0
 impact         naive       5        1       1     0     0 of 1       0        0      0      3        2
                greedy      5        0       0     0     1 of 1       0        0      0      3        0
                refined     5        0       0     0     1 of 1       0        0      0      3        0
-               framed      5        0       0     0     1 of 1       0        0      0      3        0
+               framed      5        0       0     0     1 of 1       0        0    320      3        0
 labelled       naive       9       36      36     0     0 of 8       0        0      0      0        0
                greedy      9        0       8     0     8 of 8       0        0      0      0        0
                refined     9        0       0     3     0 of 8       0        0    178      0        0
                framed      9        0       0     0     0 of 8       0        0    341      0        0
+flyby_mover    naive       5        1       1     0     0 of 1       0        0      0      3        0
+               greedy      5        0       0     0     1 of 1       0        0      0      3        0
+               refined     5        0       0     0     1 of 1       0        0      0      3        0
+               framed      5        0       0     0     1 of 1       0        0    327      3        0
 eased          naive       6        1       1     0     0 of 1       0        0      0      4        2
                greedy      6        0       0     0     1 of 1       0        0      0      4        0
                refined     6        0       0     0     1 of 1       0        0      0      4        0
-               framed      6        0       0     0     1 of 1       0        0      0      4        0
+               framed      6        0       0     0     1 of 1       0        0    160      4        0
 
 checks:
   PASS  lazy           every position is a real number (no NaN / infinity)
@@ -208,7 +212,7 @@ checks:
   PASS  motion_typos   moving objects never collide (0 pairs)
   PASS  motion_typos   planned hits touch exactly on time (0 of 0)
   PASS  motion_typos   moving objects stay in the picture (0 leave it)
-  PASS  motion_typos   reports its mistakes (5 of at least 5)
+  PASS  motion_typos   reports its mistakes (4 of at least 4)
   PASS  impact         every position is a real number (no NaN / infinity)
   PASS  impact         solving twice gives exactly the same layout
   PASS  impact         no overlaps after framing (0)
@@ -229,6 +233,16 @@ checks:
   PASS  labelled       planned hits touch exactly on time (0 of 0)
   PASS  labelled       moving objects stay in the picture (0 leave it)
   PASS  labelled       reports its mistakes (0 of at least 0)
+  PASS  flyby_mover    every position is a real number (no NaN / infinity)
+  PASS  flyby_mover    solving twice gives exactly the same layout
+  PASS  flyby_mover    no overlaps after framing (0)
+  PASS  flyby_mover    everything inside the picture (0 outside)
+  PASS  flyby_mover    nothing hidden behind something else on screen (0 pairs)
+  PASS  flyby_mover    every label has room next to its object (0 without)
+  PASS  flyby_mover    moving objects never collide (0 pairs)
+  PASS  flyby_mover    planned hits touch exactly on time (0 of 0)
+  PASS  flyby_mover    moving objects stay in the picture (0 leave it)
+  PASS  flyby_mover    reports its mistakes (0 of at least 0)
   PASS  eased          every position is a real number (no NaN / infinity)
   PASS  eased          solving twice gives exactly the same layout
   PASS  eased          no overlaps after framing (0)

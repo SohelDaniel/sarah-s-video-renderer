@@ -39,12 +39,12 @@ future is already known.
 
 ### Worked example: scene 5
 
-The planet orbits the sun with R = 6.33 (why 6.33: see section 4), 1 turn in
+The planet orbits the sun with R = 6.35 (why 6.35: see section 4), 1 turn in
 20 s. At T = 12 s:
 
 ```
 angle = 2π · 12/20 = 216°
-planet(12) = (6.33 · cos 216°, 0, −6.33 · sin 216°) = (−5.12, 0, 3.72)
+planet(12) = (6.35 · cos 216°, 0, −6.35 · sin 216°) = (−5.14, 0, 3.73)
 ```
 
 The comet (r = 0.87, a small pyramid) and the planet (r = 0.8):
@@ -52,14 +52,14 @@ The comet (r = 0.87, a small pyramid) and the planet (r = 0.8):
 ```
 touch distance = 0.87 + 0.80 = 1.67
 n = in front, (0, 0, 1)        (the first direction that's clear, section 3)
-contact = (−5.12, 0, 3.72) + (0, 0, 1.67)  = (−5.12, 0, 5.39)
-start   = contact + n · (2 · 1.67 + 3)     = (−5.12, 0, 11.72)
+contact = (−5.14, 0, 3.73) + (0, 0, 1.67)  = (−5.14, 0, 5.40)
+start   = contact + n · (2 · 1.67 + 3)     = (−5.14, 0, 11.73)
 ```
 
 The report ([scene5-framed.txt](images/scene5-framed.txt)):
 
 ```
-comet      hits planet (which moves), 8.00-12.00 s: from (-5.12, 0.00, 11.72), touching at (-5.12, 0.00, 5.39) at 12.00 s, then sticks
+comet      hits planet (which moves), 8.00-12.00 s: from (-5.14, 0.00, 11.73), touching at (-5.14, 0.00, 5.40) at 12.00 s, then sticks
 planned hit: comet touches planet at 12.00 s (gap 0.00) as planned
 ```
 
@@ -77,7 +77,7 @@ window = 2 · gap / speed            (the time to cover the last gap, twice over
 ```
 
 ```
-comet speed = |start − contact| / 4 s = 6.33 / 4 = 1.58 per second
+comet speed = |start − contact| / 4 s = 6.33 / 4 = 1.58 per second   (11.73 − 5.40)
 window      = 2 · 0.4 / 1.58 = 0.51 s      → the pair may touch from 11.49 s on
 ```
 
@@ -121,11 +121,11 @@ After impact, the comet keeps the offset it had at that moment (17, `stick_to`):
 comet(t) = contact + (planet(t) − planet(T))          for t ≥ T
 ```
 
-At t = 16 s, the planet is at angle 288°: (1.96, 0, 6.02).
+At t = 16 s, the planet is at angle 288°: (1.96, 0, 6.04).
 
 ```
-comet(16) = (−5.12, 0, 5.39) + ((1.96, 0, 6.02) − (−5.12, 0, 3.72))
-          = (−5.12 + 7.08, 0, 5.39 + 2.30) = (1.96, 0, 7.69)
+comet(16) = (−5.14, 0, 5.40) + ((1.96, 0, 6.04) − (−5.14, 0, 3.73))
+          = (−5.14 + 7.10, 0, 5.40 + 2.31) = (1.96, 0, 7.71)
 offset from the planet = (0, 0, 1.67)              still touching, same side ✓
 ```
 
@@ -136,12 +136,12 @@ moon (16, reach): for planning its own orbit, the planet counts as
 reach = r_planet + 2 · r_comet = 0.80 + 2 · 0.87 = 2.53
 ```
 
-That's why its orbit is 6.33 and not smaller:
+That's why its orbit is 6.35 and not smaller:
 
 ```
 smallest: 2.53 + 1.4 + 0.4 = 4.33
-the rock (at h = 2.6, r = 0.8) rules out 2.6 ± (2.53 + 0.8 + 0.4) = −1.13 .. 6.33
-→ R = 6.33
+the rock (at h = 2.62, r = 0.8) rules out 2.62 ± (2.53 + 0.8 + 0.4) = −1.11 .. 6.35
+→ R = 6.35
 ```
 
 Without that, the comet would hit the rock once it's stuck and riding along.
@@ -167,11 +167,11 @@ The circles stay grey: touching isn't overlapping. The stress tests have
 ## Try it on paper
 
 1. The meteor (r = 0.5) hits the rock (r = 0.8, standing still at
-   (2.6, 0, 0)) at 6 s, coming in from the front. Where does it touch, and
+   (2.62, 0, 0)) at 6 s, coming in from the front. Where does it touch, and
    where does its 3 s flight start?
 2. How long is its window?
 
-Answers: 1. contact = (2.6, 0, 0) + (0, 0, 1.3) = (2.6, 0, 1.3); start =
-contact + (0, 0, 2 · 1.3 + 3) = (2.6, 0, 6.9). (The report says the same.)
+Answers: 1. contact = (2.62, 0, 0) + (0, 0, 1.3) = (2.62, 0, 1.3); start =
+contact + (0, 0, 2 · 1.3 + 3) = (2.62, 0, 6.9). (The report says the same.)
 2. Speed = 5.6 / 3 = 1.87 per second, window = 0.8 / 1.87 = 0.43 s, so from
 5.57 s on.
