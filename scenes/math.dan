@@ -1,0 +1,10 @@
+# Math (docs/30): formulas, shown under the title, each for its own time.
+
+scene "math"
+title "Gravity"
+math "F = G\frac{m_1 m_2}{r^2}" 0s-10s
+math "a^2 + b^2 = c^2,  \sqrt{x_1^2 + x_2^2}" 10s-20s
+
+sun    = sphere big gold important label "m_1"
+planet = octahedron red orbits sun 1 turn 0s-20s label "m_2"
+arrow sun planet gold

@@ -2,6 +2,7 @@
 #include "camera.h"
 #include "mat4.h"
 #include "mesh.h"
+#include "math_layout.h"
 #include "pixel.h"
 #include <string>
 #include <vector>
@@ -56,6 +57,10 @@ public:
 	// How wide and tall that text will be, in pixels
 	static float text_width(const std::string& text,float size);
 	static float text_height(float size);
+
+	// A laid-out formula (docs/30), its top-left corner at (x, y) on the
+	// finished picture; `opacity` fades it (docs/24). Drawn last, with the text.
+	void draw_math(float x,float y,const math_box& formula,px::Pixel color,float opacity = 1.0f);
 
 	// The 8x8 bitmap font (docs/27): each font pixel a scale x scale square.
 	void draw_bitmap_text(int x,int y,const std::string& text,int scale,px::Pixel color);
@@ -137,6 +142,14 @@ private:
 		px::Pixel color;
 	};
 	std::vector<screen_line> screen_lines;   // waiting for finish()
+
+	struct math_item{
+		float x, y;
+		math_box formula;
+		px::Pixel color;
+	};
+	std::vector<math_item> maths;      // waiting for finish()
+	void paint_math(const math_item& m,float dx,float dy,px::Pixel color);
 	void paint_text(const text_item& t,int dx,int dy,px::Pixel color);
 	void paint_outline_text(const text_item& t,float dx,float dy,px::Pixel color);
 	void rasterize_line(const line& l);

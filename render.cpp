@@ -38,6 +38,7 @@ void render::begin(const camera& cam){
 	lines.clear();
 	texts.clear();
 	screen_lines.clear();
+	maths.clear();
 }
 
 void render::draw_mesh(const mesh& model,const mat4<float>& model_matrix,px::Pixel color){
@@ -422,6 +423,53 @@ void render::finish(){
 		}
 	}
 	texts.clear();
+
+	// formulas (docs/30): the same soft shadow, then the glyphs and bars
+	for(const math_item& m : maths){
+		px::Pixel shadow(0, 0, 0, uint8_t(170 * m.color.a / 255));
+		paint_math(m, 1.5f, 1.5f, shadow);
+		paint_math(m, 0.0f, 0.0f, m.color);
+	}
+	maths.clear();
+}
+
+void render::draw_math(float x,float y,const math_box& formula,px::Pixel color,float opacity){
+	if(opacity <= 0.0f) return;
+	color.a = uint8_t(std::lround(color.a * std::clamp(opacity, 0.0f, 1.0f)));
+	maths.push_back({x, y, formula, color});
+}
+
+// Every glyph of the formula at its place (the baseline is `height` below
+// the top), and every bar filled with smooth top and bottom edges.
+void render::paint_math(const math_item& m,float dx,float dy,px::Pixel color){
+	px::Image& picture = out();
+	float baseline = m.y + dy + m.formula.height;
+	auto blend = [&](int x,int y,float c){
+		if(c <= 0.0f) return;
+		px::Pixel p = color;
+		p.a = uint8_t(std::lround(color.a * std::min(1.0f, c)));
+		picture.Draw(x, y, p);
+	};
+	for(const math_glyph& g : m.formula.glyphs){
+		const font::glyph& shape = g.face->get(g.codepoint, g.size);
+		int left = int(std::lround(m.x + dx + g.x)) + shape.left;
+		int top = int(std::lround(baseline + g.y)) + shape.top;
+		for(int y = 0;y<shape.height;y++){
+			for(int x = 0;x<shape.width;x++) blend(left + x, top + y, shape.coverage[size_t(y) * shape.width + x]);
+		}
+	}
+	for(const math_rule& r : m.formula.rules){
+		float x0 = m.x + dx + r.x, x1 = x0 + r.width;
+		float y0 = baseline + r.y, y1 = y0 + r.height;
+		for(int y = int(std::floor(y0));y<int(std::ceil(y1));y++){
+			// how much of this pixel row the bar covers: its overlap with [y, y+1]
+			float rows = std::min(y1, float(y + 1)) - std::max(y0, float(y));
+			for(int x = int(std::floor(x0));x<int(std::ceil(x1));x++){
+				float cols = std::min(x1, float(x + 1)) - std::max(x0, float(x));
+				blend(x, y, rows * cols);
+			}
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------

@@ -9,6 +9,7 @@
 #include "font.h"
 #include "label_layout.h"
 #include "live_scene.h"
+#include "math_layout.h"
 #include "render.h"
 #include "scene_parser.h"
 #include "test_scenes.h"
@@ -175,6 +176,37 @@ static void test_fonts(){
 		check(middle == 0.0f, "the middle of an 'o' is empty: its inner loop makes the hole");
 		check(!sans->get(960, 30).coverage.empty(), "pi has an outline (the font has Greek)");
 	}
+}
+
+// ---- math (docs/30) ----
+static void test_math(){
+	std::printf("math:\n");
+	math_parse_result x2 = parse_math("x^2");
+	check(x2.error.empty(), "x^2 parses");
+	if(fonts::serif() && fonts::italic() && x2.error.empty()){
+		math_box b = layout_math(*x2.tree, 30.0f);
+		bool shape = b.glyphs.size() == 2;
+		float expected_x = fonts::italic()->advance('x', 30) + 30 * 0.04f;
+		check(shape && b.glyphs[1].size == 21.0f && b.glyphs[1].y == -13.5f && std::fabs(b.glyphs[1].x - expected_x) < 1e-4f,
+		      "the 2 in x^2 is 70% size (21 px), raised 0.45 em (13.5 px), right after the x");
+
+		math_parse_result half = parse_math("\\frac{1}{2}");
+		math_box f = layout_math(*half.tree, 30.0f);
+		bool ok = f.glyphs.size() == 2 && f.rules.size() == 1;
+		check(ok && f.glyphs[0].y < f.rules[0].y && f.glyphs[1].y > f.rules[0].y + f.rules[0].height,
+		      "\\frac{1}{2}: the 1 above the bar, the 2 below it");
+		check(ok && f.rules[0].width == f.width && f.glyphs[0].size == 25.5f, "the bar is as wide as the fraction; top and bottom are 85% size (25.5 px)");
+	}
+	math_parse_result pi = parse_math("\\pi");
+	check(pi.error.empty() && pi.tree->parts.size() == 1 && pi.tree->parts[0]->codepoint == 960, "\\pi is the character 960");
+
+	math_parse_result typo = parse_math("\\frax{1}{2}");
+	check(typo.column == 1 && typo.error.find("did you mean \\frac") != std::string::npos, "\\frax: unknown, at column 1, did you mean \\frac");
+	math_parse_result open = parse_math("x^{2");
+	check(open.column == 3 && open.error.find("never closed") != std::string::npos, "x^{2: the { at column 3 is never closed");
+
+	parse_result scene = parse_scene("math \"E = mc^\" 0s-5s\n");
+	check(!scene.ok() && scene.errors[0].column == 13, "a broken formula in a .dan file points at the exact character: the ^ in column 13");
 }
 
 // ---- labels (docs/28): the original notes, replayed ----
@@ -467,6 +499,7 @@ int main(){
 	test_clipping();
 	test_fly_camera();
 	test_fonts();
+	test_math();
 	test_labels();
 	test_text();
 	test_lines();

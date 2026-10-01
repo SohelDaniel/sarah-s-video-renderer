@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include "font.h"
+#include "math_layout.h"
 
 
 std::vector<float> world::load_meshes(const scene_spec& spec){
@@ -83,6 +85,11 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 	cam.point_at(solved.still().camera_target());
 
 	titles.assign(spec.titles.begin(), spec.titles.end());
+	// formulas are laid out once (docs/30); the parser already checked them
+	for(const title_spec& m : spec.maths){
+		math_parse_result parsed = parse_math(m.text);
+		if(parsed.tree && fonts::serif() && fonts::italic()) maths.push_back({m, layout_math(*parsed.tree, 30.0f)});
+	}
 
 	// arrows (docs/26): look the names up once
 	auto find = [&](const std::string& name){
@@ -117,6 +124,13 @@ void world::draw_overlays(render& renderer,float t){
 		float x = (cam.width - render::text_width(s.text, size)) / 2.0f;
 		renderer.draw_text(x, top, s.text, size, px::Pixel(240, 240, 245));
 		top += render::text_height(size) + 6.0f;
+	}
+	// formulas under the titles, centered, each during its own time range
+	for(const world_math& m : maths){
+		if(t < m.when.start || (m.when.end >= 0.0f && t > m.when.end)) continue;
+		float x = (cam.width - m.formula.width) / 2.0f;
+		renderer.draw_math(x, top + 4.0f, m.formula, px::Pixel(240, 240, 245));
+		top += m.formula.height + m.formula.depth + 12.0f;
 	}
 
 	for(const world_arrow& a : arrows){

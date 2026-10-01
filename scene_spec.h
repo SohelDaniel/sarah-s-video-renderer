@@ -199,6 +199,7 @@ public:
 	}
 	std::deque<arrow_spec> arrows;
 	std::deque<title_spec> titles;
+	std::deque<title_spec> maths;    // formulas (docs/30), shown under the titles
 
 	object_spec& add(const std::string& name,const std::string& mesh_file,px::Pixel color,
 	                 size_word size = size_word::normal,int importance = 1){

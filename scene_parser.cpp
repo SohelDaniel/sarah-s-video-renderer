@@ -1,4 +1,5 @@
 #include "scene_parser.h"
+#include "math_layout.h"
 
 #include <algorithm>
 #include <cctype>
@@ -204,6 +205,7 @@ static std::vector<token> tokenize(const std::string& source){
 //    line       = [ header | arrow | definition | fact ] end_of_line
 //    arrow      = "arrow" name name [ color ] [ time "-" time ]
 //    title      = "title" text [ time "-" time ]
+//    math       = "math" text [ time "-" time ]          (the text is checked by parse_math, docs/30)
 //    header     = "scene" [ text ] [ "view" view_word ]
 //    definition = name "=" shape { property }
 //    fact       = name phrase { [","] phrase }
@@ -243,6 +245,7 @@ private:
 	void header();
 	void arrow();
 	void title();
+	void formula();
 	void definition();
 	void fact();
 	void property(object_spec& o);
@@ -322,6 +325,7 @@ void parser::line(){
 	if(first.value == "scene"){ header(); return; }
 	if(first.value == "arrow" && tokens[pos + 1].kind != token_kind::equals){ arrow(); return; }
 	if(first.value == "title" && tokens[pos + 1].kind != token_kind::equals){ title(); return; }
+	if(first.value == "math" && tokens[pos + 1].kind != token_kind::equals){ formula(); return; }
 	if(tokens[pos + 1].kind == token_kind::equals){ definition(); return; }
 
 	// a fact: remember where it is, skip it for now
@@ -384,6 +388,29 @@ void parser::title(){
 	}
 	if(!at_end_of_line()) fail(peek(), "unexpected " + describe(peek()) + " after the title");
 	result.spec.titles.push_back(s);
+}
+
+// math = "math" text [ time "-" time ]      (docs/30)
+void parser::formula(){
+	next();   // "math"
+	const token& words = next();
+	if(words.kind != token_kind::text) fail(words, "expected the formula in quotes, like: math \"E = mc^2\" 0s-5s");
+	math_parse_result check = parse_math(words.value);
+	if(!check.error.empty()){
+		// point at the exact character: the text starts one column after its quote
+		token at = words;
+		at.column = words.column + check.column;
+		fail(at, "in the formula: " + check.error);
+	}
+	title_spec s{words.value, 0.0f, -1.0f};
+	if(peek().kind == token_kind::time){
+		s.start = time("");
+		const token& dash = next();
+		if(dash.kind != token_kind::dash) fail(dash, "expected '-' between the start and end times, like 0s-5s");
+		s.end = time("for when the formula goes away, like 5s");
+	}
+	if(!at_end_of_line()) fail(peek(), "unexpected " + describe(peek()) + " after the formula");
+	result.spec.maths.push_back(s);
 }
 
 // definition = name "=" shape { property }

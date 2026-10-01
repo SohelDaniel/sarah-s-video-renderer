@@ -55,6 +55,11 @@ private:
 	};
 	std::vector<world_arrow> arrows;
 	std::vector<title_spec> titles;
+	struct world_math{
+		title_spec when;
+		math_box formula;
+	};
+	std::vector<world_math> maths;
 	std::vector<std::string> labels;      // labels[i] = object i's label ("" = none)
 	label_layout placer;
 	std::vector<std::string> arrow_errors;

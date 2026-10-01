@@ -7,14 +7,14 @@ SDL_CFLAGS = $(shell pkg-config --cflags sdl3)
 SDL_LIBS   = $(shell pkg-config --libs sdl3)
 
 TARGET  = main
-SOURCES = main.cpp camera.cpp fly_camera.cpp font.cpp label_layout.cpp layout.cpp live_scene.cpp mesh.cpp motion.cpp object.cpp player.cpp render.cpp scene_parser.cpp solver.cpp test_scenes.cpp vec3.cpp window.cpp world.cpp
+SOURCES = main.cpp camera.cpp fly_camera.cpp font.cpp label_layout.cpp math_layout.cpp layout.cpp live_scene.cpp mesh.cpp motion.cpp object.cpp player.cpp render.cpp scene_parser.cpp solver.cpp test_scenes.cpp vec3.cpp window.cpp world.cpp
 
 # The solver's stress tests: no window, so no SDL (docs/15).
 TEST_TARGET  = solver_test
 TEST_SOURCES = solver_test.cpp layout.cpp mesh.cpp motion.cpp solver.cpp test_scenes.cpp vec3.cpp
 # The engine's own tests (docs/19-21): also no SDL
 ENGINE_TEST         = engine_test
-ENGINE_TEST_SOURCES = engine_test.cpp camera.cpp fly_camera.cpp font.cpp label_layout.cpp layout.cpp live_scene.cpp mesh.cpp motion.cpp object.cpp render.cpp scene_parser.cpp solver.cpp test_scenes.cpp vec3.cpp world.cpp
+ENGINE_TEST_SOURCES = engine_test.cpp camera.cpp fly_camera.cpp font.cpp label_layout.cpp math_layout.cpp layout.cpp live_scene.cpp mesh.cpp motion.cpp object.cpp render.cpp scene_parser.cpp solver.cpp test_scenes.cpp vec3.cpp world.cpp
 HEADERS = $(wildcard *.h)
 
 .PHONY: all run stills test clean
@@ -55,6 +55,7 @@ stills: $(TARGET) $(TEST_TARGET)
 	@for t in 7 10; do ./$(TARGET) scenes/arrows.dan framed docs/images/arrows-$$t.png $$t --aa > /dev/null; done
 	@./$(TARGET) scenes/arrows.dan framed docs/images/text-title.png 7 --aa > /dev/null
 	@for t in 2 8 14; do ./$(TARGET) scenes/labels.dan framed docs/images/labels-$$t.png $$t --aa > /dev/null; done
+	@for t in 3 13; do ./$(TARGET) scenes/math.dan framed docs/images/math-$$t.png $$t --aa > /dev/null; done
 	@rm -f scenes/*.report
 	@./solver_test > docs/images/stress-results.txt || true
 	@# our PNG writer doesn't compress (docs/pixel.h); macOS's sips can, ~50x smaller
