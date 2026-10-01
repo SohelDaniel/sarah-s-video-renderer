@@ -9,7 +9,7 @@ layout (refined): 9 objects, 0 overlapping pairs, 0 pairs overlapping on screen
     pyramid     normal  r= 1.39  at (  0.00,   5.06,  -0.32)
     torus       normal  r= 0.80  at (  1.54,  -3.64,   0.06)
     tetrahedron small   r= 0.50  at (  0.00,   2.29,  -4.18)
-    octahedron  small   r= 0.50  at (  3.20,   0.71,  -2.62)
+    octahedron  small   r= 0.50  at (  3.20,   0.70,  -2.61)
   relations:
     ok      sphere near cube
     ok      cone near cube
@@ -23,17 +23,17 @@ layout (refined): 9 objects, 0 overlapping pairs, 0 pairs overlapping on screen
     step   0   E = 227.6333   (spring 0.0000, push 0.0000, relations 0.0000, screen 227.6333)
     step   1   E =  68.1100   (spring 2.7921, push 0.0000, relations 0.0000, screen 65.3179)
     step   2   E =  29.9342   (spring 5.2642, push 0.0000, relations 0.0000, screen 24.6700)
-    step  50   E =   9.9892   (spring 9.3588, push 0.0000, relations 0.0000, screen 0.6304)
-    step 100   E =   9.9806   (spring 9.3519, push 0.0000, relations 0.0000, screen 0.6286)
-    step 150   E =   9.9787   (spring 9.3503, push 0.0000, relations 0.0000, screen 0.6285)
-    step 200   E =   9.9783   (spring 9.3500, push 0.0000, relations 0.0000, screen 0.6283)
-    step 250   E =   9.9782   (spring 9.3500, push 0.0000, relations 0.0000, screen 0.6282)
-    step 300   E =   9.9782   (spring 9.3504, push 0.0000, relations 0.0000, screen 0.6278)
-    step 350   E =   9.9782   (spring 9.3499, push 0.0000, relations 0.0000, screen 0.6283)
-    step 400   E =   9.9782   (spring 9.3505, push 0.0000, relations 0.0000, screen 0.6277)
-    step 450   E =   9.9782   (spring 9.3501, push 0.0000, relations 0.0000, screen 0.6281)
-    step 500   E =   9.9783   (spring 9.3508, push 0.0000, relations 0.0000, screen 0.6275)
-    steps halved because they went uphill: 160
+    step  50   E =   9.9892   (spring 9.3596, push 0.0000, relations 0.0000, screen 0.6296)
+    step 100   E =   9.9806   (spring 9.3518, push 0.0000, relations 0.0000, screen 0.6288)
+    step 150   E =   9.9787   (spring 9.3501, push 0.0000, relations 0.0000, screen 0.6287)
+    step 200   E =   9.9783   (spring 9.3498, push 0.0000, relations 0.0000, screen 0.6285)
+    step 250   E =   9.9782   (spring 9.3497, push 0.0000, relations 0.0000, screen 0.6285)
+    step 300   E =   9.9782   (spring 9.3497, push 0.0000, relations 0.0000, screen 0.6285)
+    step 350   E =   9.9782   (spring 9.3497, push 0.0000, relations 0.0000, screen 0.6285)
+    step 400   E =   9.9782   (spring 9.3497, push 0.0000, relations 0.0000, screen 0.6285)
+    step 450   E =   9.9782   (spring 9.3497, push 0.0000, relations 0.0000, screen 0.6285)
+    step 500   E =   9.9782   (spring 9.3497, push 0.0000, relations 0.0000, screen 0.6285)
+    steps halved because they went uphill: 172
   problems in the description:
     octahedron near moon: there is no object called "moon" (relation ignored)
 wrote docs/images/scene3-refined.png

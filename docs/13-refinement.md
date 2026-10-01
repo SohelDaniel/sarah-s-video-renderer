@@ -234,9 +234,13 @@ else:                 keep it,  η ← 1.25·η           (it worked: be a bit b
 ```
 
 The energy can then **never go up**, however steep things get. The report
-says how many times a step had to be halved. The check allows for float
-rounding: a float has about 7 significant digits, so an energy around 10
-wobbles by a few millionths even at the bottom.
+says how many times a step had to be halved.
+
+The check is strict: a step is kept only if the energy is **not higher**
+than before. A first version allowed a tiny rise (one part in 100,000) for
+float rounding, but the stress tests (15) showed those tiny rises adding up
+over hundreds of steps when the energy is large. Now rounding noise near the
+bottom just makes the step shrink, which does no harm.
 
 ## 6. Result
 
@@ -248,9 +252,9 @@ layout (refined): 9 objects, 0 overlapping pairs, 0 pairs overlapping on screen
   refinement (energy should go down):
     step   0   E = 227.6333   (spring 0.0000, push 0.0000, relations 0.0000, screen 227.6333)
     step   1   E =  68.1100   (spring 2.7921, ...                          screen 65.3179)
-    step  50   E =   9.9892   (spring 9.3588, ...                          screen 0.6304)
-    step 500   E =   9.9783   (spring 9.3508, ...                          screen 0.6275)
-    steps halved because they went uphill: 160
+    step  50   E =   9.9892   (spring 9.3596, ...                          screen 0.6296)
+    step 500   E =   9.9782   (spring 9.3497, ...                          screen 0.6285)
+    steps halved because they went uphill: 172
 ```
 
 At step 0 all the energy is in the screen term (things hide each other). By

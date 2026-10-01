@@ -594,9 +594,12 @@ void layout::refine(){
 				placed[i].position = old[i] - g[i] * eta;   // downhill
 			}
 			float after = energy(home).total();
-			// allow for float rounding: a float has ~7 significant digits, so
-			// an energy around 10 wobbles by a few millionths even at the bottom
-			if(after <= before * (1.0f + 1e-5f)){
+			// Only ever accept a step that didn't make things worse. (An
+			// earlier version allowed a tiny rise for float rounding, but
+			// those tiny rises could add up over hundreds of steps; see
+			// docs/15. Near the bottom, rounding noise now just makes the
+			// step shrink, which does no harm.)
+			if(after <= before){
 				before = after;
 				eta = std::min(eta * 1.25f, 4.0f * step_size);
 				break;
