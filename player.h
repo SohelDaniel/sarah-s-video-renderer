@@ -1,5 +1,6 @@
 #pragma once
 #include "camera.h"
+#include "frame_source.h"
 #include "object.h"
 
 #include <string>
@@ -29,6 +30,9 @@ public:
 	bool loop = true;
 
 	void play(camera& cam,const std::vector<object*>& scene);
+	// Play from any source of frames, e.g. a .dan file that reloads itself
+	// when it changes (docs/22). The video's length comes from the source.
+	void play(frame_source& source);
 
 	// Instead of playing: draw the single frame at time t and save it as a
 	// PNG. Used for the pictures in docs/.

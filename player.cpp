@@ -12,8 +12,13 @@ player::player(float seconds)
 	: seconds(seconds){}
 
 void player::play(camera& cam,const std::vector<object*>& scene){
-	window screen("sarah's video player", cam.width, cam.height);
-	render renderer(cam.width, cam.height);  // made once, reused every frame
+	fixed_source source(cam, scene, seconds);
+	play(source);
+}
+
+void player::play(frame_source& source){
+	window screen("sarah's video player", source.cam().width, source.cam().height);
+	render renderer(source.cam().width, source.cam().height);  // made once, reused every frame
 	renderer.clipping = clipping;
 
 	// steady_clock only ever goes forward (unlike the wall clock, which can
@@ -29,6 +34,14 @@ void player::play(camera& cam,const std::vector<object*>& scene){
 	float last = 0.0f;       // `real` of the previous frame, for real dt
 
 	while(screen.is_open()){
+		// a chance for the source to change the scene (a .dan file that was
+		// saved again, docs/22). The camera and objects are asked for again
+		// every frame, so a new scene simply takes over.
+		source.poll();
+		camera& cam = source.cam();
+		const std::vector<object*>& scene = source.objects();
+		float seconds = source.seconds();
+
 		// 1. seconds since we started playing. Using real time (not a frame
 		// count) means a slow computer shows fewer frames of the same motion,
 		// instead of playing in slow motion.
@@ -52,7 +65,9 @@ void player::play(camera& cam,const std::vector<object*>& scene){
 			                   : "free camera: off (back to the scripted camera)") << std::endl;
 		}
 
-		// 2. everything goes to where it is at time t
+		// 2. everything goes to where it is at time t. (The free camera is
+		// separate from the scene, so you stay where you walked to even when
+		// the scene is reloaded.)
 		if(free){
 			fly.step(screen.read_controls(), dt);
 			cam.set_view(fly.eye, fly.target());

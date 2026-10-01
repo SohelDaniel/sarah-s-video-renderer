@@ -7,14 +7,14 @@ SDL_CFLAGS = $(shell pkg-config --cflags sdl3)
 SDL_LIBS   = $(shell pkg-config --libs sdl3)
 
 TARGET  = main
-SOURCES = main.cpp camera.cpp fly_camera.cpp layout.cpp mesh.cpp motion.cpp object.cpp player.cpp render.cpp scene_parser.cpp solver.cpp test_scenes.cpp vec3.cpp window.cpp world.cpp
+SOURCES = main.cpp camera.cpp fly_camera.cpp layout.cpp live_scene.cpp mesh.cpp motion.cpp object.cpp player.cpp render.cpp scene_parser.cpp solver.cpp test_scenes.cpp vec3.cpp window.cpp world.cpp
 
 # The solver's stress tests: no window, so no SDL (docs/15).
 TEST_TARGET  = solver_test
 TEST_SOURCES = solver_test.cpp layout.cpp mesh.cpp motion.cpp solver.cpp test_scenes.cpp vec3.cpp
 # The engine's own tests (docs/19-21): also no SDL
 ENGINE_TEST         = engine_test
-ENGINE_TEST_SOURCES = engine_test.cpp camera.cpp fly_camera.cpp mesh.cpp object.cpp render.cpp scene_parser.cpp test_scenes.cpp vec3.cpp
+ENGINE_TEST_SOURCES = engine_test.cpp camera.cpp fly_camera.cpp layout.cpp live_scene.cpp mesh.cpp motion.cpp object.cpp render.cpp scene_parser.cpp solver.cpp test_scenes.cpp vec3.cpp world.cpp
 HEADERS = $(wildcard *.h)
 
 .PHONY: all run stills test clean

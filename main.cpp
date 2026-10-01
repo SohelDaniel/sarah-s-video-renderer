@@ -4,6 +4,7 @@
 #include "fly_camera.h"
 #include "player.h"
 #include "render.h"
+#include "live_scene.h"
 #include "scene_parser.h"
 #include "scene_spec.h"
 #include "test_scenes.h"
@@ -25,7 +26,8 @@
 //   ./main 5 framed           things that collide on purpose (docs/18)
 //   ./main clip on|off        standing in a scene, with/without near-plane clipping (docs/19)
 //   ./main walk prefix        pictures of walking around scene 3 with pretend keys (docs/20)
-//   ./main scenes/x.dan       a scene written in the dan language (docs/21)
+//   ./main scenes/x.dan       a scene written in the dan language (docs/21); edit and
+//                             save the file while it plays and it reloads (docs/22)
 //   ./main scenes/x.dan framed x.png 7   ... saved as a picture at 7 seconds
 //   In the window: Tab = free camera (WASD + mouse, Space/Shift up/down,
 //   Ctrl faster), Esc = back to the scripted camera.
@@ -269,14 +271,20 @@ motion_plan::method motion_step(const std::string& step){
 int main(int argc,char** argv){
 	std::string which = argc > 1 ? argv[1] : "1";
 	try {
-		// a scene file in the scene language (docs/21)
+		// a .dan file (docs/21). Played live: saving the file again reloads
+		// it, and every load writes <file>.report for the AI (docs/22).
 		if(which.size() > 4 && which.substr(which.size() - 4) == ".dan"){
-			parse_result parsed = parse_scene_file(which);
-			for(const parse_message& m : parsed.errors) std::cerr << which << ": " << m.to_string() << "\n";
-			for(const parse_message& m : parsed.notes)  std::cerr << which << ": note: " << m.to_string() << "\n";
-			if(!parsed.ok()) return 1;
-			solved_scene(parsed.spec, layout::method::framed, motion_step(argc > 2 ? argv[2] : "framed"),
-			             argc > 3 ? argv[3] : "", argc > 4 ? std::stof(argv[4]) : 0.0f);
+			live_scene live(which, motion_step(argc > 2 ? argv[2] : "framed"));
+			std::cout << live.last_report();
+			std::string picture = argc > 3 ? argv[3] : "";
+			if(!picture.empty()){
+				if(!live.has_scene()) return 1;
+				player stills(live.seconds());
+				stills.save_still(live.cam(), live.objects(), argc > 4 ? std::stof(argv[4]) : 0.0f, picture);
+				return 0;
+			}
+			player video(live.seconds());
+			video.play(live);
 			return 0;
 		}
 		if(which == "1")      example_scene();

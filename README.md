@@ -100,7 +100,7 @@ make run SCENE=2      scene 2: a small solar system, 20 s
 ./main 4              scene 4: orbits, a moon, and a fly-by, fully solved
 ./main 4 naive        ... or with naive paths (naive, orbits, flights, framed)
 ./main 5              scene 5: collisions that are meant to happen
-./main scenes/impact.dan    any scene written in the scene language
+./main scenes/impact.dan    any .dan file: edit and save it while it plays, it reloads live
 ./main scenes/broken.dan    ... or one full of mistakes, to see the error messages
 ./main clip on|off    standing inside a scene, with or without near-plane clipping
 ./main stress crowd   any of the stress test scenes (crowd, chain, cycle, typos, ...)

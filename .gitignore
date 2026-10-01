@@ -9,3 +9,4 @@ renders/
 
 # macOS
 .DS_Store
+*.dan.report

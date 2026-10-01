@@ -1,19 +1,22 @@
 // ============================================================================
-//  Tests for the engine itself (docs/19-21): the parts that aren't the
+//  Tests for the engine itself (docs/19-22): the parts that aren't the
 //  layout solver. No window and no SDL, so they run anywhere.
 //
 //  Exits with 1 if anything failed, so `make test` stops.
 // ============================================================================
 #include "camera.h"
 #include "fly_camera.h"
+#include "live_scene.h"
 #include "render.h"
 #include "scene_parser.h"
 #include "test_scenes.h"
 #include "timeline.h"
 
+#include <chrono>
 #include <cmath>
-
 #include <cstdio>
+#include <filesystem>
+#include <fstream>
 #include <string>
 
 
@@ -221,11 +224,48 @@ static void test_scene_language(){
 	check(r.errors.size() == 6, "every broken line is reported, not just the first (" + std::to_string(r.errors.size()) + " errors)");
 }
 
+// ---- live reload (docs/22) ----
+static void write_file(const std::string& path,const std::string& text,int seconds_later){
+	std::ofstream(path) << text;
+	// file times can be coarse, so make sure each version looks newer
+	auto when = std::filesystem::file_time_type::clock::now() + std::chrono::seconds(seconds_later);
+	std::filesystem::last_write_time(path, when);
+}
+
+static bool contains(const std::string& text,const std::string& part){
+	return text.find(part) != std::string::npos;
+}
+
+static void test_live_reload(){
+	std::printf("live reload:\n");
+	std::string path = "engine_test_live.dan";
+
+	write_file(path, "sun = sphere big gold important\n", 1);
+	live_scene live(path, motion_plan::method::framed);
+	check(live.has_scene() && live.objects().size() == 1, "reads the file when it starts (1 object)");
+	std::ifstream report_file(live.report_path());
+	std::string report((std::istreambuf_iterator<char>(report_file)), std::istreambuf_iterator<char>());
+	check(contains(report, "layout (framed): 1 objects"), "writes the solver's report next to it (" + live.report_path() + ")");
+	check(!live.check_now(), "nothing changed: no reload");
+
+	write_file(path, "sun = sphere big gold important\nrock = icosahedron grey near sun\n", 2);
+	check(live.check_now() && live.objects().size() == 2, "the file was saved again: reloaded (2 objects)");
+
+	write_file(path, "sun = spher big gold\n", 3);
+	check(!live.check_now() && live.objects().size() == 2, "a broken version: the last good scene stays (still 2 objects)");
+	check(contains(live.last_report(), "did you mean sphere") && contains(live.last_report(), "last good version"),
+	      "... and the report says what's wrong, and that the old scene is still showing");
+
+	std::filesystem::remove(path);
+	std::filesystem::remove(live.report_path());
+}
+
 int main(){
 	test_clipping();
 	test_fly_camera();
 	test_looping();
 	test_scene_language();
+	test_live_reload();
 	std::printf("\n%s: %d check%s failed\n", failures == 0 ? "ALL PASSED" : "FAILED", failures, failures == 1 ? "" : "s");
 	return failures == 0 ? 0 : 1;
 }
