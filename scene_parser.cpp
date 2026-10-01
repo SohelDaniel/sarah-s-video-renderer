@@ -72,7 +72,7 @@ static const std::vector<std::string> shape_words = {
 	"cube", "sphere", "cone", "cylinder", "icosahedron", "octahedron", "pyramid", "tetrahedron", "torus", "plane",
 };
 
-// the same colors the C++ test scenes use, so a .scene file and its C++
+// the same colors the C++ test scenes use, so a .dan file and its C++
 // version give exactly the same scene (checked by engine_test)
 static const std::map<std::string, px::Pixel> color_words = {
 	{"blue",   px::Pixel( 80, 160, 230)}, {"green",  px::Pixel(120, 200,  90)},

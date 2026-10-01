@@ -5,7 +5,7 @@
 #include <vector>
 
 // ============================================================================
-//  The scene language (docs/21): what the AI will write.
+//  The dan language (docs/21): what the AI writes, in .dan files.
 //
 //      scene "solar" view front_above
 //      sun    = sphere big gold important

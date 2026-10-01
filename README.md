@@ -6,21 +6,21 @@ the scenes**, and you can walk around inside them while they play.
 AI models are good at saying *what* should be in a scene ("a big cube, a
 sphere next to it, a pyramid on top") but bad at picking *coordinates*:
 things overlap, hide each other or end up off screen. So in this engine the
-AI never writes numbers. It writes a small **scene language** of objects,
+AI never writes numbers. It writes **dan**, a small scene language (`.dan` files) of objects,
 relations and motions, and a **solver** works out where everything goes,
 which paths moving things take so they never collide (unless they're meant
 to), and where the camera should stand. A CPU software rasterizer then draws
 it, live in a window you can walk around in.
 
 ```
-# scenes/lazy.scene
+# scenes/lazy.dan
 cube        = cube big orange important
 sphere      = sphere blue near cube
 pyramid     = pyramid white above cube
 torus       = torus teal left_of sphere
 octahedron  = octahedron small grey near moon     # a mistake: there is no moon
 
-# scenes/impact.scene
+# scenes/impact.dan
 planet = octahedron red orbits sun 1 turn 0s-20s
 comet  = pyramid small white
 comet hits planet at 12s from 8s sticks
@@ -78,7 +78,7 @@ The circles are each object's bounding sphere: red = overlapping something.
   typo-ridden, empty, moving, colliding on purpose) and 135 automatic checks.
   They found 4 bugs, each fixed in its own commit ([docs/15](docs/15-stress-tests.md))
 
-**Scene language** ([docs/21](docs/21-scene-language.md))
+**The dan language** ([docs/21](docs/21-scene-language.md))
 - hand-written lexer and recursive-descent parser, building the same
   structures the C++ scenes do (a test proves they're identical)
 - every error in one go, with line, column and a **did you mean** from edit
@@ -100,8 +100,8 @@ make run SCENE=2      scene 2: a small solar system, 20 s
 ./main 4              scene 4: orbits, a moon, and a fly-by, fully solved
 ./main 4 naive        ... or with naive paths (naive, orbits, flights, framed)
 ./main 5              scene 5: collisions that are meant to happen
-./main scenes/impact.scene    any scene written in the scene language
-./main scenes/broken.scene    ... or one full of mistakes, to see the error messages
+./main scenes/impact.dan    any scene written in the scene language
+./main scenes/broken.dan    ... or one full of mistakes, to see the error messages
 ./main clip on|off    standing inside a scene, with or without near-plane clipping
 ./main stress crowd   any of the stress test scenes (crowd, chain, cycle, typos, ...)
 make test             all the tests
@@ -118,7 +118,7 @@ small numbers you can check on paper. One point is followed from the cube's
 `.obj` file all the way to its pixel.
 
 ```
-.scene text ─► parser ─► scene description ─► solver ───────► world ─► model → view → projection → clip → viewport → rasterize → depth + shade ─► window
+.dan text ─► parser ─► scene description ─► solver ───────► world ─► model → view → projection → clip → viewport → rasterize → depth + shade ─► window
                 (21)        (11)              (12–14, 16, 18)     (17)     (03)   (04)     (05)      (19)     (06)       (07)        (08)          (10, 20)
 ```
 
@@ -143,7 +143,7 @@ small numbers you can check on paper. One point is followed from the cube's
 
 ## Next
 
-- hooking up an AI to write `.scene` files, with the parser's errors and the
+- hooking up an AI to write `.dan` files, with the parser's errors and the
   solver's report sent back so it can fix its own scenes
 - flying past (not just orbiting) things that move
 - full parent/child transforms (spin and scale too) for things like wheels on

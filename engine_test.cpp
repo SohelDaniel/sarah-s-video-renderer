@@ -191,10 +191,10 @@ static void test_scene_language(){
 	check(edit_distance("cueb", "cube") == 1, "edit_distance(cueb, cube) = 1 (two neighbours swapped)");
 	check(edit_distance("kitten", "sitting") == 3, "edit_distance(kitten, sitting) = 3");
 
-	// every .scene file gives exactly the same scene as its C++ version
+	// every .dan file gives exactly the same scene as its C++ version
 	struct pair{ const char* file; scene_spec spec; };
-	for(const pair& p : {pair{"scenes/lazy.scene", lazy_ai_scene()}, pair{"scenes/motion.scene", lazy_motion_scene()},
-	                     pair{"scenes/impact.scene", impact_scene()}}){
+	for(const pair& p : {pair{"scenes/lazy.dan", lazy_ai_scene()}, pair{"scenes/motion.dan", lazy_motion_scene()},
+	                     pair{"scenes/impact.dan", impact_scene()}}){
 		parse_result r = parse_scene_file(p.file);
 		std::string why;
 		bool same = r.ok() && same_spec(r.spec, p.spec, why);

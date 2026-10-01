@@ -25,8 +25,8 @@
 //   ./main 5 framed           things that collide on purpose (docs/18)
 //   ./main clip on|off        standing in a scene, with/without near-plane clipping (docs/19)
 //   ./main walk prefix        pictures of walking around scene 3 with pretend keys (docs/20)
-//   ./main scenes/x.scene     a scene written in the scene language (docs/21)
-//   ./main scenes/x.scene framed x.png 7   ... saved as a picture at 7 seconds
+//   ./main scenes/x.dan       a scene written in the dan language (docs/21)
+//   ./main scenes/x.dan framed x.png 7   ... saved as a picture at 7 seconds
 //   In the window: Tab = free camera (WASD + mouse, Space/Shift up/down,
 //   Ctrl faster), Esc = back to the scripted camera.
 //   ./main stress crowd                 one of the stress test scenes (docs/15)
@@ -270,7 +270,7 @@ int main(int argc,char** argv){
 	std::string which = argc > 1 ? argv[1] : "1";
 	try {
 		// a scene file in the scene language (docs/21)
-		if(which.size() > 6 && which.substr(which.size() - 6) == ".scene"){
+		if(which.size() > 4 && which.substr(which.size() - 4) == ".dan"){
 			parse_result parsed = parse_scene_file(which);
 			for(const parse_message& m : parsed.errors) std::cerr << which << ": " << m.to_string() << "\n";
 			for(const parse_message& m : parsed.notes)  std::cerr << which << ": note: " << m.to_string() << "\n";

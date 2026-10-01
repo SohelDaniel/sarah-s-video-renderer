@@ -1,13 +1,13 @@
-# 21 · The scene language
+# 21 · The dan language
 
 Until now, scenes were written in C++ (`spec.add(...).near("cube")`). The AI
-won't write C++. It writes a small text language made for exactly this, one
-statement per line, and a **parser** turns that into the very same
-`scene_spec`. Everything after it (solver, motion planner, renderer) doesn't
+won't write C++. It writes a small text language made for exactly this,
+**dan** (files end in `.dan`), one statement per line, and a **parser** turns
+that into the very same `scene_spec`. Everything after it (solver, motion planner, renderer) doesn't
 change at all.
 
 ```
-# scenes/impact.scene
+# scenes/impact.dan
 scene "impact"
 
 sun    = sphere big gold important
@@ -20,11 +20,11 @@ comet hits planet at 12s from 8s sticks
 ```
 
 ```
-./main scenes/impact.scene                 play it
-./main scenes/impact.scene framed x.png 12 save the picture at 12 s
+./main scenes/impact.dan                 play it
+./main scenes/impact.dan framed x.png 12 save the picture at 12 s
 ```
 
-Code: `scene_parser.h/.cpp`, `scenes/*.scene`, the tests in `engine_test.cpp`.
+Code: `scene_parser.h/.cpp`, `scenes/*.dan`, the tests in `engine_test.cpp`.
 
 ---
 
@@ -145,7 +145,7 @@ When the AI makes a mistake, the most useful thing is a precise message,
 the main loop. The loop records the error, skips to the end of the line,
 and carries on with the next one. One bad line never hides the others.
 
-`./main scenes/broken.scene`:
+`./main scenes/broken.dan`:
 
 ```
 line 4, col 21: unknown view 'front_abuve' (did you mean front_above?); try front, front_above, left_above or right_above
@@ -223,9 +223,9 @@ scene language:
   PASS  edit_distance(spher, sphere) = 1
   PASS  edit_distance(cueb, cube) = 1 (two neighbours swapped)
   PASS  edit_distance(kitten, sitting) = 3
-  PASS  scenes/lazy.scene parses to exactly the C++ scene
-  PASS  scenes/motion.scene parses to exactly the C++ scene
-  PASS  scenes/impact.scene parses to exactly the C++ scene
+  PASS  scenes/lazy.dan parses to exactly the C++ scene
+  PASS  scenes/motion.dan parses to exactly the C++ scene
+  PASS  scenes/impact.dan parses to exactly the C++ scene
   PASS  line 1: unknown view, did you mean front_above
   ...
   PASS  every broken line is reported, not just the first (6 errors)

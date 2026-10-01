@@ -1,5 +1,5 @@
 # A scene full of mistakes, to show the error messages (docs/21).
-# ./main scenes/broken.scene
+# ./main scenes/broken.dan
 
 scene "broken" view front_abuve
 cube = cueb big orange
