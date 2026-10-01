@@ -1,0 +1,24 @@
+# Everything at once: titles and formulas with their own times, labels
+# (always on, timed, and formulas), orbits, a moon, a fly-by past a moving
+# planet (docs/32), a planned hit that sticks (docs/18), easing, fades,
+# see-through glass and arrows. No coordinates anywhere: the solver places it all.
+# ./main scenes/showcase.dan --aa
+
+scene "showcase"
+title "A solar system, solved"
+title "a probe flies past the moving planet" 4s-12s
+title "a comet hits it, and sticks" 13s-20s
+math "F = G\frac{m_1 m_2}{r^2}" 0s-12s
+math "v = \sqrt{\frac{GM}{r}}" 12s-24s
+
+sun    = sphere big gold important label math "M" always
+rock   = icosahedron grey near sun label "a rock" 0s-6s
+glass  = cube teal in_front_of sun fades_in 1s-3s fades_out 20s-23s
+planet = octahedron red orbits sun 1 turn 0s-24s label math "m" always
+moon   = tetrahedron tiny white orbits planet 3 turns 0s-24s label "moon" 2s-10s
+probe  = cube small blue flies_past planet 4s-12s smooth label "probe" 4s-12s
+comet  = pyramid small white fades_in 9s-11s label "comet" 9s-20s
+comet hits planet at 16s from 12s sticks
+
+arrow sun planet gold
+arrow comet planet teal 12s-16s
