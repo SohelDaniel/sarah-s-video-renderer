@@ -77,15 +77,47 @@ void object::scale(float scale_by,float start,float end){
 
 void object::update(float t){
 	now = motion.at(t);
+	now_time = t;
+}
+
+void object::attach_to(const object* new_parent){
+	parent = new_parent;
+	follows = link::attached;
+}
+
+void object::stick_to(const object* new_parent,float time){
+	parent = new_parent;
+	follows = link::stuck;
+	stick_time = time;
+}
+
+// own = where its own motion puts it at t. Then, depending on the link:
+//   none     : own
+//   attached : parent(t) + own                       (own is relative)
+//   stuck    : own, plus however far the parent has moved since sticking
+//              = own + (parent(t) - parent(stick_time))   for t >= stick_time
+// Asking the parent for its position at t works even for chains
+// (a moon on a planet on a star): each one asks its own parent.
+vec3 object::position_at(float t)const{
+	vec3 own = motion.at(t).position;
+	switch(follows){
+		case link::none:     return own;
+		case link::attached: return parent->position_at(t) + own;
+		case link::stuck:
+			if(t < stick_time) return own;
+			return own + (parent->position_at(t) - parent->position_at(stick_time));
+	}
+	return own;
 }
 
 vec3 object::get_position()const{
-	return now.position;
+	return position_at(now_time);
 }
 
 mat4<float> object::model_matrix()const{
 	// ::scale is the matrix from transform.h, not this class's scale()
-	return translate(now.position[0], now.position[1], now.position[2])
+	vec3 p = get_position();
+	return translate(p[0], p[1], p[2])
 	     * rotate_y(now.rot_y) * rotate_x(now.rot_x)
 	     * ::scale(now.size, now.size, now.size);
 }
@@ -93,7 +125,7 @@ mat4<float> object::model_matrix()const{
 void object::draw(render& renderer)const{
 	renderer.draw_mesh(*shape, model_matrix(), color);
 	if(bounds_on){
-		renderer.draw_bounds(now.position, shape->bounding_radius() * now.size);
+		renderer.draw_bounds(get_position(), shape->bounding_radius() * now.size);
 	}
 }
 

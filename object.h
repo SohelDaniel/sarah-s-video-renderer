@@ -51,7 +51,22 @@ public:
 	// Work out where the object is at time t (seconds). Call once per frame.
 	void update(float t);
 
+	// ---- parent/child (docs/17): follow another object around ----
+	// Only the position is inherited, not the spin: a moon's orbit shouldn't
+	// swing round every time its planet turns.
+
+	// From the start: this object's position is RELATIVE to the parent's,
+	// so (0,0,0) means "right where the parent is".
+	void attach_to(const object* parent);
+	// Moves on its own until `time`; from then on it keeps the same offset
+	// from the parent and rides along with it (something that hit it and stuck).
+	void stick_to(const object* parent,float time);
+
+	// Where it really is, after following its parent (at the time of the
+	// last update)
 	vec3 get_position()const;
+	// ... and at any time t, without changing anything
+	vec3 position_at(float t)const;
 	// translate * rotate * scale: scale first, then turn, then move
 	mat4<float> model_matrix()const;
 	void draw(render& renderer)const;
@@ -63,6 +78,12 @@ private:
 	const mesh* shape;
 	px::Pixel color;
 	timeline<pose> motion;  // how it starts + every change scheduled on it
-	pose now;               // where it is at the current time
+	pose now;               // where it is at the current time (its own motion)
+	float now_time = 0.0f;  // the t of the last update
+
+	enum class link{ none, attached, stuck };
+	link follows = link::none;
+	const object* parent = nullptr;
+	float stick_time = 0.0f;
 	bool bounds_on = false;
 };

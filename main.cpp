@@ -105,10 +105,11 @@ void solar_system(){
 	planet_two.move(vec3(-7.0f, 0.0f, 0.0f));
 	planet_two.scale(0.6f);
 
-	// Planet two's ring: same place as planet two, tipped a little
-	// (the torus lies flat to begin with).
+	// Planet two's ring, attached to planet two (docs/17): its position is
+	// relative to the planet, so (0,0,0) = right around it, wherever the
+	// planet goes. Tipped a little, since the torus lies flat.
 	object ring(torus, px::Pixel(200, 120, 220));
-	ring.move(vec3(-7.0f, 0.0f, 0.0f));
+	ring.attach_to(&planet_two);
 	ring.scale(1.7f);
 	ring.rotate(0.0f, 0.4f);
 
@@ -132,9 +133,6 @@ void solar_system(){
 	// planet two goes round once the other way (negative = other direction)
 	planet_one.rotate_around(center, 12.566f, 0.0f, 0.0f, 20.0f);
 	planet_two.rotate_around(center, -6.283f, 0.0f, 0.0f, 20.0f);
-	// the ring gets the exact same orbit, so it stays around planet two.
-	// (There's no "attach the ring to the planet" yet, see LIVE.md.)
-	ring.rotate_around(center, -6.283f, 0.0f, 0.0f, 20.0f);
 
 	// the sun breathes: grows for 10 seconds, then shrinks back.
 	// The second scale starts from wherever the first one ended.

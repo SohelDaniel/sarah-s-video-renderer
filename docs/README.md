@@ -42,6 +42,7 @@ All the math is built on **vectors and matrices** (01).
 | 14 | [Auto camera](14-auto-camera.md) | Where should the camera go? | `layout.cpp`, `world.cpp` |
 | 15 | [Stress tests](15-stress-tests.md) | Does the solver survive sloppy input? What broke? | `test_scenes.cpp`, `solver_test.cpp` |
 | 16 | [Motion placement](16-motion-placement.md) | How do moving things avoid each other? | `motion.cpp`, `solver.cpp` |
+| 17 | [Parent and child](17-parent-child.md) | How does a ring follow its planet? | `object.cpp` |
 | | [Ranges and settings](ranges.md) | What values make sense? | `camera.h`, `object.h` |
 | | [C++ notes](cpp-notes.md) | What does this syntax mean? | everywhere |
 | | [Design](design.md) | Why is the code split up like this? | everywhere |
