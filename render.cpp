@@ -372,12 +372,16 @@ void render::finish(){
 	// distance between the two on screen.
 	for(size_t i = 0;i<overlay.size();i++){
 		const circle& c = overlay[i];
-		// red if this sphere overlaps any other one right now (docs/11)
+		// red if this sphere overlaps any other one right now (docs/11).
+		// Touching isn't overlapping (a comet stuck to a planet, docs/18), and
+		// float rounding can make "exactly touching" come out a millionth
+		// short, so they must overlap by more than 0.01% of the distance.
 		bool hit = false;
 		for(size_t j = 0;j<overlay.size();j++){
 			if(j == i) continue;
 			vec3 d = c.center - overlay[j].center;
-			if(std::sqrt(dot(d, d)) < c.radius + overlay[j].radius) hit = true;
+			float touch = c.radius + overlay[j].radius;
+			if(std::sqrt(dot(d, d)) < touch * (1.0f - 1e-4f)) hit = true;
 		}
 		px::Pixel color = hit ? px::Pixel(255, 70, 70) : px::Pixel(150, 150, 160);
 		vec3 mid, edge;

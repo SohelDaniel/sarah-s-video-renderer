@@ -158,7 +158,10 @@ Without that, the comet would hit the rock once it's stuck and riding along.
 |---|---|---|---|---|
 | ![](images/scene5-framed-5.png) | ![](images/scene5-framed-6.png) | ![](images/scene5-framed-10.png) | ![](images/scene5-framed-12.png) | ![](images/scene5-framed-16.png) |
 
-The circles stay grey: touching isn't overlapping. The stress tests have
+The circles stay grey: touching isn't overlapping. (Float rounding can make
+"exactly touching" come out a millionth short, so a circle only turns red
+when two spheres overlap by more than 0.01% of the distance; `scenes/showcase.dan`
+showed a red flicker on the stuck comet before that.) The stress tests have
 `impact` too. They check that planned hits touch **exactly on time**
 (a gap of at most 0.01), and that nothing else ever collides.
 
