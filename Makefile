@@ -35,6 +35,8 @@ stills: $(TARGET) $(TEST_TARGET)
 	@for s in refined framed; do ./$(TARGET) stress chain $$s docs/images/chain-$$s.png > docs/images/chain-$$s.txt; done
 	@./$(TARGET) stress cycle framed docs/images/cycle-framed.png > docs/images/cycle-framed.txt
 	@./solver_test > docs/images/stress-results.txt || true
+	@# our PNG writer doesn't compress (docs/pixel.h); macOS's sips can, ~50x smaller
+	@if command -v sips > /dev/null; then for f in docs/images/*.png; do sips -s format png $$f --out $$f > /dev/null; done; fi
 
 $(TEST_TARGET): $(TEST_SOURCES) $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(TEST_SOURCES) -o $(TEST_TARGET)
