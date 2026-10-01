@@ -1,14 +1,13 @@
-layout (framed): 3 objects, 0 overlapping pairs, 0 pairs overlapping on screen
+layout (framed): 2 objects, 0 overlapping pairs, 0 pairs overlapping on screen
   objects not fully in the picture: 0
   objects (in placement order):
     sun         big     r= 1.40  at (  0.00,   0.00,   0.00)
     rock        normal  r= 0.80  at (  2.60,   0.00,   0.00)
-    moon        tiny    r= 0.30  at ( -2.10,   0.00,   0.00)
   relations:
     ok      rock near sun
   1 of 1 relations satisfied
-  camera: from front_above, looking at (0.00, 1.01, 0.00), scene radius 8.58, distance 16.73 (sphere fit: 21.31)
-          eye at (0.00, 6.88, 15.66)
+  camera: from front_above, looking at (0.00, 0.59, 0.00), scene radius 10.40, distance 19.90 (sphere fit: 25.85)
+          eye at (0.00, 7.58, 18.63)
   refinement (energy should go down):
     step   0   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
     step   1   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
@@ -38,13 +37,12 @@ layout (framed): 3 objects, 0 overlapping pairs, 0 pairs overlapping on screen
     step 450   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
     step 500   E =   0.0000   (spring 0.0000, push 0.0000, relations 0.0000, screen 0.0000)
     steps halved because they went uphill: 0
-motion (framed): 3 moving objects, 0 colliding pairs
-  checked every 0.0239 s (fastest moves 4.1884 per second)
+motion (framed): 4 moving objects, 0 colliding pairs
+  checked every 0.0184 s (fastest moves 5.4450 per second)
   paths:
-    planet1    orbits sun, 0.00-20.00 s: radius 4.60, 1.00 turns
-    planet2    orbits sun, 0.00-20.00 s: radius 6.67, 2.00 turns
+    planet1    orbits sun, 0.00-20.00 s: radius 5.60, 1.00 turns
+    planet2    orbits sun, 0.00-20.00 s: radius 8.67, 2.00 turns
     comet      flies_past sun, 4.00-10.00 s: from (-7.53, 2.67, 0.00) to (7.53, 2.67, 0.00)
+    moon       orbits planet1 (which moves), 0.00-20.00 s: radius 1.50, 3.00 turns
   moving objects that leave the picture at some moment: 0
-  problems with motions in the description:
-    moon orbits planet1: planet1 moves too, and moving around something that moves isn't supported yet (it stands still instead)
 wrote docs/images/scene4-framed.png

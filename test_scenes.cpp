@@ -41,6 +41,20 @@ scene_spec lazy_motion_scene(){
 	return spec;
 }
 
+// Every way a motion can't work.
+static scene_spec motion_mistakes(){
+	scene_spec spec;
+	spec.add("sun",   "shapes/sphere.obj",      px::Pixel(250, 200, 60), size_word::big, 10);
+	spec.add("a",     "shapes/cube.obj",        colors[0]).orbits("b", 1.0f, 0.0f, 10.0f);     // a round b ...
+	spec.add("b",     "shapes/cone.obj",        colors[1]).orbits("a", 1.0f, 0.0f, 10.0f);     // ... and b round a
+	spec.add("c",     "shapes/octahedron.obj",  colors[2]).orbits("sunn", 1.0f, 0.0f, 10.0f);  // misspelled
+	spec.add("d",     "shapes/pyramid.obj",     colors[3]).orbits("d", 1.0f, 0.0f, 10.0f);     // itself
+	spec.add("e",     "shapes/torus.obj",       colors[4]).orbits("sun", 1.0f, 8.0f, 2.0f);    // ends before it starts
+	spec.add("f",     "shapes/sphere.obj",      colors[5], size_word::small).orbits("sun", 1.0f, 0.0f, 10.0f);
+	spec.add("g",     "shapes/tetrahedron.obj", colors[6], size_word::small).flies_past("f", 2.0f, 6.0f);  // past a mover
+	return spec;
+}
+
 // 20 things all "near" one cube: far more than fit around it.
 static scene_spec crowd(){
 	scene_spec spec;
@@ -136,6 +150,7 @@ std::vector<test_scene> all_test_scenes(){
 		{"view_front",    "the lazy scene seen from the front",               seen_from(view_word::front),         1},
 		{"view_left",     "the lazy scene seen from the left, above",         seen_from(view_word::left_above),    1},
 		{"view_right",    "the lazy scene seen from the right, above",        seen_from(view_word::right_above),   1},
-		{"motion",        "orbits and a fly-by crossing a crowded spot",      lazy_motion_scene(),                 1},
+		{"motion",        "orbits, a moon, and a fly-by crossing a crowded spot", lazy_motion_scene(),             0},
+		{"motion_typos",  "every way a motion can't work",                    motion_mistakes(),                   5},
 	};
 }

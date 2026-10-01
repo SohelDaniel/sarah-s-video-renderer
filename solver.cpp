@@ -27,10 +27,11 @@ int scene_solver::moving_off_screen()const{
 	int count = 0;
 	float dt = planner.sample_step();
 	float last = planner.duration();
-	for(const path& p : planner.paths()){
+	for(size_t i = 0;i<planner.paths().size();i++){
+		const path& p = planner.paths()[i];
 		for(int k = 0;;k++){
 			float t = std::min(k * dt, last);
-			if(!still_layout.in_picture(p.at(t), p.radius)){
+			if(!still_layout.in_picture(planner.position(i, t), p.radius)){
 				count++;
 				break;
 			}
@@ -63,7 +64,8 @@ std::vector<path> scene_solver::make_paths(const scene_spec& spec,const std::vec
 		p.turns  = m.turns;
 		p.start  = m.start;
 		p.end    = m.end;
-		// split_motion made sure the other object exists and stands still
+		// split_motion made sure the other object exists: it either stands
+		// still, or (for an orbit) moves itself
 		for(size_t k = 0;k<split.still.objects.size();k++){
 			if(split.still.objects[k].name == m.other){
 				p.around = int(k);
@@ -71,6 +73,17 @@ std::vector<path> scene_solver::make_paths(const scene_spec& spec,const std::vec
 			}
 		}
 		paths.push_back(p);
+	}
+	// orbits around something that moves: point at its path
+	for(path& p : paths){
+		if(p.around >= 0) continue;
+		const std::string& other = spec.objects[p.object].motions[0].other;
+		for(size_t k = 0;k<paths.size();k++){
+			if(paths[k].name == other){
+				p.around_path = int(k);
+				break;
+			}
+		}
 	}
 	return paths;
 }

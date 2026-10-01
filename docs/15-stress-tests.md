@@ -28,7 +28,8 @@ Code: `test_scenes.h/.cpp` (the scenes), `solver_test.cpp` (the checks),
 | `empty` | no objects at all |
 | `single` | one object |
 | `view_front`, `view_left`, `view_right` | the lazy scene from every camera direction |
-| `motion` | scene 4 from 16: orbits and a fly-by through a crowded spot, plus an unsupported moon |
+| `motion` | scene 4 from 16: orbits, a moon on a moving planet, and a fly-by through a crowded spot |
+| `motion_typos` | every way a motion can't work: a circle of orbits, a misspelled name, itself, ending before it starts, flying past a mover |
 
 Any of them can be watched: `./main stress crowd`, or after one step,
 `./main stress crowd greedy picture.png`.
@@ -176,7 +177,8 @@ From [stress-results.txt](images/stress-results.txt), after the full solve:
 | empty | 0 | 0 | 0 | 0 | 0 of 0 | 0 |
 | single | 1 | 0 | 0 | 0 | 0 of 0 | 0 |
 | view_front / left / right | 9 | 0 | 0 | 0 | 7 of 7 | 1 |
-| motion (added with 16) | 6, 3 of them moving | 0 | 0 | 0 | 1 of 1 | 1 |
+| motion (added with 16) | 6, 4 of them moving | 0 | 0 | 0 | 1 of 1 | 0 |
+| motion_typos (added with 17) | 8, 2 of them moving | 0 | 0 | 0 | 0 of 0 | 5 |
 
 **ALL PASSED: 0 checks failed.**
 

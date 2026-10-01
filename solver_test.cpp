@@ -46,8 +46,8 @@ static void check(bool ok,const std::string& scene,const std::string& what){
 static std::vector<vec3> snapshot(const scene_solver& s){
 	std::vector<vec3> where;
 	for(const placement& p : s.still().result()) where.push_back(p.position);
-	for(const path& p : s.plan().paths()){
-		for(float t : {0.0f, 0.5f * s.plan().duration(), s.plan().duration()}) where.push_back(p.at(t));
+	for(size_t k = 0;k<s.plan().paths().size();k++){
+		for(float t : {0.0f, 0.5f * s.plan().duration(), s.plan().duration()}) where.push_back(s.plan().position(k, t));
 	}
 	return where;
 }

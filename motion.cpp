@@ -27,8 +27,9 @@ split_scene split_motion(const scene_spec& spec){
 	parts.still.view = spec.view;
 	int n = int(spec.objects.size());
 
-	// first decide who moves: they need a usable motion
+	// 1. every motion that could work on its own
 	std::vector<bool> moves(n, false);
+	std::vector<int> target(n, -1);
 	for(int i = 0;i<n;i++){
 		const object_spec& o = spec.objects[i];
 		if(o.motions.empty()) continue;
@@ -45,15 +46,40 @@ split_scene split_motion(const scene_spec& spec){
 			parts.errors.push_back(what + ": it can't move around itself (it stands still instead)");
 		}else if(!(m.end > m.start)){
 			parts.errors.push_back(what + ": it ends before it starts (it stands still instead)");
-		}else if(!spec.objects[other].motions.empty()){
-			parts.errors.push_back(what + ": " + m.other + " moves too, and moving around something that"
-			                       " moves isn't supported yet (it stands still instead)");
 		}else{
 			moves[i] = true;
+			target[i] = other;
 		}
 	}
 
-	// then build the still scene, without any relation that points at a mover
+	// 2. motions in a circle ("a orbits b, b orbits a") can't work: follow
+	// each chain of centers, and if it comes back round, stop that one
+	for(int i = 0;i<n;i++){
+		if(!moves[i]) continue;
+		int j = target[i];
+		for(int steps = 0;steps<n && j >= 0 && moves[j];steps++){
+			if(j == i){
+				parts.errors.push_back(spec.objects[i].name + " " + motion_name(spec.objects[i].motions[0].kind) + " "
+				                       + spec.objects[i].motions[0].other + ": the motions go round in a circle"
+				                       " (it stands still instead)");
+				moves[i] = false;
+				break;
+			}
+			j = target[j];
+		}
+	}
+
+	// 3. flying past something that moves isn't supported yet
+	for(int i = 0;i<n;i++){
+		if(moves[i] && spec.objects[i].motions[0].kind == motion_kind::flies_past && moves[target[i]]){
+			parts.errors.push_back(spec.objects[i].name + " flies_past " + spec.objects[i].motions[0].other + ": "
+			                       + spec.objects[i].motions[0].other + " moves too, and flying past something that"
+			                       " moves isn't supported yet (it stands still instead)");
+			moves[i] = false;
+		}
+	}
+
+	// 4. the still scene, without any relation that points at a mover
 	for(int i = 0;i<n;i++){
 		if(moves[i]){
 			parts.moving.push_back(i);
@@ -85,7 +111,7 @@ split_scene split_motion(const scene_spec& spec){
 //  Paths
 // ---------------------------------------------------------------------------
 
-vec3 path::at(float t)const{
+vec3 path::at(float t,const vec3& center)const{
 	float f = std::clamp((t - start) / (end - start), 0.0f, 1.0f);
 	if(kind == motion_kind::orbits){
 		// the same turn as rotate_y (docs/03): x' = x·cos + z·sin, z' = -x·sin + z·cos,
@@ -110,14 +136,43 @@ motion_plan::motion_plan(const std::vector<obstacle>& still,std::vector<path> mo
 	}
 }
 
+// Where moving object k is at time t. If it orbits something that moves,
+// first ask where THAT is at t (docs/17), and so on up the chain.
+vec3 motion_plan::position(size_t k,float t)const{
+	const path& p = moving[k];
+	vec3 center = p.around_path >= 0 ? position(size_t(p.around_path), t) : p.center;
+	return p.at(t, center);
+}
+
+float motion_plan::speed_of(size_t k)const{
+	const path& p = moving[k];
+	return p.speed() + (p.around_path >= 0 ? speed_of(size_t(p.around_path)) : 0.0f);
+}
+
+int motion_plan::depth(size_t k)const{
+	return moving[k].around_path >= 0 ? 1 + depth(size_t(moving[k].around_path)) : 0;
+}
+
+// A planet with a moon is, for planning its own orbit, a bigger object: the
+// moon's circle reaches orbit_radius + the moon's own reach from the planet.
+float motion_plan::reach(size_t k)const{
+	float r = moving[k].radius;
+	for(size_t j = 0;j<moving.size();j++){
+		if(moving[j].around_path == int(k)){
+			r = std::max(r, moving[j].orbit_radius + reach(j));
+		}
+	}
+	return r;
+}
+
 void motion_plan::solve(method how){
 	switch(how){
 		case method::naive:  place_naive(); method_name = "naive"; break;
-		case method::orbits: place_naive(); plan_orbits(); method_name = "orbits"; break;
+		case method::orbits: place_naive(); plan_orbits(); repair_orbits(); method_name = "orbits"; break;
 		case method::flights:
-			place_naive(); plan_orbits(); plan_flights(); method_name = "flights"; break;
+			place_naive(); plan_orbits(); repair_orbits(); plan_flights(); method_name = "flights"; break;
 		case method::framed:
-			place_naive(); plan_orbits(); plan_flights(); method_name = "framed"; break;
+			place_naive(); plan_orbits(); repair_orbits(); plan_flights(); method_name = "framed"; break;
 	}
 }
 
@@ -126,11 +181,12 @@ void motion_plan::solve(method how){
 //   fly-by  : a straight line along x, right through the middle of it
 void motion_plan::place_naive(){
 	for(path& p : moving){
-		const obstacle& other = still[p.around];
 		if(p.kind == motion_kind::orbits){
-			p.orbit_radius = p.radius + other.radius + layout::gap;
+			float center_radius = p.around_path >= 0 ? moving[p.around_path].radius : still[p.around].radius;
+			p.orbit_radius = p.radius + center_radius + layout::gap;
 			p.start_angle  = 0.0f;
 		}else{
+			const obstacle& other = still[p.around];
 			float half = 2.0f * (p.radius + other.radius) + 3.0f;
 			p.from = other.position - vec3(half, 0.0f, 0.0f);
 			p.to   = other.position + vec3(half, 0.0f, 0.0f);
@@ -156,35 +212,50 @@ void motion_plan::place_naive(){
 //  |R − R_q| ≥ r + r_q + gap. That rules out R_q − need .. R_q + need.
 //
 //  The orbit gets the smallest R (at least r + r_center + gap) that isn't
-//  ruled out by anything.
+//  ruled out by anything. Here r is the object's REACH: with a moon going
+//  round it, a planet counts as big enough to hold the moon's circle
+//  (docs/17), so if the planet's orbit is clear, so is its moon.
 // ---------------------------------------------------------------------------
 void motion_plan::plan_orbits(){
-	std::vector<int> done;   // orbits that already have their radius
-	for(size_t k = 0;k<moving.size();k++){
+	// moons before planets: a planet's reach depends on its moons' orbits
+	std::vector<size_t> order;
+	for(size_t k = 0;k<moving.size();k++) order.push_back(k);
+	std::stable_sort(order.begin(), order.end(), [&](size_t a,size_t b){ return depth(a) > depth(b); });
+
+	std::vector<size_t> done;   // orbits that already have their radius
+	for(size_t k : order){
 		path& p = moving[k];
 		if(p.kind != motion_kind::orbits) continue;
-		const obstacle& center = still[p.around];
+		bool center_moves = p.around_path >= 0;
+		float center_radius = center_moves ? moving[p.around_path].radius : still[p.around].radius;
+		float r = reach(k);   // the object, or the object with its moons
 
 		std::vector<std::pair<float, float>> ruled_out;
-		for(size_t j = 0;j<still.size();j++){
-			if(int(j) == p.around) continue;
-			vec3 d = still[j].position - center.position;
-			float h = std::sqrt(d[0] * d[0] + d[2] * d[2]);
-			float v = d[1];
-			float need = p.radius + still[j].radius + layout::gap;
-			if(need <= std::fabs(v)) continue;   // far enough above or below: never in the way
-			float w = std::sqrt(need * need - v * v);
-			ruled_out.push_back({h - w, h + w});
+		if(!center_moves){
+			// still objects can only be in the way of orbits around still things;
+			// a moon's circle moves along with its planet, and the planet's own
+			// orbit (with the moon's reach) already keeps clear of them
+			const obstacle& center = still[p.around];
+			for(size_t j = 0;j<still.size();j++){
+				if(int(j) == p.around) continue;
+				vec3 d = still[j].position - center.position;
+				float h = std::sqrt(d[0] * d[0] + d[2] * d[2]);
+				float v = d[1];
+				float need = r + still[j].radius + layout::gap;
+				if(need <= std::fabs(v)) continue;   // far enough above or below: never in the way
+				float w = std::sqrt(need * need - v * v);
+				ruled_out.push_back({h - w, h + w});
+			}
 		}
-		for(int q : done){
-			if(moving[q].around != p.around) continue;
-			float need = p.radius + moving[q].radius + layout::gap;
+		for(size_t q : done){
+			if(moving[q].around != p.around || moving[q].around_path != p.around_path) continue;
+			float need = r + reach(q) + layout::gap;
 			ruled_out.push_back({moving[q].orbit_radius - need, moving[q].orbit_radius + need});
 		}
 
 		// the answer is either the smallest radius, or just past the end of
 		// one of the ruled-out ranges: try those, smallest first
-		float smallest = p.radius + center.radius + layout::gap;
+		float smallest = r + center_radius + layout::gap;
 		std::vector<float> tries = {smallest};
 		for(const auto& range : ruled_out){
 			if(range.second > smallest) tries.push_back(range.second);
@@ -200,7 +271,61 @@ void motion_plan::plan_orbits(){
 				break;
 			}
 		}
-		done.push_back(int(k));
+		done.push_back(k);
+	}
+}
+
+// Does moving object k ever come too close to a still object? (Sampled,
+// for paths where no exact formula applies.)
+bool motion_plan::clear_of_still_sampled(size_t k)const{
+	const path& p = moving[k];
+	float dt = sample_step();
+	float last = duration();
+	for(int step = 0;;step++){
+		float t = std::min(step * dt, last);
+		vec3 here = position(k, t);
+		for(const obstacle& o : still){
+			if(distance(here, o.position) - p.radius - o.radius < layout::gap / 4.0f) return false;
+		}
+		if(t >= last) break;
+	}
+	return true;
+}
+
+// Orbits around DIFFERENT centers aren't compared by the exact rule above
+// (their circles aren't around the same point), so two of them can cross.
+// Crossing isn't the problem; being at the crossing at the same TIME is.
+// So for an orbit that still collides with another orbit (fly-bys come
+// later, and steer around the orbits):
+//   1. try starting it at a different place on its circle: 45°, 90°, ...
+//      (the circle stays the same, so nothing still can be in the way)
+//   2. if no start works, make the circle 15% bigger and try again,
+//      now checking the still objects too
+void motion_plan::repair_orbits(){
+	for(size_t k = 0;k<moving.size();k++){
+		path& p = moving[k];
+		if(p.kind != motion_kind::orbits || clear_of_moving(k, true)) continue;
+		float first_radius = p.orbit_radius;
+		bool fixed = false;
+		for(int grow = 0;grow<6 && !fixed;grow++){
+			if(grow > 0) p.orbit_radius *= 1.15f;
+			for(int step = 0;step<8 && !fixed;step++){
+				p.start_angle = step * two_pi / 8.0f;
+				fixed = clear_of_moving(k, true) && (grow == 0 || clear_of_still_sampled(k));
+			}
+		}
+		std::ostringstream note;
+		note << std::fixed << std::setprecision(2);
+		if(fixed){
+			note << p.name << "'s orbit crossed another moving object's path; it now starts at "
+			     << p.start_angle * 360.0f / two_pi << " degrees";
+			if(p.orbit_radius != first_radius) note << ", radius " << first_radius << " -> " << p.orbit_radius;
+		}else{
+			p.orbit_radius = first_radius;
+			p.start_angle = 0.0f;
+			note << "no clear orbit found for " << p.name << " (it may collide)";
+		}
+		warnings.push_back(note.str());
 	}
 }
 
@@ -232,28 +357,17 @@ bool motion_plan::clear_of_still(const path& p)const{
 	return true;
 }
 
-// the sample step if `extra` were added to the moving objects
-float motion_plan::sample_step_with(const path& extra)const{
-	float fastest = extra.speed();
-	float last = extra.end;
-	for(const path& p : moving){
-		fastest = std::max(fastest, p.speed());
-		last = std::max(last, p.end);
-	}
-	return std::max(layout::gap / (4.0f * fastest), last / 20000.0f);
-}
-
 // Does moving object k ever come too close to another moving object?
-bool motion_plan::clear_of_moving(size_t k)const{
+bool motion_plan::clear_of_moving(size_t k,bool orbits_only)const{
 	const path& p = moving[k];
-	float dt = sample_step_with(p);
+	float dt = sample_step();
 	float last = duration();
 	for(int step = 0;;step++){
 		float t = std::min(step * dt, last);
-		vec3 here = p.at(t);
+		vec3 here = position(k, t);
 		for(size_t j = 0;j<moving.size();j++){
-			if(j == k) continue;
-			float surface_gap = distance(here, moving[j].at(t)) - p.radius - moving[j].radius;
+			if(j == k || (orbits_only && moving[j].kind != motion_kind::orbits)) continue;
+			float surface_gap = distance(here, position(j, t)) - p.radius - moving[j].radius;
 			if(surface_gap < layout::gap / 4.0f) return false;
 		}
 		if(t >= last) break;
@@ -298,15 +412,19 @@ void motion_plan::plan_flights(){
 
 std::vector<obstacle> motion_plan::bounds()const{
 	std::vector<obstacle> spheres;
-	for(const path& p : moving){
+	for(size_t k = 0;k<moving.size();k++){
+		const path& p = moving[k];
 		if(p.kind == motion_kind::orbits){
+			// a moon's circle travels with its planet, and the planet's
+			// spheres already include the moon's reach
+			if(p.around_path >= 0) continue;
 			// 32 spheres around the circle. A point of the circle is never
 			// more than half a step's chord, 2·R·sin(π/64), from the nearest
 			// one, so growing each by that covers the whole ring. One big
 			// sphere would also work, but it's as tall as it is wide, and an
 			// orbit is flat (docs/16).
 			const int n = 32;
-			float cover = p.radius + 2.0f * p.orbit_radius * std::sin(3.14159265f / (2.0f * n));
+			float cover = reach(k) + 2.0f * p.orbit_radius * std::sin(3.14159265f / (2.0f * n));
 			for(int k = 0;k<n;k++){
 				float angle = two_pi * float(k) / float(n);
 				vec3 point = p.center + vec3(p.orbit_radius * std::cos(angle), 0.0f, -p.orbit_radius * std::sin(angle));
@@ -344,7 +462,7 @@ float motion_plan::duration()const{
 // ---------------------------------------------------------------------------
 float motion_plan::sample_step()const{
 	float fastest = 0.0f;
-	for(const path& p : moving) fastest = std::max(fastest, p.speed());
+	for(size_t k = 0;k<moving.size();k++) fastest = std::max(fastest, speed_of(k));
 	if(fastest <= 0.0f) return 1.0f;
 	float dt = layout::gap / (4.0f * fastest);
 	// keep the number of samples sane for very fast objects
@@ -371,7 +489,7 @@ std::vector<motion_plan::collision> motion_plan::find_collisions()const{
 	for(int k = 0;;k++){
 		float t = std::min(k * dt, last);
 		for(size_t i = 0;i<moving.size();i++){
-			vec3 p = moving[i].at(t);
+			vec3 p = position(i, t);
 			// against everything standing still
 			for(const obstacle& o : still){
 				float surface_gap = distance(p, o.position) - moving[i].radius - o.radius;
@@ -379,7 +497,7 @@ std::vector<motion_plan::collision> motion_plan::find_collisions()const{
 			}
 			// against the other moving objects
 			for(size_t j = i + 1;j<moving.size();j++){
-				float surface_gap = distance(p, moving[j].at(t)) - moving[i].radius - moving[j].radius;
+				float surface_gap = distance(p, position(j, t)) - moving[i].radius - moving[j].radius;
 				if(surface_gap < tolerance) record(moving[i].name, moving[j].name, t, surface_gap);
 			}
 		}
@@ -402,7 +520,7 @@ std::string motion_plan::report()const{
 
 	float dt = sample_step();
 	float fastest = 0.0f;
-	for(const path& p : moving) fastest = std::max(fastest, p.speed());
+	for(size_t k = 0;k<moving.size();k++) fastest = std::max(fastest, speed_of(k));
 	out << "motion (" << method_name << "): " << moving.size() << " moving objects, "
 	    << hits.size() << " colliding pairs\n";
 	if(moving.empty()) return out.str();
@@ -411,8 +529,9 @@ std::string motion_plan::report()const{
 
 	out << "  paths:\n";
 	for(const path& p : moving){
+		std::string center = p.around_path >= 0 ? moving[p.around_path].name + " (which moves)" : still[p.around].name;
 		out << "    " << std::left << std::setw(10) << p.name << std::right << " "
-		    << motion_name(p.kind) << " " << still[p.around].name << ", "
+		    << motion_name(p.kind) << " " << center << ", "
 		    << p.start << "-" << p.end << " s: ";
 		if(p.kind == motion_kind::orbits){
 			out << "radius " << p.orbit_radius << ", " << p.turns << " turns";
@@ -423,7 +542,7 @@ std::string motion_plan::report()const{
 		out << "\n";
 	}
 	if(!warnings.empty()){
-		out << "  problems while planning:\n";
+		out << "  notes from planning:\n";
 		for(const std::string& w : warnings) out << "    " << w << "\n";
 	}
 	if(!hits.empty()){

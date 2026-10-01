@@ -47,10 +47,14 @@ view_right     naive       9       36      36     0     0 of 7       1        0 
                greedy      9        0       6     0     7 of 7       1        0      0      0        0
                refined     9        0       0     0     7 of 7       1        0    172      0        0
                framed      9        0       0     0     7 of 7       1        0    342      0        0
-motion         naive       6        3       3     0     0 of 1       1        0      0      3        0
-               greedy      6        0       0     0     1 of 1       1        0      0      3        0
-               refined     6        0       0     0     1 of 1       1        0      0      3        0
-               framed      6        0       0     0     1 of 1       1        0      0      3        0
+motion         naive       6        1       1     0     0 of 1       0        0      0      4        0
+               greedy      6        0       0     0     1 of 1       0        0      0      4        0
+               refined     6        0       0     0     1 of 1       0        0      0      4        0
+               framed      6        0       0     0     1 of 1       0        0      0      4        0
+motion_typos   naive       8       15      15     0     0 of 0       5        0      0      2        0
+               greedy      8        0       5     0     0 of 0       5        0      0      2        0
+               refined     8        0       0     0     0 of 0       5        0    169      2        0
+               framed      8        0       0     0     0 of 0       5        0    320      2        0
 
 checks:
   PASS  lazy           every position is a real number (no NaN / infinity)
@@ -156,6 +160,14 @@ checks:
   PASS  motion         nothing hidden behind something else on screen (0 pairs)
   PASS  motion         moving objects never collide (0 pairs)
   PASS  motion         moving objects stay in the picture (0 leave it)
-  PASS  motion         reports its mistakes (1 of at least 1)
+  PASS  motion         reports its mistakes (0 of at least 0)
+  PASS  motion_typos   every position is a real number (no NaN / infinity)
+  PASS  motion_typos   solving twice gives exactly the same layout
+  PASS  motion_typos   no overlaps after framing (0)
+  PASS  motion_typos   everything inside the picture (0 outside)
+  PASS  motion_typos   nothing hidden behind something else on screen (0 pairs)
+  PASS  motion_typos   moving objects never collide (0 pairs)
+  PASS  motion_typos   moving objects stay in the picture (0 leave it)
+  PASS  motion_typos   reports its mistakes (5 of at least 5)
 
 ALL PASSED: 0 checks failed

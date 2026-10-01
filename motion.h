@@ -36,8 +36,9 @@ struct split_scene{
 };
 
 // Separates the moving objects from the still ones. Motions that can't work
-// (unknown name, around another moving object, no time to do it in) are
-// reported, and that object stands still instead.
+// (unknown name, a circle of motions, no time to do it in, flying past
+// something that moves) are reported, and that object stands still instead.
+// Orbiting something that moves is fine (a moon around a planet, docs/17).
 split_scene split_motion(const scene_spec& spec);
 
 // Something standing still, as the planner sees it.
@@ -53,7 +54,8 @@ struct path{
 	std::string name;
 	motion_kind kind = motion_kind::orbits;
 	float radius = 0.0f;      // the object's bounding radius
-	int around = -1;          // which obstacle it moves around / past
+	int around = -1;          // which still obstacle it moves around / past (or -1)
+	int around_path = -1;     // orbits only: which moving object it goes round (or -1)
 	float start = 0.0f, end = 0.0f;
 
 	// orbits: a circle in the horizontal plane through `center`
@@ -66,10 +68,11 @@ struct path{
 	vec3 from{0.0f, 0.0f, 0.0f};
 	vec3 to{0.0f, 0.0f, 0.0f};
 
-	// Where it is at time t (before `start` it waits at the beginning,
-	// after `end` it stays at the end)
-	vec3 at(float t)const;
-	// How fast it goes while moving (world units per second)
+	// Where it is at time t, if the thing it orbits is at `center` then
+	// (before `start` it waits at the beginning, after `end` it stays at the
+	// end). Fly-bys don't use `center`. motion_plan::position fills it in.
+	vec3 at(float t,const vec3& center)const;
+	// How fast it goes along its own path (world units per second)
 	float speed()const;
 };
 
@@ -82,6 +85,11 @@ public:
 	void solve(method how);
 
 	const std::vector<path>& paths()const;
+	// Where moving object k is at time t (following its center if that moves)
+	vec3 position(size_t k,float t)const;
+	// How far object k reaches from its own center: its radius, or more if
+	// it has moons going round it (docs/17)
+	float reach(size_t k)const;
 	// Spheres that hold each whole path: for an orbit, 32 spheres around its
 	// circle; for a fly-by, its two end points (the segment lies between them).
 	std::vector<obstacle> bounds()const;
@@ -100,11 +108,15 @@ public:
 private:
 	void place_naive();
 	void plan_orbits();
+	void repair_orbits();
+	bool clear_of_still_sampled(size_t k)const;
 	void plan_flights();
 	bool clear_of_still(const path& p)const;
-	bool clear_of_moving(size_t k)const;
+	// orbits_only: ignore fly-bys (they're planned after the orbits)
+	bool clear_of_moving(size_t k,bool orbits_only = false)const;
 	std::vector<std::string> warnings;
-	float sample_step_with(const path& extra)const;
+	float speed_of(size_t k)const;   // its own speed plus its center's
+	int depth(size_t k)const;        // 0 = goes round something still, 1 = round a mover, ...
 
 	// One pair that hit each other.
 	struct collision{

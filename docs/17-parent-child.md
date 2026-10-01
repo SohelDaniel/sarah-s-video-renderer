@@ -96,7 +96,21 @@ It's the simplest link that's still correct for orbits, rings and things
 that stick. Full inheritance (for example a wheel spinning on a moving car)
 can be added later as a third kind of link.
 
-## 4. In the code
+## 4. Moons in the solver
+
+The motion planner (16) uses the same idea. A moon's path is a circle around
+a center that **moves**, so its position at t is
+
+```
+moon(t) = planet(t) + ring offset(t)          (motion_plan::position asks for planet(t) first)
+```
+
+and `world` turns it into an `attach_to` link, with the moon's circle drawn
+around (0, 0, 0) in the planet's frame. For planning, a planet with a moon
+counts as a bigger object (its **reach**, 16 section 6), so if the planet's
+orbit is clear, the moon's is too.
+
+## 5. In the code
 
 ```cpp
 vec3 object::position_at(float t)const{

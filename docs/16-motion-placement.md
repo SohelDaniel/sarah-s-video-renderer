@@ -35,22 +35,22 @@ the description
    └──► moving objects ─────────────────────────► motion_plan ───┴─► paths
 ```
 
-A moving object needs something that **stands still** to move around.
-`split_motion` checks every motion, and anything it can't use is reported
-while that object stands still instead:
+`split_motion` checks every motion. Anything it can't use is reported, and
+that object stands still instead:
 
 | Problem | Message (shortened) |
 |---|---|
 | unknown name | `there is no object called "sunn" (it stands still instead)` |
 | around itself | `it can't move around itself` |
 | end ≤ start | `it ends before it starts` |
-| around something that **moves** | `moving around something that moves isn't supported yet` |
+| motions in a circle (a orbits b, b orbits a) | `the motions go round in a circle` |
+| flying **past** something that moves | `flying past something that moves isn't supported yet` |
 | a still object placed relative to a mover | `comet moves, so it can't be used to place things (relation ignored)` |
 
-The fourth one is the moon orbiting a planet that orbits the sun. It needs
-**parent/child transforms**: the moon's path is relative to the planet,
-whose path is relative to the sun. That's a later feature, so for now it's
-reported clearly instead of half-working.
+**Orbiting** something that moves is fine: a moon around a planet that goes
+round the sun. The moon's circle travels along with its planet (17). (The
+first version of step E reported it as "not supported yet", which is what
+the stress test `motion_typos` still checks for the cases above.)
 
 ## 3. A path's position at time t
 
@@ -144,29 +144,33 @@ Scene 4 (`./main 4 naive`, `lazy_motion_scene` in `test_scenes.cpp`):
 - a sun, and a **rock** near it (greedy puts it at (2.6, 0, 0))
 - **planet1** and **planet2** orbiting the sun (1 and 2 turns), with no
   distance given
+- a **moon** orbiting planet1 (3 turns)
 - a **comet** flying past the sun from 4 s to 10 s
-- a **moon** orbiting planet1, which isn't supported yet
 
 The report ([scene4-naive.txt](images/scene4-naive.txt)):
 
 ```
-motion (naive): 3 moving objects, 9 colliding pairs
+motion (naive): 4 moving objects, 8 colliding pairs
     planet1    orbits sun, 0.00-20.00 s: radius 2.60, 1.00 turns
     planet2    orbits sun, 0.00-20.00 s: radius 2.67, 2.00 turns
     comet      flies_past sun, 4.00-10.00 s: from (-7.53, 0.00, 0.00) to (7.53, 0.00, 0.00)
+    moon       orbits planet1 (which moves), 0.00-20.00 s: radius 1.50, 3.00 turns
   collisions:
     planet1 hits rock, first at 0.00 s (closest: inside each other by 1.60)
     planet1 hits planet2, first at 0.00 s (closest: inside each other by 1.60)
+    planet2 hits rock, first at 0.00 s (closest: inside each other by 1.60)
+    planet2 hits moon, first at 1.08 s (closest: inside each other by 0.35)
+    moon hits sun, first at 3.86 s (closest: inside each other by 0.60)
+    planet2 hits comet, first at 5.26 s (closest: inside each other by 0.31)
     comet hits sun, first at 6.09 s (closest: inside each other by 2.24)
-    ...
-  problems with motions in the description:
-    moon orbits planet1: planet1 moves too, and moving around something that moves isn't supported yet (it stands still instead)
+    comet hits rock, first at 7.37 s (closest: inside each other by 1.64)
 ```
 
 Planet1's smallest orbit, 1.4 + 0.8 + 0.4 = 2.6, is exactly where greedy put
-the rock: they start **in the same place**. Both planets' orbits are nearly
-the same size, so they're on top of each other at the start too, and
-planet2 laps planet1. The comet flies straight through the sun.
+the rock, so they start **in the same place**. Both planets' orbits are nearly
+the same size, so they're on top of each other at the start too, and planet2
+laps planet1. The moon's circle (1.5 around planet1) swings it **into the sun**
+whenever it's on the inner side. The comet flies straight through the sun.
 
 | 0 s | 3 s | 7 s | 12 s |
 |---|---|---|---|
@@ -178,7 +182,7 @@ they happen. At 0 s the rock and both planets are one red tangle; at 7 s
 the comet is inside the sun.
 
 The camera only frames the still objects, so moving ones can leave the
-picture: all 3 of them do at some point. That gets fixed in E4.
+picture: all 4 of them do at some point. That gets fixed in E4.
 
 ---
 
@@ -205,8 +209,8 @@ in the plane through c, o and that point:
 closest distance = √( (h − R)² + v² )
 ```
 
-It must be at least `need = r_planet + r_o + gap`. Square both sides and solve
-for R. The circle is too close exactly when
+It must be at least `need = r + r_o + gap`. Square both sides and solve for
+R. The circle is too close exactly when
 
 ```
 |h − R| < w,      w = √(need² − v²)              (if need ≤ |v|, never too close)
@@ -223,61 +227,82 @@ R_q + need.
 inside any ruled-out range. The answer is always either that minimum or
 the top end of some range, so only those values need to be tried.
 
+### Moons: an object's reach
+
+A planet with a moon is, for planning **its own** orbit, a bigger object: the
+moon's circle reaches `R_moon + r_moon` from the planet's center. So in all
+the formulas above, **r is the object's reach**:
+
+```
+reach(planet1) = max(r_planet1,  R_moon + reach(moon)) = max(0.8, 1.5 + 0.3) = 1.8
+```
+
+If the planet's orbit keeps its whole reach clear of everything, the moon
+can't hit anything either, so it's still exact and needs no sampling. That's why
+moons are planned **first** (deepest first): a planet's reach depends on its
+moons' radii.
+
 ### Worked example: scene 4
 
-Sun r = 1.4. The rock (r = 0.8) is at h = 2.6, the moon (r = 0.3, standing
-still) at h = 2.1, both at v = 0, so w = need.
+Sun r = 1.4. The rock (r = 0.8) is at h = 2.6, v = 0, so w = need.
 
-**Planet1** (r = 0.8). Smallest radius: 0.8 + 1.4 + 0.4 = **2.6**.
+**The moon** (r = 0.3) goes round planet1 (r = 0.8). Nothing still can be in
+its way (its circle moves with the planet), so it gets the smallest radius:
+0.3 + 0.8 + 0.4 = **1.5**. That makes planet1's reach **1.8**.
 
-| Rules out | need | range |
-|---|---|---|
-| rock | 0.8 + 0.8 + 0.4 = 2.0 | 2.6 − 2.0 .. 2.6 + 2.0 = **0.6 .. 4.6** |
-| moon | 0.8 + 0.3 + 0.4 = 1.5 | 2.1 − 1.5 .. 2.1 + 1.5 = **0.6 .. 3.6** |
-
-Try 2.6: inside 0.6..4.6 ✗. Try 3.6: inside 0.6..4.6 ✗. Try 4.6: on the edge,
-allowed ✓ → **R = 4.6**.
-
-**Planet2** (r = 0.87). Smallest radius: 0.87 + 1.4 + 0.4 = **2.67**.
+**Planet1** (reach 1.8). Smallest radius: 1.8 + 1.4 + 0.4 = **3.6**.
 
 | Rules out | need | range |
 |---|---|---|
-| rock | 2.07 | 0.53 .. 4.67 |
-| moon | 1.57 | 0.53 .. 3.67 |
-| planet1's orbit (4.6) | 0.87 + 0.8 + 0.4 = 2.07 | 2.53 .. **6.67** |
+| rock | 1.8 + 0.8 + 0.4 = 3.0 | 2.6 − 3.0 .. 2.6 + 3.0 = **−0.4 .. 5.6** |
 
-Try 2.67 ✗ (rock), 3.67 ✗ (rock), 4.67 ✗ (planet1's orbit), 6.67 ✓ →
-**R = 6.67**.
+Try 3.6: inside ✗. Try 5.6: on the edge, allowed ✓ → **R = 5.6**.
+
+**Planet2** (r = 0.87, no moons, so reach 0.87). Smallest: 0.87 + 1.4 + 0.4 = **2.67**.
+
+| Rules out | need | range |
+|---|---|---|
+| rock | 0.87 + 0.8 + 0.4 = 2.07 | 0.53 .. 4.67 |
+| planet1's orbit (5.6, reach 1.8) | 0.87 + 1.8 + 0.4 = 3.07 | 2.53 .. **8.67** |
+
+Try 2.67 ✗ (both), 4.67 ✗ (planet1's orbit), 8.67 ✓ → **R = 8.67**.
 
 The report ([scene4-orbits.txt](images/scene4-orbits.txt)):
 
 ```
-motion (orbits): 3 moving objects, 4 colliding pairs
-    planet1    orbits sun, 0.00-20.00 s: radius 4.60, 1.00 turns
-    planet2    orbits sun, 0.00-20.00 s: radius 6.67, 2.00 turns
+motion (orbits): 4 moving objects, 4 colliding pairs
+    planet1    orbits sun, 0.00-20.00 s: radius 5.60, 1.00 turns
+    planet2    orbits sun, 0.00-20.00 s: radius 8.67, 2.00 turns
+    moon       orbits planet1 (which moves), 0.00-20.00 s: radius 1.50, 3.00 turns
   collisions:
-    planet2 hits comet, first at 4.58 s ...
-    comet hits moon, first at 5.68 s ...
     comet hits sun, first at 6.06 s ...
     comet hits rock, first at 7.35 s ...
+    planet2 hits comet, first at 9.83 s ...
+    comet hits moon, first at 19.65 s ...
 ```
 
-**9 → 4 colliding pairs**, and every one that's left involves the comet,
-which still flies straight through (E3). The orbits are exact: they
-can't hit any still object or each other, at any speed and at any moment,
-which is better than sampling could ever prove.
+**8 → 4 colliding pairs**, and every one that's left involves the comet,
+which still flies straight through (E3).
 
-One limit: orbits around **different** centers aren't compared this way
-(their circles aren't concentric). Time sampling still catches them if they
-collide.
+### Orbits around different centers
+
+The rules above compare an orbit with still objects and with other orbits
+**around the same center**. Two orbits around different centers can still
+cross (the `motion_typos` stress test has one). Crossing isn't the problem;
+being at the crossing **at the same time** is. So afterwards, any orbit that
+still collides with another orbit (by sampling) is repaired:
+
+1. start it somewhere else on its circle: 45°, 90°, ... (the circle stays
+   the same, so nothing still can be in the way)
+2. if no start works, make the circle 15% bigger and try again, now checking
+   the still objects by sampling too
+
+The report says what it changed, e.g. `b's orbit crossed another moving
+object's path; it now starts at 45.00 degrees`.
 
 | 0 s | 3 s | 7 s | 12 s |
 |---|---|---|---|
 | ![](images/scene4-orbits-0.png) | ![](images/scene4-orbits-3.png) | ![](images/scene4-orbits-7.png) | ![](images/scene4-orbits-12.png) |
-
-The planets are clear of the rock and of each other. Planet2's orbit is
-now so wide it's mostly out of the picture, because the camera still only
-frames the still objects (E4).
 
 ---
 
@@ -329,28 +354,33 @@ could run into it there.
 ### Worked example: why not the line in front?
 
 The first candidate is in front of the sun: z = 2.67, y = 0. Against the
-still objects it's fine (the same numbers as above, just sideways). But it
-lies in the planets' orbit plane, and it crosses planet2's orbit (R = 6.67)
-at x = ±√(6.67² − 2.67²) = ±6.11. Sampling finds that **at 8.84 s**,
-planet2 comes within 0.07 of the comet, below the gap/4 = 0.1 it needs. ✗
+still objects it's fine (the same numbers as above, just sideways). During
+the flight itself (4–10 s), nothing gets in its way either. But the comet
+**waits at its end point** (7.53, 0, 2.67) once it arrives, and that point is
+in the orbit plane. At **19.04 s** the moon sweeps past it, only 0.10 away,
+and at 19.14 s planet2 comes within 0.08. Both are below the gap/4 = 0.1 it
+needs. ✗
+
+That's why sampling covers the **whole** video, not just the flight.
 
 The next candidate, **above** (y = 2.67, z = 0), is 2.67 above the orbit
-plane. A planet would have to be within 0.87 + 0.87 + 0.4 = 2.13 of it, and
-it's always at least 2.67 away. That's clear at every moment, without
-sampling even needing to find it. ✓
+plane. Everything moving in that plane would have to come within its own
+need (planet2: 0.87 + 0.87 + 0.4 = 2.13, the moon: 0.3 + 0.87 + 0.4 = 1.57),
+and it's always at least 2.67 away. That's clear at every moment. ✓
 
 The report ([scene4-flights.txt](images/scene4-flights.txt)):
 
 ```
-motion (flights): 3 moving objects, 0 colliding pairs
-    planet1    orbits sun, 0.00-20.00 s: radius 4.60, 1.00 turns
-    planet2    orbits sun, 0.00-20.00 s: radius 6.67, 2.00 turns
+motion (flights): 4 moving objects, 0 colliding pairs
+    planet1    orbits sun, 0.00-20.00 s: radius 5.60, 1.00 turns
+    planet2    orbits sun, 0.00-20.00 s: radius 8.67, 2.00 turns
     comet      flies_past sun, 4.00-10.00 s: from (-7.53, 2.67, 0.00) to (7.53, 2.67, 0.00)
+    moon       orbits planet1 (which moves), 0.00-20.00 s: radius 1.50, 3.00 turns
 ```
 
 | | naive (E1) | orbits (E2) | flights (E3) |
 |---|---|---|---|
-| colliding pairs | 9 | 4 | **0** |
+| colliding pairs | 8 | 4 | **0** |
 
 | 0 s | 3 s | 7 s | 12 s |
 |---|---|---|---|
@@ -373,7 +403,8 @@ to fit every **path**:
 
 | Path | Spheres that hold all of it |
 |---|---|
-| orbit (center c, radius R, object radius r) | **32 spheres** spread around the circle, each of radius r + 2R·sin(π/64) |
+| orbit (center c, radius R, object reach r) | **32 spheres** spread around the circle, each of radius r + 2R·sin(π/64) |
+| a moon's orbit | nothing extra: the planet's reach already includes it |
 | fly-by (A → B, object radius r) | **two spheres**, at A and at B, radius r |
 
 **Why 32 spheres for an orbit?** One sphere of radius R + r around the center
@@ -397,21 +428,21 @@ that leave the picture at **any** moment.
 ### Worked example
 
 ```
-planet1's ring:  R = 4.60,  32 spheres of radius 0.80 + 2·4.60·sin(π/64) = 0.80 + 0.45 = 1.25
-planet2's ring:  R = 6.67,  32 spheres of radius 0.87 + 2·6.67·sin(π/64) = 0.87 + 0.65 = 1.52
+planet1's ring:  R = 5.60, reach 1.8:  32 spheres of radius 1.80 + 2·5.60·sin(π/64) = 1.80 + 0.55 = 2.35
+planet2's ring:  R = 8.67, reach 0.87: 32 spheres of radius 0.87 + 2·8.67·sin(π/64) = 0.87 + 0.85 = 1.72
 comet's ends:    (±7.53, 2.67, 0),  radius 0.87
 
-box in y:  from −1.52 (the rings) to 2.67 + 0.87 = 3.54 (the comet)  →  center y = 1.01
-farthest:  a comet end,  √(7.53² + (2.67 − 1.01)²) + 0.87 = 7.71 + 0.87 = 8.58
-sphere fit:  1.05 · 8.58 / sin(25°) = 21.31,   then the binary search → 16.73
+box in y:  from −2.35 (planet1's ring) to 2.67 + 0.87 = 3.53 (the comet)  →  center y = 0.59
+farthest:  a point of planet2's ring, √(8.67² + 0.59²) + 1.72 = 8.69 + 1.72 = 10.40
+sphere fit:  1.05 · 10.40 / sin(25°) = 25.85,   then the binary search → 19.90
 ```
 
 | | flights (E3) | framed (E4) |
 |---|---|---|
 | what the camera fits | still objects only | still objects **and every path** |
-| scene radius | 2.90 | **8.58** |
-| camera distance | 4.91 | **16.73** (sphere fit: 21.31) |
-| moving objects that leave the picture | 3 | **0** |
+| scene radius | 2.40 | **10.40** |
+| camera distance | 4.06 | **19.90** (sphere fit: 25.85) |
+| moving objects that leave the picture | 4 | **0** |
 
 From [scene4-flights.txt](images/scene4-flights.txt) and
 [scene4-framed.txt](images/scene4-framed.txt). The stress tests check it
@@ -432,14 +463,14 @@ is empty.
 
 | | E1 naive | E2 orbits | E3 flights | E4 framed |
 |---|---|---|---|---|
-| colliding pairs | 9 | 4 | 0 | **0** |
-| moving objects leaving the picture | 3 | 3 | 3 | **0** |
-| orbit radii | 2.60, 2.67 | 4.60, 6.67 | 4.60, 6.67 | 4.60, 6.67 |
+| colliding pairs | 8 | 4 | 0 | **0** |
+| moving objects leaving the picture | 4 | 4 | 4 | **0** |
+| orbit radii (planet1, planet2, moon) | 2.60, 2.67, 1.50 | 5.60, 8.67, 1.50 | 5.60, 8.67, 1.50 | 5.60, 8.67, 1.50 |
 | comet's path | through the sun | through the sun | above the sun | above the sun |
 
 From a description that says only "orbits sun" and "flies past sun", the
-planner found paths that never collide at any moment, keep everything
-visible the whole time, and reported the one motion it can't do yet.
+planner found paths that never collide at any moment, including a moon
+riding along on a moving planet, and keeps everything visible the whole time.
 
 ---
 

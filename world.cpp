@@ -31,17 +31,37 @@ world::world(const scene_spec& spec,layout::method still_how,motion_plan::method
 			thing.move(solved.placed(int(i))->position);
 		}else{
 			// follow the path the solver picked, with the timed animations
-			// from docs/09; path::at() describes exactly the same motion
+			// from docs/09; motion_plan::position describes exactly the same
+			// motion
 			const path& p = solved.plan().paths()[k];
-			thing.move(p.at(0.0f));
-			if(p.kind == motion_kind::orbits){
+			if(p.kind == motion_kind::orbits && p.around_path >= 0){
+				// round something that moves: work relative to it (attached
+				// below), so the circle is around (0,0,0)
+				vec3 zero(0.0f, 0.0f, 0.0f);
+				thing.move(p.at(0.0f, zero));
+				thing.rotate_around(zero, 6.2831853f * p.turns, 0.0f, p.start, p.end);
+			}else if(p.kind == motion_kind::orbits){
+				thing.move(p.at(0.0f, p.center));
 				thing.rotate_around(p.center, 6.2831853f * p.turns, 0.0f, p.start, p.end);
 			}else{
+				thing.move(p.from);
 				thing.move(p.to, p.start, p.end);
 			}
 		}
 		objects.push_back(thing);
 		moves.push_back(k >= 0);
+	}
+
+	// now that every object exists (and won't move in memory), link the
+	// moons to what they go round (docs/17)
+	for(size_t i = 0;i<objects.size();i++){
+		int k = solved.path_of(int(i));
+		if(k < 0) continue;
+		const path& p = solved.plan().paths()[k];
+		if(p.kind == motion_kind::orbits && p.around_path >= 0){
+			int parent = solved.plan().paths()[p.around_path].object;
+			objects[i].attach_to(&objects[parent]);
+		}
 	}
 
 	cam.move(solved.still().camera_eye());
